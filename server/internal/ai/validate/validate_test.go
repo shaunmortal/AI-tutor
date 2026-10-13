@@ -181,3 +181,84 @@ func TestAgreesWithProposedAnswer(t *testing.T) {
 		}
 	}
 }
+
+func TestTypedQuestions(t *testing.T) {
+	short := q(func(g *GeneratedQuestion) {
+		g.QuestionType, g.Options, g.CorrectOptionIndexes = "short", nil, nil
+		g.Body = "What is the name of the structure that maps keys to slots by hashing?"
+		g.AcceptedAnswers, g.Rubric = []string{"hash table", "hash map"}, "Names a hash table (or hash map)."
+	})
+	numeric := q(func(g *GeneratedQuestion) {
+		g.QuestionType, g.Options, g.CorrectOptionIndexes = "numeric", nil, nil
+		g.Body = "A table of 8 slots holds 6 keys. What is its load factor?"
+		g.NumericAnswer = &NumericAnswer{Value: 0.75, Tolerance: 0.01}
+	})
+	for name, g := range map[string]GeneratedQuestion{"short": short, "numeric": numeric} {
+		if r := BusinessCheck(g); r != "" {
+			t.Errorf("%s rejected: %s", name, r)
+		}
+	}
+	for name, edit := range map[string]func(*GeneratedQuestion){
+		"short with no accepted answer": func(g *GeneratedQuestion) { g.AcceptedAnswers = nil },
+		"short with no rubric":          func(g *GeneratedQuestion) { g.Rubric = " " },
+		"short with options":            func(g *GeneratedQuestion) { g.Options = []string{"a", "b"} },
+		"short giving itself away": func(g *GeneratedQuestion) {
+			g.AcceptedAnswers = []string{"separate chaining"}
+			g.Body = "Is separate chaining a way to resolve hash collisions? Name the method."
+		},
+	} {
+		g := short
+		edit(&g)
+		if BusinessCheck(g) == "" {
+			t.Errorf("%s accepted", name)
+		}
+	}
+	noKey := numeric
+	noKey.NumericAnswer = nil
+	if BusinessCheck(noKey) == "" {
+		t.Error("numeric with no answer accepted")
+	}
+
+	// The schema gate accepts typed questions without options, and lines misconceptions up.
+	raw := `{"questions": [
+		{"questionType": "short", "body": "` + short.Body + `", "options": [], "correctOptionIndexes": [],
+		 "optionMisconceptions": [], "acceptedAnswers": ["hash table"], "rubric": "Names a hash table.",
+		 "numericAnswer": null, "explanation": "` + short.Explanation + `", "difficulty": "easy"},
+		{"questionType": "mcq", "body": "` + q(nil).Body + `", "options": ["Linked list", "Hash table", "Sorted array", "Stack"],
+		 "correctOptionIndexes": [1], "optionMisconceptions": ["thinks lists index by key", "wrongly labelled", "", "confuses LIFO with lookup"],
+		 "acceptedAnswers": [], "rubric": "", "numericAnswer": null, "explanation": "` + q(nil).Explanation + `", "difficulty": "easy"}
+	]}`
+	out := ValidateGeneratedQuestions([]byte(raw))
+	if len(out.Accepted) != 2 {
+		t.Fatalf("accepted %d: %+v", len(out.Accepted), out.Rejected)
+	}
+	got := out.Accepted[1].OptionMisconceptions
+	if len(got) != 4 || got[0] != "thinks lists index by key" || got[1] != "" || got[3] != "confuses LIFO with lookup" {
+		t.Errorf("misconceptions not aligned with the correct option blanked: %q", got)
+	}
+}
+
+func TestAgreesWithNumericAnswer(t *testing.T) {
+	v := func(f float64) *float64 { return &f }
+	key := NumericAnswer{Value: 0.75, Tolerance: 0.01}
+	for _, c := range []struct {
+		check TypedCheck
+		want  bool
+	}{
+		{TypedCheck{NumericValue: v(0.755), Confidence: "high"}, true},
+		{TypedCheck{NumericValue: v(0.8), Confidence: "high"}, false},
+		{TypedCheck{NumericValue: v(0.75), Confidence: "low"}, false},
+		{TypedCheck{NumericValue: nil, Confidence: "high"}, false},
+		{TypedCheck{NumericValue: v(0.75), Confidence: "high", Unanswerable: true}, false},
+	} {
+		if got, reason := AgreesWithNumericAnswer(key, c.check); got != c.want {
+			t.Errorf("%+v: got %v (%s)", c.check, got, reason)
+		}
+	}
+	if _, err := ParseTypedCheck([]byte(`{"answer": "x", "numericValue": null, "confidence": "high", "unanswerable": false}`)); err != nil {
+		t.Error(err)
+	}
+	if _, err := ParseTypedCheck([]byte(`{"answer": "x", "confidence": "sure", "unanswerable": false}`)); err == nil {
+		t.Error("bad confidence accepted")
+	}
+}

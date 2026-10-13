@@ -20,7 +20,14 @@ type QuestionForGrading struct {
 	IsVerified    bool            `db:"is_verified" json:"is_verified"`
 	// The course excerpt the question was written from, if any.
 	SourceChunkID *string `db:"source_chunk_id" json:"source_chunk_id"`
+	// Body is what a rubric grader is shown; OptionMisconceptions names why each wrong option
+	// tempts a learner ("" for correct options), or is nil.
+	Body                 string   `db:"body" json:"-"`
+	OptionMisconceptions []string `db:"option_misconceptions" json:"-"`
 }
+
+const gradingCols = `id, topic_id, question_type, correct_answer, explanation, difficulty, is_verified, source_chunk_id,
+	body, option_misconceptions`
 
 // AttemptRow is one attempt with the question's difficulty embedded, as PostgREST's
 // `questions(difficulty)` returned it: Questions is nil when the question could not be read.
@@ -69,8 +76,7 @@ func NewAttempts(q Q) *Attempts { return &Attempts{q} }
 // existing (404 QUESTION_NOT_FOUND).
 func (r *Attempts) FindForGrading(ctx context.Context, questionID string) (*QuestionForGrading, error) {
 	q, err := rowOf[QuestionForGrading](ctx, r.q, "attempts.findForGrading",
-		`select id, topic_id, question_type, correct_answer, explanation, difficulty, is_verified, source_chunk_id
-		 from questions where id = $1`, questionID)
+		`select `+gradingCols+` from questions where id = $1`, questionID)
 	if err != nil {
 		return nil, err
 	}
@@ -78,6 +84,21 @@ func (r *Attempts) FindForGrading(ctx context.Context, questionID string) (*Ques
 		return nil, httpx.E(http.StatusNotFound, "QUESTION_NOT_FOUND", "That question does not exist or is not available yet.")
 	}
 	return q, nil
+}
+
+// FindManyForGrading is FindForGrading for a whole paper, keyed by id. A question that is no
+// longer verified is simply absent: the paper skips it rather than failing.
+func (r *Attempts) FindManyForGrading(ctx context.Context, questionIDs []string) (map[string]*QuestionForGrading, error) {
+	out := map[string]*QuestionForGrading{}
+	if len(questionIDs) == 0 {
+		return out, nil
+	}
+	rows, err := rowsOf[QuestionForGrading](ctx, r.q, "attempts.findManyForGrading",
+		`select `+gradingCols+` from questions where id = any($1::uuid[]) and is_verified`, questionIDs)
+	for i := range rows {
+		out[rows[i].ID] = &rows[i]
+	}
+	return out, err
 }
 
 // FindByIDs loads attempts by id, for a paper that recorded which attempt answered what.

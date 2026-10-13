@@ -94,10 +94,10 @@ func (r *Assessments) FindAssessableTopics(ctx context.Context, goalID string) (
 		 where g.goal_id = $1`, goalID)
 }
 
-// FindOneQuestionForTopic is one verified question id on a topic, or nil.
-func (r *Assessments) FindOneQuestionForTopic(ctx context.Context, topicID string) (*string, error) {
-	ids, err := colOf[string](ctx, r.q, "assessments.findOneQuestionForTopic",
-		`select id::text from questions where topic_id = $1 and is_verified limit 1`, topicID)
+// FindOneQuestionForTopic is one verified question id on a topic, the freshest for this learner,
+// or nil.
+func (r *Assessments) FindOneQuestionForTopic(ctx context.Context, userID, topicID string) (*string, error) {
+	ids, err := freshQuestionIDs(ctx, r.q, "assessments.findOneQuestionForTopic", userID, topicID, 1)
 	if err != nil || len(ids) == 0 {
 		return nil, err
 	}
@@ -159,6 +159,13 @@ func (r *Assessments) Complete(ctx context.Context, assessmentID string, correct
 	return single[AssessmentRow](ctx, r.q, "assessments.complete",
 		`update assessments set status = 'completed', correct_count = $2, completed_at = now()
 		 where id = $1 returning `+assessmentCols, assessmentID, correctCount)
+}
+
+// LockOpen locks the assessment row for this transaction and reports whether it is still open.
+func (r *Assessments) LockOpen(ctx context.Context, assessmentID string) (bool, error) {
+	status, err := colOf[string](ctx, r.q, "assessments.lockOpen",
+		`select status from assessments where id = $1 for update`, assessmentID)
+	return err == nil && len(status) == 1 && status[0] == "in_progress", err
 }
 
 // AbandonOpen retires an unfinished diagnostic so a fresh one can be started.

@@ -94,6 +94,9 @@ func (s *svc) routes() []route {
 		{"GET /ai/conversations", s.listConversations, nil},
 		{"GET /ai/conversations/{id}", s.getConversation, nil},
 		{"POST /ai/tutor", s.ask, []mw{tutor}},
+		{"POST /ai/checks/{id}/answer", s.answerCheck, nil},
+		{"GET /revision/flashcards", s.flashcards, nil},
+		{"POST /revision/flashcards/{id}/review", s.reviewFlashcard, nil},
 	}
 }
 
@@ -292,7 +295,15 @@ func (s *svc) list(w http.ResponseWriter, r *http.Request) error {
 	for i, x := range rows {
 		out[i] = sourceView{x.ID, x.Kind, x.Title, x.Status, x.Error, x.ChunkCount, x.CurriculumID, x.CreatedAt}
 	}
-	httpx.OK(w, http.StatusOK, map[string]any{"sources": out})
+	// Whether a course map is waiting on this material (whenReady), or failed to build after it.
+	organize := map[string]any{"status": "idle"}
+	userID := auth.UserID(r)
+	if n, _ := s.d.Redis.Exists(r.Context(), organizePendingKey(userID)).Result(); n > 0 {
+		organize["status"] = "waiting"
+	} else if msg, err := s.d.Redis.Get(r.Context(), organizeFailedKey(userID)).Result(); err == nil {
+		organize = map[string]any{"status": "failed", "message": msg}
+	}
+	httpx.OK(w, http.StatusOK, map[string]any{"sources": out, "organize": organize})
 	return nil
 }
 
@@ -320,6 +331,8 @@ func (s *svc) remove(w http.ResponseWriter, r *http.Request) error {
 func (s *svc) organizeRoute(w http.ResponseWriter, r *http.Request) error {
 	var body struct {
 		CourseName *string `json:"courseName"`
+		// WhenReady: if material is still processing, build the map when it finishes (202).
+		WhenReady bool `json:"whenReady"`
 	}
 	if err := httpx.Decode(w, r, &body); err != nil {
 		return err
@@ -334,7 +347,24 @@ func (s *svc) organizeRoute(w http.ResponseWriter, r *http.Request) error {
 	case n > 120:
 		return invalid("courseName: Too big: expected string to have <=120 characters")
 	}
-	m, err := s.organize(r.Context(), auth.UserID(r), name)
+	userID, ctx := auth.UserID(r), r.Context()
+	if body.WhenReady {
+		processing, err := s.sources().HasProcessingSources(ctx, userID)
+		if err != nil {
+			return err
+		}
+		if processing {
+			s.d.Redis.Del(ctx, organizeFailedKey(userID))
+			if err := s.d.Redis.Set(ctx, organizePendingKey(userID), name, organizeKeyTTL).Err(); err != nil {
+				return err
+			}
+			// The last source may have finished between the check and the write.
+			go s.organizeIfPending(ctx, userID)
+			httpx.OK(w, http.StatusAccepted, map[string]any{"status": "waiting"})
+			return nil
+		}
+	}
+	m, err := s.organize(ctx, userID, name)
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,19 @@ import { Failed, Loading } from '@/components/Loading/States';
 import { useApi } from '@/hooks/useApi';
 import { useVoice } from '@/hooks/useVoice';
 import { api } from '@/lib/api';
-import type { ConversationSummary, TutorMessage, TutorReply } from '@/types/api';
+import type {
+    CheckResult,
+    ConversationSummary,
+    QuickCheck,
+    TutorMessage,
+    TutorReply,
+} from '@/types/api';
+
+/** A message as shown here: a live reply may carry a quick check on what it explained. */
+type ShownMessage = TutorMessage & { check?: QuickCheck };
+
+/** Answers not taken from the learner's material start with this, in the server's own words. */
+const GENERAL_KNOWLEDGE = 'General knowledge';
 
 /**
  * The doubt-solving tutor.
@@ -28,7 +40,7 @@ export default function AITutor() {
     );
 
     const [conversationId, setConversationId] = useState<string | null>(null);
-    const [messages, setMessages] = useState<TutorMessage[]>([]);
+    const [messages, setMessages] = useState<ShownMessage[]>([]);
     const [question, setQuestion] = useState('');
     const [asking, setAsking] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -87,6 +99,7 @@ export default function AITutor() {
                     content: reply.answer,
                     createdAt: new Date().toISOString(),
                     citations: reply.citations,
+                    check: reply.check ?? undefined,
                 },
             ]);
 
@@ -193,21 +206,48 @@ export default function AITutor() {
                             {message.content
                                 .split(/\n{2,}/)
                                 .filter((part) => part.trim() !== '')
-                                .map((paragraph, i) => (
-                                    <p
-                                        key={i}
-                                        style={{
-                                            marginTop: i === 0 ? 8 : 12,
-                                            marginBottom: 0,
-                                            whiteSpace: 'pre-wrap',
-                                        }}
-                                    >
-                                        {paragraph}
-                                    </p>
-                                ))}
+                                .map((paragraph, i) =>
+                                    // Anything not from the learner's own material is set apart,
+                                    // so it is never mistaken for what their course says.
+                                    message.role === 'tutor' &&
+                                    paragraph.startsWith(GENERAL_KNOWLEDGE) ? (
+                                        <div
+                                            key={i}
+                                            className="banner"
+                                            style={{ marginTop: i === 0 ? 8 : 12 }}
+                                        >
+                                            <span className="pill">General knowledge</span>
+                                            <p
+                                                style={{
+                                                    margin: '8px 0 0',
+                                                    whiteSpace: 'pre-wrap',
+                                                }}
+                                            >
+                                                {paragraph}
+                                            </p>
+                                            {paragraph.includes('Sources page') && (
+                                                <Link to="/sources">
+                                                    Add your course material →
+                                                </Link>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <p
+                                            key={i}
+                                            style={{
+                                                marginTop: i === 0 ? 8 : 12,
+                                                marginBottom: 0,
+                                                whiteSpace: 'pre-wrap',
+                                            }}
+                                        >
+                                            {paragraph}
+                                        </p>
+                                    )
+                                )}
                             {message.role === 'tutor' && (
                                 <Citations citations={message.citations ?? []} />
                             )}
+                            {message.check && <QuickCheckCard check={message.check} />}
                         </div>
                     ))}
 
@@ -311,6 +351,77 @@ export default function AITutor() {
                     ))}
                 </div>
             )}
+        </div>
+    );
+}
+
+/**
+ * One question on what was just explained. Graded on the server and recorded like a practice
+ * answer, so talking a doubt through also moves the learner's mastery and revision schedule.
+ */
+function QuickCheckCard({ check }: { check: QuickCheck }) {
+    const [chosen, setChosen] = useState<number | null>(null);
+    const [result, setResult] = useState<CheckResult | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    async function answer(option: number) {
+        if (chosen !== null) return;
+        setChosen(option);
+        setError(null);
+
+        try {
+            setResult(
+                await api.post<CheckResult>(`/ai/checks/${check.questionId}/answer`, {
+                    selectedOption: option,
+                })
+            );
+        } catch (cause) {
+            setChosen(null);
+            setError(cause instanceof Error ? cause.message : 'Could not check that answer.');
+        }
+    }
+
+    return (
+        <div className="stack" style={{ gap: 8, marginTop: 14 }}>
+            <span className="label">Quick check</span>
+            <p style={{ margin: 0 }}>{check.body}</p>
+            {check.options.map((option, index) => {
+                const marking = result
+                    ? result.correctAnswer.includes(index)
+                        ? ' option--correct'
+                        : index === chosen
+                          ? ' option--wrong'
+                          : ''
+                    : '';
+
+                return (
+                    <button
+                        key={index}
+                        type="button"
+                        className={`option${marking}`}
+                        aria-pressed={index === chosen}
+                        disabled={chosen !== null}
+                        onClick={() => void answer(index)}
+                    >
+                        <span className="option__mark">{String.fromCharCode(65 + index)}</span>
+                        <span>{option}</span>
+                    </button>
+                );
+            })}
+            {error && <div className="banner banner--error">{error}</div>}
+            {result && (
+                <div className={`banner banner--${result.isCorrect ? 'good' : 'error'}`}>
+                    <strong>{result.isCorrect ? 'Right.' : 'Not quite.'}</strong>{' '}
+                    {result.explanation}
+                    <p className="faint" style={{ margin: '6px 0 0' }}>
+                        Counted towards your mastery of this topic
+                        {result.mastery.before === null
+                            ? ` (now ${Math.round(result.mastery.after)}).`
+                            : `: ${Math.round(result.mastery.before)} → ${Math.round(result.mastery.after)}.`}
+                    </p>
+                </div>
+            )}
+            {result && <Citations citations={[check.citation]} />}
         </div>
     );
 }

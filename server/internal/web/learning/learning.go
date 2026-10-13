@@ -55,6 +55,8 @@ func routes(d *app.Deps) []route {
 		{"GET /learner/subjects", h.getGoalSubjects, nil},
 		{"GET /learner/profile", h.getProfile, nil},
 		{"PATCH /learner/profile", h.updateProfile, nil},
+		{"GET /learner/confidence", h.getConfidence, nil},
+		{"PUT /learner/confidence", h.saveConfidence, nil},
 
 		{"GET /study-plan/current", h.getCurrentPlan, nil},
 		{"POST /study-plan/generate", h.generatePlan,
@@ -402,6 +404,7 @@ func profileView(p *store.AccountProfile) map[string]any {
 	}
 	return map[string]any{"profile": map[string]any{
 		"displayName": p.DisplayName, "email": p.Email, "timezone": tz, "createdAt": p.CreatedAt,
+		"preferredLanguage": p.PreferredLanguage,
 	}}
 }
 
@@ -440,13 +443,20 @@ func (h handlers) updateProfile(w http.ResponseWriter, r *http.Request) error {
 	if timezone != nil && !knownTimezone(*timezone) {
 		return invalid("timezone: is not a timezone this server recognises")
 	}
-	if displayName == nil && timezone == nil {
-		return invalid("send a displayName or a timezone")
+	language, err := f.optStr("preferredLanguage", 0, 20)
+	if err != nil {
+		return err
+	}
+	if language != nil && *language != "english" && *language != "hindi" && *language != "hinglish" {
+		return invalid("preferredLanguage: must be english, hindi or hinglish")
+	}
+	if displayName == nil && timezone == nil && language == nil {
+		return invalid("send a displayName, a timezone or a preferredLanguage")
 	}
 
 	var p *store.AccountProfile
 	err = h.asUser(r, func(tx pgx.Tx) (err error) {
-		p, err = store.NewLearners(tx).UpdateAccountProfile(r.Context(), auth.UserID(r), displayName, timezone)
+		p, err = store.NewLearners(tx).UpdateAccountProfile(r.Context(), auth.UserID(r), displayName, timezone, language)
 		return err
 	})
 	if err != nil {
@@ -493,7 +503,9 @@ func (h handlers) getReadiness(w http.ResponseWriter, r *http.Request) error {
 		in := readiness.Input{Topics: []readiness.Topic{}, Mocks: []readiness.Mock{},
 			DaysRemaining: goal.DaysRemaining, DailyMinutes: goal.DailyMinutes}
 		for _, t := range planTopics {
-			in.Topics = append(in.Topics, readiness.Topic(t))
+			// Field by field: readiness counts evidence only, so a self-rated prior stays out.
+			in.Topics = append(in.Topics, readiness.Topic{TopicID: t.TopicID, Name: t.Name, SubjectName: t.SubjectName,
+				Weight: t.Weight, MasteryScore: t.MasteryScore, Attempts: t.Attempts})
 		}
 		// Only finished papers: an abandoned test says nothing about form.
 		for _, m := range mocks {
@@ -567,5 +579,48 @@ func (h handlers) getDueRevisions(w http.ResponseWriter, r *http.Request) error 
 		return err
 	}
 	httpx.OK(w, http.StatusOK, out)
+	return nil
+}
+
+// ---- self-rated confidence (onboarding) ----
+
+// GET /learner/confidence — the learner's self-ratings, as the learner.
+func (h handlers) getConfidence(w http.ResponseWriter, r *http.Request) error {
+	var ratings []store.SelfRating
+	err := h.asUser(r, func(tx pgx.Tx) (err error) {
+		ratings, err = store.NewLearners(tx).FindSelfRatings(r.Context(), auth.UserID(r))
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	httpx.OK(w, http.StatusOK, map[string]any{"ratings": ratings})
+	return nil
+}
+
+// PUT /learner/confidence {ratings: [{topicId, confidence 1-5}]} — how sure the learner is of each
+// area before any evidence. Only a prior for topics they have not answered on (see
+// learner.SelfRatedPrior). Admin, because learners hold SELECT only on self_ratings.
+func (h handlers) saveConfidence(w http.ResponseWriter, r *http.Request) error {
+	var body struct {
+		Ratings []store.SelfRating `json:"ratings"`
+	}
+	if err := httpx.Decode(w, r, &body); err != nil {
+		return err
+	}
+	if len(body.Ratings) == 0 || len(body.Ratings) > 50 {
+		return invalid("ratings: send between 1 and 50 ratings")
+	}
+	seen := map[string]bool{}
+	for _, s := range body.Ratings {
+		if !isUUID(s.TopicID) || s.Confidence < 1 || s.Confidence > 5 || seen[s.TopicID] {
+			return invalid("ratings: each needs its own topicId and a confidence from 1 to 5")
+		}
+		seen[s.TopicID] = true
+	}
+	if err := store.NewLearners(h.d.DB.Admin).SaveSelfRatings(r.Context(), auth.UserID(r), body.Ratings); err != nil {
+		return err
+	}
+	httpx.OK(w, http.StatusOK, map[string]any{"ratings": body.Ratings})
 	return nil
 }

@@ -92,7 +92,13 @@ type Response struct {
 
 type Client struct {
 	sdk *anthropic.Client
+	// fake, when set, answers instead of the API. Tests only; see NewFake.
+	fake func(Request) (string, error)
 }
+
+// NewFake is a Client that never calls the API: fn answers every request with the text (or the
+// JSON, for a Schema request) the model would have returned. For tests of AI-driven behaviour.
+func NewFake(fn func(Request) (string, error)) *Client { return &Client{fake: fn} }
 
 // New returns nil when apiKey is empty: the server still starts, and only AI routes fail.
 func New(apiKey string) *Client {
@@ -132,6 +138,10 @@ func (c *Client) Text(ctx context.Context, req Request) (Response, error) {
 func (c *Client) send(ctx context.Context, req Request) (Response, error) {
 	if c == nil {
 		return Response{}, httpx.E(http.StatusServiceUnavailable, "AI_UNAVAILABLE", "AI features are not configured on this server.")
+	}
+	if c.fake != nil {
+		text, err := c.fake(req)
+		return Response{Text: text, Model: "fake"}, err
 	}
 	m := models[req.Quality]
 	maxTokens := req.MaxTokens

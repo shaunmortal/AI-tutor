@@ -4,7 +4,7 @@ import { Icon } from '@/components/Icon/Icon';
 import { Failed, Loading } from '@/components/Loading/States';
 import { useApi } from '@/hooks/useApi';
 import { api } from '@/lib/api';
-import type { CourseMap, CourseSource } from '@/types/api';
+import type { CourseMap, CourseSource, SourcesResponse } from '@/types/api';
 
 /**
  * The learner's own course material: textbooks, slide decks and lecture videos.
@@ -24,21 +24,20 @@ const KIND_LABEL: Record<CourseSource['kind'], string> = {
 const POLL_MS = 4000;
 
 export default function Sources() {
-    const sources = useApi<{ sources: CourseSource[] }>(() =>
-        api.get<{ sources: CourseSource[] }>('/sources')
-    );
+    const sources = useApi<SourcesResponse>(() => api.get<SourcesResponse>('/sources'));
+    const organize = sources.data?.organize;
 
     const list = sources.data?.sources ?? [];
     const processing = list.some((source) => source.status === 'processing');
     const ready = list.filter((source) => source.status === 'ready');
 
-    // Ingestion runs on the server after the upload returns; poll until nothing is pending.
+    // Ingestion (and a course map waiting on it) runs on the server; poll until nothing is pending.
     useEffect(() => {
-        if (!processing) return;
+        if (!processing && organize?.status !== 'waiting') return;
 
         const timer = setInterval(sources.reload, POLL_MS);
         return () => clearInterval(timer);
-    }, [processing, sources.reload]);
+    }, [processing, organize?.status, sources.reload]);
 
     const latestCurriculum = ready.find((source) => source.curriculumId)?.curriculumId ?? null;
 
@@ -73,9 +72,19 @@ export default function Sources() {
                 </div>
             )}
 
-            {ready.length > 0 && (
+            {organize?.status === 'waiting' && (
+                <div className="banner">
+                    Your course map will be built as soon as all your material has been read.
+                </div>
+            )}
+            {organize?.status === 'failed' && (
+                <div className="banner banner--error">{organize.message}</div>
+            )}
+
+            {(ready.length > 0 || processing) && (
                 <BuildCourse
-                    disabled={processing}
+                    key={latestCurriculum ?? 'none'}
+                    disabled={organize?.status === 'waiting'}
                     initialCurriculumId={latestCurriculum}
                     onBuilt={sources.reload}
                 />
@@ -84,7 +93,7 @@ export default function Sources() {
     );
 }
 
-function AddMaterial({ onAdded }: { onAdded: () => void }) {
+export function AddMaterial({ onAdded }: { onAdded: () => void }) {
     const [mode, setMode] = useState<'file' | 'video'>('file');
     const [kind, setKind] = useState<'pdf' | 'slides'>('pdf');
     const [file, setFile] = useState<File | null>(null);
@@ -302,9 +311,12 @@ function BuildCourse({
         setBuilding(true);
 
         try {
-            setMap(
-                await api.post<CourseMap>('/sources/organize', { courseName: courseName.trim() })
-            );
+            // With material still being read, the server builds the map when it is done.
+            const result = await api.post<CourseMap | { status: 'waiting' }>('/sources/organize', {
+                courseName: courseName.trim(),
+                whenReady: true,
+            });
+            if (!('status' in result)) setMap(result);
             onBuilt();
         } catch (cause) {
             setError(cause instanceof Error ? cause.message : 'Could not build the course map.');

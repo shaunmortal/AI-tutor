@@ -35,6 +35,20 @@ type PlanTopic struct {
 	// MasteryScore is 0-100, or nil for a topic never attempted.
 	MasteryScore *float64 `json:"masteryScore"`
 	Attempts     int      `json:"attempts"`
+	// PriorMastery stands in for MasteryScore while it is nil: the learner's self-rated
+	// confidence in the topic's area (learner.SelfRatedPrior). Nil means UnknownMastery.
+	PriorMastery *float64 `json:"priorMastery,omitempty"`
+}
+
+// mastery is what the plan assumes the learner knows: measured, else self-rated, else unknown.
+func (t PlanTopic) mastery() float64 {
+	switch {
+	case t.MasteryScore != nil:
+		return *t.MasteryScore
+	case t.PriorMastery != nil:
+		return *t.PriorMastery
+	}
+	return UnknownMastery
 }
 
 // DueRevision is a topic the spaced-repetition schedule says is owed a review.
@@ -62,6 +76,9 @@ type PlanInputs struct {
 	// DueRevisions are scheduled before new learning, longest overdue first: a topic past its
 	// due date is being actively forgotten, which is worse than one merely not yet learned.
 	DueRevisions []DueRevision `json:"dueRevisions,omitempty"`
+	// Prerequisites maps a topic id to the ids of topics it builds on. A topic is not given its
+	// first learning session until each of its weak prerequisites in the plan has had one.
+	Prerequisites map[string][]string `json:"prerequisites,omitempty"`
 }
 
 // Session kinds.
@@ -126,6 +143,9 @@ const (
 	UnknownMastery = 35
 	// MinNeedFactor keeps a well-known topic alive instead of abandoning it before the exam.
 	MinNeedFactor = 0.15
+	// WeakPrerequisiteBelow: a prerequisite under this mastery has to be started before the topic
+	// that builds on it. Above it, the learner knows enough of the basis to go on in parallel.
+	WeakPrerequisiteBelow = 60
 )
 
 // jsRound is JavaScript's Math.round: halves round up, not away from zero.
@@ -134,11 +154,7 @@ func jsRound(x float64) int { return int(math.Floor(x + 0.5)) }
 // TopicNeed is how much attention a topic needs before the budget is known: the gap below
 // MasteryTarget (floored at MinNeedFactor) times exam weight (floored at 0.1).
 func TopicNeed(topic PlanTopic) float64 {
-	mastery := float64(UnknownMastery)
-	if topic.MasteryScore != nil {
-		mastery = *topic.MasteryScore
-	}
-	rawGap := math.Max(0, MasteryTarget-mastery) / MasteryTarget
+	rawGap := math.Max(0, MasteryTarget-topic.mastery()) / MasteryTarget
 	gap := math.Max(MinNeedFactor, rawGap)
 	return gap * math.Max(0.1, topic.Weight)
 }
@@ -269,6 +285,26 @@ func BuildPlan(inputs PlanInputs) StudyPlan {
 		claimed[slot{date, due.TopicID}] = true
 	}
 
+	// Prerequisite order: a topic waits for its weak prerequisites that are in the plan to have
+	// had a learning session — on an earlier day, or earlier the same day. Only weak ones: a
+	// basis the learner already holds should not hold anything up.
+	planned := map[string]PlanTopic{}
+	for _, q := range queues {
+		planned[q.topic.TopicID] = q.topic
+	}
+	waitsFor := map[string][]string{}
+	for _, q := range queues {
+		for _, p := range inputs.Prerequisites[q.topic.TopicID] {
+			if pre, ok := planned[p]; ok && p != q.topic.TopicID && pre.mastery() < WeakPrerequisiteBelow {
+				waitsFor[q.topic.TopicID] = append(waitsFor[q.topic.TopicID], p)
+			}
+		}
+	}
+	started := map[string]bool{}
+	blocked := func(topicID string) bool {
+		return slices.ContainsFunc(waitsFor[topicID], func(p string) bool { return !started[p] })
+	}
+
 	anyRemaining := func() bool {
 		return slices.ContainsFunc(queues, func(q *queue) bool { return q.remaining > 0 })
 	}
@@ -289,43 +325,56 @@ func BuildPlan(inputs PlanInputs) StudyPlan {
 		// changes only the order, never the totals.
 		start := dayIndex % len(queues)
 
-		for step := range queues {
-			q := queues[(start+step)%len(queues)]
+		// Pass 2 places what a prerequisite placed earlier today has just unblocked. Pass 3 ignores
+		// prerequisites, and runs only when nothing was placed: a cycle in the course map (A needs
+		// B, B needs A) must not stall the whole plan.
+		learned := 0
+		placed := map[string]bool{}
+		for pass := 0; pass < 3 && (pass < 2 || learned == 0); pass++ {
+			for step := range queues {
+				q := queues[(start+step)%len(queues)]
 
-			if q.remaining <= 0 {
-				continue
+				if q.remaining <= 0 {
+					continue
+				}
+				if placedToday >= MaxTopicsPerDay || dayLeft < sessionFloor {
+					break
+				}
+				// Revision covered this topic today. Skipped, not merged: the minutes stay queued for
+				// a later day, so the topic keeps its full allocation.
+				if claimed[slot{date, q.topic.TopicID}] {
+					continue
+				}
+				if placed[q.topic.TopicID] || (pass < 2 && blocked(q.topic.TopicID)) {
+					continue
+				}
+
+				minutes := min(q.remaining, dayLeft, sessionCap)
+
+				// Never leave a stub too small to be its own session: fold it in when the day has room.
+				folded := minutes
+				if stub := q.remaining - minutes; stub > 0 && stub < sessionFloor && dayLeft-minutes >= stub {
+					folded += stub
+				}
+
+				sessions = append(sessions, PlannedSession{
+					ScheduledDate:    date,
+					TopicID:          q.topic.TopicID,
+					TopicName:        q.topic.Name,
+					SortOrder:        placedToday,
+					PlannedMinutes:   folded,
+					PlannedQuestions: questionsFor(folded),
+					Kind:             KindLearn,
+					Reason:           sessionReason(q.topic),
+				})
+
+				q.remaining -= folded
+				dayLeft -= folded
+				placedToday++
+				learned++
+				started[q.topic.TopicID] = true
+				placed[q.topic.TopicID] = true
 			}
-			if placedToday >= MaxTopicsPerDay || dayLeft < sessionFloor {
-				break
-			}
-			// Revision covered this topic today. Skipped, not merged: the minutes stay queued for
-			// a later day, so the topic keeps its full allocation.
-			if claimed[slot{date, q.topic.TopicID}] {
-				continue
-			}
-
-			minutes := min(q.remaining, dayLeft, sessionCap)
-
-			// Never leave a stub too small to be its own session: fold it in when the day has room.
-			folded := minutes
-			if stub := q.remaining - minutes; stub > 0 && stub < sessionFloor && dayLeft-minutes >= stub {
-				folded += stub
-			}
-
-			sessions = append(sessions, PlannedSession{
-				ScheduledDate:    date,
-				TopicID:          q.topic.TopicID,
-				TopicName:        q.topic.Name,
-				SortOrder:        placedToday,
-				PlannedMinutes:   folded,
-				PlannedQuestions: questionsFor(folded),
-				Kind:             KindLearn,
-				Reason:           sessionReason(q.topic),
-			})
-
-			q.remaining -= folded
-			dayLeft -= folded
-			placedToday++
 		}
 	}
 

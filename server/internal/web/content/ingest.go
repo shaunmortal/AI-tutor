@@ -16,6 +16,7 @@ import (
 
 	"github.com/shaunmortal/AI-tutor/server/internal/ai"
 	"github.com/shaunmortal/AI-tutor/server/internal/app"
+	"github.com/shaunmortal/AI-tutor/server/internal/httpx"
 	"github.com/shaunmortal/AI-tutor/server/internal/sources"
 	"github.com/shaunmortal/AI-tutor/server/internal/store"
 )
@@ -53,6 +54,9 @@ func (s *svc) giveUp(ctx context.Context, payload []byte, err error) {
 	var j job
 	if json.Unmarshal(payload, &j) == nil && j.SourceID != "" {
 		s.fail(ctx, j.SourceID, "Processing failed after several attempts ("+err.Error()+"). Delete this source and add it again.")
+		if found, err := s.sources().FindMany(ctx, []string{j.SourceID}); err == nil && len(found) == 1 {
+			s.organizeIfPending(ctx, found[0].UserID)
+		}
 	}
 }
 
@@ -120,6 +124,7 @@ func (s *svc) ingest(ctx context.Context, payload []byte) error {
 	var f failure
 	if errors.As(err, &f) {
 		s.fail(ctx, src.ID, f.msg)
+		s.organizeIfPending(ctx, src.UserID)
 		return nil
 	}
 	if err != nil {
@@ -127,8 +132,10 @@ func (s *svc) ingest(ctx context.Context, payload []byte) error {
 	}
 	if len(chunks) == 0 {
 		s.fail(ctx, src.ID, "No readable content was found. Scanned PDFs need OCR first.")
+		s.organizeIfPending(ctx, src.UserID)
 		return nil
 	}
+	defer s.organizeIfPending(ctx, src.UserID)
 	return pgx.BeginFunc(ctx, s.d.DB.Admin, func(tx pgx.Tx) error {
 		r := store.NewSources(tx)
 		if err := r.DeleteChunks(ctx, src.ID); err != nil {
@@ -321,4 +328,38 @@ func IngestNow(ctx context.Context, d *app.Deps, in store.NewSource, file []byte
 		return err
 	}
 	return nil
+}
+
+// Building the course map once the material is in. POST /sources/organize with whenReady
+// leaves the course name here while any source is still processing; whichever ingestion job
+// finishes the learner's last source builds the map. GETDEL makes exactly one job claim it.
+func organizePendingKey(userID string) string { return "organize:pending:" + userID }
+func organizeFailedKey(userID string) string  { return "organize:failed:" + userID }
+
+const organizeKeyTTL = 24 * time.Hour
+
+func (s *svc) organizeIfPending(ctx context.Context, userID string) {
+	ctx = context.WithoutCancel(ctx)
+	if n, err := s.d.Redis.Exists(ctx, organizePendingKey(userID)).Result(); err != nil || n == 0 {
+		return
+	}
+	processing, err := s.sources().HasProcessingSources(ctx, userID)
+	if err != nil || processing {
+		return
+	}
+	name, err := s.d.Redis.GetDel(ctx, organizePendingKey(userID)).Result()
+	if err != nil {
+		return // redis.Nil: another job claimed it
+	}
+	if _, err := s.organize(ctx, userID, name); err != nil {
+		slog.Warn("organize after ingestion", "user", userID, "err", err)
+		msg := "Could not build the course map. Try again from Sources."
+		var he *httpx.Error
+		if errors.As(err, &he) {
+			msg = he.Message
+		}
+		s.d.Redis.Set(ctx, organizeFailedKey(userID), msg, organizeKeyTTL)
+		return
+	}
+	s.d.Redis.Del(ctx, organizeFailedKey(userID))
 }

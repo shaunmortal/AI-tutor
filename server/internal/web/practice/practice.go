@@ -20,7 +20,6 @@ import (
 	"github.com/shaunmortal/AI-tutor/server/internal/assessment"
 	"github.com/shaunmortal/AI-tutor/server/internal/auth"
 	"github.com/shaunmortal/AI-tutor/server/internal/dates"
-	"github.com/shaunmortal/AI-tutor/server/internal/goals"
 	"github.com/shaunmortal/AI-tutor/server/internal/httpx"
 	"github.com/shaunmortal/AI-tutor/server/internal/learner"
 	"github.com/shaunmortal/AI-tutor/server/internal/ratelimit"
@@ -54,6 +53,7 @@ func routes(d *app.Deps) []route {
 			limit("mock-tests-generate", 20, "You have generated a lot of tests in the last hour.")},
 		{"GET /mock-tests/{id}", getTest(d), nil},
 		{"POST /mock-tests/{id}/submit", submitTest(d), nil},
+		{"GET /misconceptions", listMisconceptions(d), nil},
 	}
 }
 
@@ -71,7 +71,11 @@ type attemptResult struct {
 	CorrectAnswer json.RawMessage `json:"correctAnswer"` // released only now the answer is committed
 	Explanation   *string         `json:"explanation"`
 	SourceChunkID *string         `json:"sourceChunkId"`
-	Mastery       masteryChange   `json:"mastery"`
+	// Feedback is the rubric grader's note on a typed answer; null for choice and numeric ones.
+	Feedback *string `json:"feedback"`
+	// Misconception is what a wrong answer showed, when it showed something specific.
+	Misconception *string       `json:"misconception"`
+	Mastery       masteryChange `json:"mastery"`
 }
 
 type masteryChange struct {
@@ -93,28 +97,19 @@ func submitAttempt(d *app.Deps) httpx.Handler {
 			return err
 		}
 		ctx := r.Context()
-
-		// The exam date caps how far out a review can go; no goal is a normal state.
-		var daysUntilExam *int
-		if err := d.DB.AsUser(ctx, userID, func(tx pgx.Tx) error {
-			g, err := goals.New(store.NewGoals(tx)).GetActive(ctx, userID)
-			if g != nil {
-				daysUntilExam = &g.DaysRemaining
-			}
-			return err
-		}); err != nil {
+		daysUntilExam, err := examDays(ctx, d, userID)
+		if err != nil {
 			return err
 		}
 
 		admin := d.DB.Admin
-		attempts, learners := store.NewAttempts(admin), store.NewLearners(admin)
-
-		question, err := attempts.FindForGrading(ctx, in.QuestionID)
+		question, err := store.NewAttempts(admin).FindForGrading(ctx, in.QuestionID)
 		if err != nil {
 			return err
 		}
-		// Graded before anything is written, so a malformed question leaves no half-recorded attempt.
-		isCorrect, err := assessment.GradeAnswer(gradable(question), in.Answer.given())
+		// Graded before anything is written (a typed answer may need a model call), so a malformed
+		// question leaves no half-recorded attempt.
+		v, err := grade(ctx, d.AI, question, in.Answer)
 		if err != nil {
 			return err
 		}
@@ -122,38 +117,23 @@ func submitAttempt(d *app.Deps) httpx.Handler {
 		if err != nil {
 			return err
 		}
-		attempt, err := attempts.Insert(ctx, store.NewAttempt{UserID: userID, QuestionID: in.QuestionID, IsCorrect: isCorrect,
-			GivenAnswer: in.Answer.json(), TimeTakenSeconds: in.TimeTakenSeconds, Source: in.Source})
-		if err != nil {
+		var attempt *store.InsertedAttempt
+		var rec recomputed
+		if err := inTx(ctx, d, func(tx pgx.Tx) error {
+			inserted, recs, err := recordAnswers(ctx, tx, userID, in.Source, []graded{{questionID: in.QuestionID,
+				given: in.Answer.json(), seconds: in.TimeTakenSeconds, verdict: v}}, daysUntilExam)
+			if err == nil {
+				attempt, rec = inserted[0], recs[inserted[0].TopicID]
+			}
+			return err
+		}); err != nil {
 			return err
 		}
 
-		// The learner's own calendar day, read once so streak, schedule and grading agree.
-		timezone := ""
-		if tz, err := learners.FindTimezone(ctx, userID); err == nil && tz != nil {
-			timezone = *tz
-		}
-		today := dates.TodayIn(timezone, time.Now())
-
-		rec, err := recomputeMastery(ctx, admin, userID, attempt.TopicID, today, timezone)
-		if err != nil {
-			return err
-		}
-		updateRevisionSchedule(ctx, store.NewRevisions(admin), userID, attempt.TopicID, today,
-			rec.answeredToday, rec.correctToday, daysUntilExam)
-
-		var secs *float64
-		if in.TimeTakenSeconds != nil {
-			s := float64(*in.TimeTakenSeconds)
-			secs = &s
-		}
-		if err := learners.RecordAttemptOnProfile(ctx, userID, isCorrect, today, secs); err != nil {
-			return err
-		}
-
-		res := attemptResult{AttemptID: attempt.ID, IsCorrect: isCorrect, CorrectAnswer: question.CorrectAnswer,
-			Explanation: question.Explanation, SourceChunkID: question.SourceChunkID,
-			Mastery: masteryChange{TopicID: attempt.TopicID, Before: before, After: rec.score, AttemptsOnTopic: rec.total}}
+		res := attemptResult{AttemptID: attempt.ID, IsCorrect: v.IsCorrect, CorrectAnswer: question.CorrectAnswer,
+			Explanation: question.Explanation, SourceChunkID: question.SourceChunkID, Feedback: v.Feedback,
+			Misconception: v.Misconception,
+			Mastery:       masteryChange{TopicID: attempt.TopicID, Before: before, After: rec.score, AttemptsOnTopic: rec.total}}
 		if before != nil {
 			change := jsRound((rec.score-*before)*100) / 100
 			res.Mastery.Change = &change
@@ -215,9 +195,10 @@ func recomputeMastery(ctx context.Context, q store.Q, userID, topicID, today, ti
 // updateRevisionSchedule moves the topic in the spaced-repetition schedule, graded on today's
 // answers: once per topic per day, and within a day the step may only collapse, never improve.
 // Never fails the submission — a schedule that did not move is a topic that returns a bit late.
-func updateRevisionSchedule(ctx context.Context, rev *store.Revisions, userID, topicID, today string,
+func updateRevisionSchedule(ctx context.Context, q store.Q, userID, topicID, today string,
 	answeredToday, correctToday int, daysUntilExam *int) {
-	err := func() error {
+	err := softly(ctx, q, func(q store.Q) error {
+		rev := store.NewRevisions(q)
 		state, err := rev.FindState(ctx, userID, topicID)
 		if err != nil {
 			return err
@@ -241,20 +222,14 @@ func updateRevisionSchedule(ctx context.Context, rev *store.Revisions, userID, t
 			return rev.Save(ctx, userID, topicID, learner.FirstSchedule(today, daysUntilExam))
 		}
 		return rev.Save(ctx, userID, topicID, learner.NextReview(state, outcome))
-	}()
+	})
 	if err != nil {
 		slog.Warn("could not update the revision schedule", "topic", topicID, "err", err)
 	}
 }
 
 func (a givenAnswer) given() assessment.GivenAnswer {
-	return assessment.GivenAnswer{SelectedOptions: a.Options, Value: a.Value}
-}
-
-// gradeOrWrong grades a paper answer; a malformed answer marks wrong rather than losing the paper.
-func gradeOrWrong(q *store.QuestionForGrading, a *givenAnswer) bool {
-	ok, err := assessment.GradeAnswer(gradable(q), a.given())
-	return err == nil && ok
+	return assessment.GivenAnswer{SelectedOptions: a.Options, Value: a.Value, Text: a.Text}
 }
 
 // jsRound is JavaScript's Math.round (halves towards +Infinity).

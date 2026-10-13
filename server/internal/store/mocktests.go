@@ -56,11 +56,32 @@ type NewMockTest struct {
 	DurationMinutes int
 }
 
-// QuestionMark is the marking of one question.
+// QuestionMark is the marking of one question. IsCorrect nil records an answer that could not be
+// marked (the question was withdrawn, or nobody could grade it), which the score leaves out.
 type QuestionMark struct {
-	QuestionID  string
-	GivenAnswer json.RawMessage
-	IsCorrect   bool
+	QuestionID    string
+	GivenAnswer   json.RawMessage
+	IsCorrect     *bool
+	Feedback      *string
+	Misconception *string
+}
+
+// ReviewRow is one question of a submitted test with its answer key, for the post-test review.
+// Admin only, and only once the test is submitted.
+type ReviewRow struct {
+	QuestionID    string          `db:"question_id"`
+	TopicID       *string         `db:"topic_id"`
+	SortOrder     int             `db:"sort_order"`
+	GivenAnswer   json.RawMessage `db:"given_answer"`
+	IsCorrect     *bool           `db:"is_correct"`
+	Feedback      *string         `db:"feedback"`
+	Misconception *string         `db:"misconception"`
+	QuestionType  string          `db:"question_type"`
+	Body          string          `db:"body"`
+	Options       []string        `db:"options"`
+	CorrectAnswer json.RawMessage `db:"correct_answer"`
+	Explanation   *string         `db:"explanation"`
+	SourceChunkID *string         `db:"source_chunk_id"`
 }
 
 // MockTestResult is what SubmitTest records.
@@ -109,10 +130,32 @@ func (r *MockTests) FindQuestionBodies(ctx context.Context, questionIDs []string
 	return questionBodies(ctx, r.q, "mockTests.findQuestionBodies", questionIDs)
 }
 
-// FindQuestionsForTopic is verified question ids on a topic.
-func (r *MockTests) FindQuestionsForTopic(ctx context.Context, topicID string, limit int) ([]string, error) {
-	return colOf[string](ctx, r.q, "mockTests.findQuestionsForTopic",
-		`select id::text from questions where topic_id = $1 and is_verified limit $2`, topicID, limit)
+// FindQuestionsForTopic is verified question ids on a topic, freshest for this learner first.
+func (r *MockTests) FindQuestionsForTopic(ctx context.Context, userID, topicID string, limit int) ([]string, error) {
+	return freshQuestionIDs(ctx, r.q, "mockTests.findQuestionsForTopic", userID, topicID, limit)
+}
+
+// freshQuestionIDs is up to limit verified questions on a topic: ones this learner has never been
+// shown first (not answered anywhere, not on any diagnostic or mock test paper, sat or abandoned),
+// then the ones seen longest ago. Ties go at random, so a second paper is not the first one again.
+func freshQuestionIDs(ctx context.Context, q Q, op, userID, topicID string, limit int) ([]string, error) {
+	return colOf[string](ctx, q, op,
+		`select q.id::text from questions q
+		 left join lateral (
+		   select max(seen) as last_seen from (
+		     select max(a.attempted_at) as seen from question_attempts a
+		      where a.user_id = $1 and a.question_id = q.id
+		     union all
+		     select max(t.started_at) from mock_test_questions mq join mock_tests t on t.id = mq.test_id
+		      where t.user_id = $1 and mq.question_id = q.id
+		     union all
+		     select max(s.started_at) from assessment_questions aq join assessments s on s.id = aq.assessment_id
+		      where s.user_id = $1 and aq.question_id = q.id
+		   ) shown
+		 ) h on true
+		 where q.topic_id = $2 and q.is_verified
+		 order by h.last_seen nulls first, random()
+		 limit $3`, userID, topicID, limit)
 }
 
 // CountQuestionsByTopic is how many verified questions each topic has (absent means none).
@@ -200,12 +243,30 @@ func (r *MockTests) AddQuestions(ctx context.Context, testID string, questionIDs
 func (r *MockTests) MarkQuestions(ctx context.Context, testID string, marks []QuestionMark) error {
 	for _, m := range marks {
 		if err := exec(ctx, r.q, "mockTests.markQuestions",
-			`update mock_test_questions set given_answer = $3, is_correct = $4 where test_id = $1 and question_id = $2`,
-			testID, m.QuestionID, m.GivenAnswer, m.IsCorrect); err != nil {
+			`update mock_test_questions set given_answer = $3, is_correct = $4, feedback = $5, misconception = $6
+			 where test_id = $1 and question_id = $2`,
+			testID, m.QuestionID, m.GivenAnswer, m.IsCorrect, m.Feedback, m.Misconception); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// LockOpen locks the test row for this transaction and reports whether it is still open, so two
+// submissions racing each other cannot both mark it.
+func (r *MockTests) LockOpen(ctx context.Context, testID string) (bool, error) {
+	status, err := colOf[string](ctx, r.q, "mockTests.lockOpen",
+		`select status from mock_tests where id = $1 for update`, testID)
+	return err == nil && len(status) == 1 && status[0] == "in_progress", err
+}
+
+// FindReview is every question of the test with what was answered and the answer key.
+func (r *MockTests) FindReview(ctx context.Context, testID string) ([]ReviewRow, error) {
+	return rowsOf[ReviewRow](ctx, r.q, "mockTests.findReview",
+		`select mq.question_id, mq.topic_id, mq.sort_order, mq.given_answer, mq.is_correct, mq.feedback, mq.misconception,
+		        q.question_type, q.body, q.options, q.correct_answer, q.explanation, q.source_chunk_id::text
+		 from mock_test_questions mq join questions q on q.id = mq.question_id
+		 where mq.test_id = $1 order by mq.sort_order`, testID)
 }
 
 func (r *MockTests) SubmitTest(ctx context.Context, testID string, res MockTestResult) (*MockTestRow, error) {

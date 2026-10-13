@@ -36,7 +36,7 @@ export type LearningAction = 'learn_new' | 'practice' | 'revise' | 'mini_test';
 export interface PracticeQuestion {
     id: string;
     topic_id: string;
-    question_type: 'mcq' | 'msq' | 'numeric';
+    question_type: 'mcq' | 'msq' | 'numeric' | 'short';
     body: string;
     options: string[] | null;
     difficulty: 'easy' | 'medium' | 'hard';
@@ -81,6 +81,10 @@ export interface AttemptResult {
     explanation: string | null;
     /** The course excerpt this question was written from, when it came from uploaded material. */
     sourceChunkId: string | null;
+    /** The marker's note on a typed answer; null for choice and numeric questions. */
+    feedback: string | null;
+    /** What a wrong answer showed, when it showed something specific. */
+    misconception: string | null;
     mastery: {
         topicId: string;
         before: number | null;
@@ -157,6 +161,8 @@ export interface Citation {
     /** "p. 42", "slide 7", "12:05". */
     location: string;
     excerpt: string;
+    /** The course-map topic the excerpt is tagged with, once the course is organised. */
+    topicId?: string;
 }
 
 export interface TutorMessage {
@@ -175,6 +181,10 @@ export interface TutorReply {
     citations: Citation[];
     messages: TutorMessage[];
     usage: { inputTokens: number; outputTokens: number; model: string };
+    /** What the conversation is about: as asked, or inferred from the cited excerpts. */
+    topicId: string | null;
+    /** One question on what was just explained, graded by POST /ai/checks/{id}/answer. */
+    check: QuickCheck | null;
 }
 
 /** One planned block: a topic, a length, and why. */
@@ -300,7 +310,11 @@ export interface LearnerProfile {
     /** IANA zone. Decides which calendar day their streaks and revision dates fall in. */
     timezone: string;
     createdAt: string;
+    /** The language the tutor explains in. */
+    preferredLanguage: PreferredLanguage;
 }
+
+export type PreferredLanguage = 'english' | 'hindi' | 'hinglish';
 
 /** A subject from the learner's goal, with how far through it they are. */
 export interface GoalSubject {
@@ -333,6 +347,8 @@ export interface MockTestResult {
     }[];
     /** One sentence naming what to do next. */
     verdict: string;
+    /** Recurring misconceptions on this test's weak topics. */
+    misconceptions: TopicMisconceptions[];
 }
 
 export interface MockTest {
@@ -351,6 +367,8 @@ export interface MockTest {
     questions?: PracticeQuestion[];
     /** Present only once submitted. */
     result?: MockTestResult;
+    /** Present only once submitted: every question with the answer key and its source. */
+    review?: MockReviewItem[];
     coverage?: {
         name: string;
         subjectName: string | null;
@@ -364,6 +382,8 @@ export interface MockTestList {
     tests: MockTest[];
     /** A paper left unfinished, offered rather than lost. */
     open: MockTest | null;
+    /** The goal's topics, to scope a test by hand. */
+    topics: MockScopeTopic[];
     limits: { min: number; max: number; default: number };
 }
 
@@ -488,4 +508,119 @@ export interface OpenedExcerpt {
     sourceTitle: string;
     location: string;
     excerpt: string;
+}
+
+/** A tutor's quick check: the answer is only released once the learner commits to one. */
+export interface QuickCheck {
+    questionId: string;
+    body: string;
+    options: string[];
+    citation: Citation;
+}
+
+export interface CheckResult {
+    attemptId: string;
+    isCorrect: boolean;
+    /** Option indexes. */
+    correctAnswer: number[];
+    explanation: string | null;
+    sourceChunkId: string | null;
+    mastery: { topicId: string; before: number | null; after: number };
+}
+
+/** Whether a course map is waiting on material still being read, or failed to build after it. */
+export interface OrganizeStatus {
+    status: 'idle' | 'waiting' | 'failed';
+    message?: string;
+}
+
+export interface SourcesResponse {
+    sources: CourseSource[];
+    organize: OrganizeStatus;
+}
+
+export interface Flashcard {
+    id: string;
+    front: string;
+    back: string;
+    sourceChunkId: string | null;
+    citations: Citation[];
+}
+
+export interface FlashcardTopic {
+    topicId: string;
+    name: string;
+    /** Due in the revision schedule, or weak. */
+    reason: 'due' | 'weak';
+    dueOn: string | null;
+    masteryScore: number | null;
+    cards: Flashcard[];
+}
+
+export interface FlashcardDeck {
+    today: string;
+    topics: FlashcardTopic[];
+    /** True when some topics' cards could not be written this time. */
+    incomplete: boolean;
+}
+
+export interface DueRevision {
+    topicId: string;
+    name: string;
+    subjectName: string | null;
+    dueOn: string;
+    intervalDays: number;
+    lapses: number;
+    reviewCount: number;
+    lastReviewAccuracy: number | null;
+    masteryScore: number | null;
+    daysOverdue: number;
+}
+
+export interface SelfRating {
+    topicId: string;
+    /** 1 (not at all) to 5 (very). */
+    confidence: number;
+}
+
+/** A goal topic a learner may pick for a mock test. */
+export interface MockScopeTopic {
+    topicId: string;
+    name: string;
+    subjectName: string | null;
+    masteryScore: number | null;
+    availableQuestions: number;
+}
+
+/** One question of a submitted mock test, answer key included. */
+export interface MockReviewItem {
+    questionId: string;
+    topicId: string | null;
+    topicName: string;
+    questionType: PracticeQuestion['question_type'];
+    body: string;
+    options: string[] | null;
+    /** 'unmarked': answered, but the question was withdrawn or could not be marked. */
+    status: 'correct' | 'wrong' | 'skipped' | 'unmarked';
+    /** {selectedOptions} | {value} | {text}, or null when skipped. */
+    givenAnswer: { selectedOptions?: number[]; value?: number; text?: string } | null;
+    /** [indexes] | {value, tol} | {answers, rubric}. */
+    correctAnswer: unknown;
+    explanation: string | null;
+    feedback: string | null;
+    misconception: string | null;
+    source: Citation | null;
+}
+
+/** A topic's recurring misconceptions, with where in the learner's material to revisit each. */
+export interface TopicMisconceptions {
+    topicId: string;
+    topicName: string;
+    masteryScore: number | null;
+    misconceptions: {
+        label: string;
+        occurrences: number;
+        lastSeenAt: string;
+        source: Citation | null;
+    }[];
 }

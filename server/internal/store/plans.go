@@ -258,6 +258,15 @@ func (r *Plans) FindPlannableTopics(ctx context.Context, userID string, scopeIDs
 		}
 		out[i] = t
 	}
+	priors, err := selfRatedPriors(ctx, r.q, userID, leafIDs)
+	if err != nil {
+		return nil, err
+	}
+	for i := range out {
+		if p, ok := priors[out[i].TopicID]; ok && out[i].MasteryScore == nil {
+			out[i].PriorMastery = &p
+		}
+	}
 	return out, nil
 }
 

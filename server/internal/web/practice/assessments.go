@@ -123,7 +123,7 @@ func startDiagnostic(d *app.Deps) httpx.Handler {
 		}
 		var questionIDs []string
 		for _, pick := range plan.Picks {
-			id, err := a.FindOneQuestionForTopic(ctx, pick.TopicID)
+			id, err := a.FindOneQuestionForTopic(ctx, userID, pick.TopicID)
 			if err != nil {
 				return err
 			}
@@ -196,7 +196,8 @@ func getAssessment(d *app.Deps) httpx.Handler {
 	}
 }
 
-// submitAssessment marks the paper in one pass and lets it move mastery.
+// submitAssessment marks the paper in one pass and lets it move the learner model exactly as
+// the same answers in practice would: mastery, revision schedule, profile and misconceptions.
 func submitAssessment(d *app.Deps) httpx.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		userID, ctx := auth.UserID(r), r.Context()
@@ -210,56 +211,14 @@ func submitAssessment(d *app.Deps) httpx.Handler {
 			return err
 		}
 
-		admin := d.DB.Admin
-		a, attempts := store.NewAssessments(admin), store.NewAttempts(admin)
+		a := store.NewAssessments(d.DB.Admin)
 		row, err := findOwnAssessment(r, a)
 		if err != nil {
 			return err
 		}
 		// Idempotent: a double-tapped submit returns the result instead of double-counting evidence.
 		if row.Status != "completed" {
-			questions, err := a.FindQuestions(ctx, row.ID)
-			if err != nil {
-				return err
-			}
-			given := answersByQuestion(answers)
-			correct := 0
-			var touched []string
-			seen := map[string]bool{}
-			for _, q := range questions {
-				answer := given[q.QuestionID]
-				if answer == nil {
-					continue
-				}
-				// The answer key is read here, server side, for the first time in this paper's life.
-				gq, err := attempts.FindForGrading(ctx, q.QuestionID)
-				if err != nil {
-					return err
-				}
-				isCorrect := gradeOrWrong(gq, answer)
-				if isCorrect {
-					correct++
-				}
-				attempt, err := attempts.Insert(ctx, store.NewAttempt{UserID: userID, QuestionID: q.QuestionID,
-					IsCorrect: isCorrect, GivenAnswer: answer.json(), Source: "assessment"})
-				if err != nil {
-					return err
-				}
-				if err := a.LinkAttempt(ctx, row.ID, q.QuestionID, attempt.ID); err != nil {
-					return err
-				}
-				if !seen[attempt.TopicID] {
-					seen[attempt.TopicID] = true
-					touched = append(touched, attempt.TopicID)
-				}
-			}
-			// This is what makes the next plan personalised.
-			for _, topicID := range touched {
-				if _, err := recomputeMastery(ctx, admin, userID, topicID, "", ""); err != nil {
-					return err
-				}
-			}
-			if row, err = a.Complete(ctx, row.ID, correct); err != nil {
+			if row, err = markAssessment(ctx, d, userID, row, answersByQuestion(answers)); err != nil {
 				return err
 			}
 		}
@@ -270,6 +229,64 @@ func submitAssessment(d *app.Deps) httpx.Handler {
 		httpx.OK(w, http.StatusOK, map[string]any{"assessment": view})
 		return nil
 	}
+}
+
+// markAssessment grades the paper (outside any transaction: a typed answer may need a model
+// call), then records everything in one transaction. A question that can no longer be marked is
+// left unanswered rather than failing the paper.
+func markAssessment(ctx context.Context, d *app.Deps, userID string, row *store.AssessmentRow,
+	given map[string]*givenAnswer) (*store.AssessmentRow, error) {
+	questions, err := store.NewAssessments(d.DB.Admin).FindQuestions(ctx, row.ID)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, len(questions))
+	for i, q := range questions {
+		ids[i] = q.QuestionID
+	}
+	marks, err := markPaper(ctx, d, ids, given)
+	if err != nil {
+		return nil, err
+	}
+	daysUntilExam, err := examDays(ctx, d, userID)
+	if err != nil {
+		return nil, err
+	}
+	var batch []graded
+	for _, id := range ids {
+		if mk := marks[id]; mk != nil && mk.marked {
+			batch = append(batch, graded{questionID: id, given: mk.answer.json(), verdict: mk.verdict})
+		}
+	}
+	out := row
+	err = inTx(ctx, d, func(tx pgx.Tx) error {
+		a := store.NewAssessments(tx)
+		if open, err := a.LockOpen(ctx, row.ID); err != nil || !open {
+			return err // already completed by a racing submit: nothing to write
+		}
+		inserted, _, err := recordAnswers(ctx, tx, userID, "assessment", batch, daysUntilExam)
+		if err != nil {
+			return err
+		}
+		correct := 0
+		for i, g := range batch {
+			if g.IsCorrect {
+				correct++
+			}
+			if err := a.LinkAttempt(ctx, row.ID, g.questionID, inserted[i].ID); err != nil {
+				return err
+			}
+		}
+		out, err = a.Complete(ctx, row.ID, correct)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	if out.Status != "completed" { // lost the race: read what the winner wrote
+		return store.NewAssessments(d.DB.Admin).Find(ctx, row.ID, userID)
+	}
+	return out, nil
 }
 
 // viewAssessment: open papers carry their questions (no answers); completed ones the result.

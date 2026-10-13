@@ -247,6 +247,16 @@ func (r *Sources) HasReadySources(ctx context.Context, userID string) (bool, err
 	return found[0], nil
 }
 
+// HasProcessingSources: is any of the learner's material still being ingested?
+func (r *Sources) HasProcessingSources(ctx context.Context, userID string) (bool, error) {
+	found, err := colOf[bool](ctx, r.q, "sources.hasProcessingSources",
+		`select exists (select 1 from course_sources where user_id = $1 and status = 'processing')`, userID)
+	if err != nil {
+		return false, err
+	}
+	return found[0], nil
+}
+
 func (r *Sources) SetTopicDetails(ctx context.Context, topicID string, keyConcepts []string) error {
 	return exec(ctx, r.q, "sources.setTopicDetails",
 		`update topics set key_concepts = $2 where id = $1`, topicID, nonNil(keyConcepts))

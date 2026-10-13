@@ -4,10 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"math"
+	"net/http"
 	"time"
 
 	"github.com/shaunmortal/AI-tutor/server/internal/ai"
+	"github.com/shaunmortal/AI-tutor/server/internal/assessment"
+	"github.com/shaunmortal/AI-tutor/server/internal/auth"
+	"github.com/shaunmortal/AI-tutor/server/internal/httpx"
 	"github.com/shaunmortal/AI-tutor/server/internal/store"
+	"github.com/shaunmortal/AI-tutor/server/internal/web/practice"
 )
 
 // conversations is ai.Conversations over the store.
@@ -110,7 +115,18 @@ func (c conversations) FindTutorFacts(ctx context.Context, userID string, topicI
 		p := int(math.Round(*f.RecentAccuracyPercent))
 		out.RecentAccuracyPercent = &p
 	}
-	return out, nil
+	out.PreferredLanguage, err = c.r.FindPreferredLanguage(ctx, userID)
+	return out, err
+}
+
+func (c conversations) SetTopic(ctx context.Context, conversationID, topicID string) error {
+	return c.r.SetConversationTopic(ctx, conversationID, topicID)
+}
+
+func (c conversations) SaveCheck(ctx context.Context, userID string, q ai.CheckQuestion) (string, error) {
+	return c.r.SaveCheck(ctx, userID, store.GeneratedQuestion{TopicID: q.TopicID, QuestionType: "mcq", Body: q.Body,
+		Options: q.Options, CorrectOptionIndexes: []int{q.CorrectIndex}, Explanation: q.Explanation, Difficulty: "easy",
+		SourceChunkID: &q.ChunkID})
 }
 
 // material is ai.Material over the learner's excerpts.
@@ -145,10 +161,50 @@ func (m material) Retrieve(ctx context.Context, userID, query string, limit int)
 			title, kind = s.Title, s.Kind
 		}
 		out[i] = ai.Citation{N: i + 1, ChunkID: c.ID, SourceID: c.SourceID, SourceTitle: title, Kind: kind,
-			Modality: c.Modality, Location: locationOf(c), Excerpt: c.Content}
+			Modality: c.Modality, Location: locationOf(c), Excerpt: c.Content, TopicID: c.TopicID}
 	}
 	return out, nil
 }
 
 // NewMaterial is the tutor's retrieval, for cmd/evalgrounding to run exactly what the tutor runs.
 func NewMaterial(r *store.Sources) ai.Material { return material{r} }
+
+// POST /ai/checks/{id}/answer {selectedOption}: grade the tutor's quick check server-side and
+// record it as a 'tutor' attempt, which moves mastery and the revision schedule like practice.
+func (s *svc) answerCheck(w http.ResponseWriter, r *http.Request) error {
+	id, err := uuidParam(r, "id")
+	if err != nil {
+		return err
+	}
+	var body struct {
+		SelectedOption *int `json:"selectedOption"`
+	}
+	if err := httpx.Decode(w, r, &body); err != nil {
+		return err
+	}
+	if body.SelectedOption == nil || *body.SelectedOption < 0 || *body.SelectedOption > 9 {
+		return invalid("selectedOption: pick one of the options")
+	}
+	userID, ctx := auth.UserID(r), r.Context()
+	q, err := store.NewAttempts(s.d.DB.Admin).FindCheckForGrading(ctx, id, userID)
+	if err != nil {
+		return err
+	}
+	given := assessment.GivenAnswer{SelectedOptions: []int{*body.SelectedOption}}
+	isCorrect, err := assessment.GradeAnswer(assessment.GradableQuestion{
+		QuestionType: assessment.QuestionType(q.QuestionType), CorrectAnswer: []byte(q.CorrectAnswer)}, given)
+	if err != nil {
+		return err
+	}
+	raw, _ := json.Marshal(given)
+	rec, err := practice.RecordGraded(ctx, s.d, userID, q, isCorrect, raw, "tutor")
+	if err != nil {
+		return err
+	}
+	httpx.OK(w, http.StatusCreated, map[string]any{
+		"attemptId": rec.AttemptID, "isCorrect": isCorrect, "correctAnswer": q.CorrectAnswer,
+		"explanation": q.Explanation, "sourceChunkId": q.SourceChunkID,
+		"mastery": map[string]any{"topicId": rec.TopicID, "before": rec.Before, "after": rec.After},
+	})
+	return nil
+}

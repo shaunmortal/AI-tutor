@@ -108,7 +108,7 @@ func (e *env) newUser(withGoal bool) string {
 			t.Errorf("cleanup: %v", err)
 		}
 		for _, table := range []string{"question_attempts", "concept_mastery", "revision_schedule", "assessments",
-			"mock_tests", "learning_goals", "learner_profiles"} {
+			"mock_tests", "learning_goals", "learner_profiles", "mistake_patterns"} {
 			var n int
 			_ = e.d.DB.Admin.QueryRow(ctx, `select count(*) from `+table+` where user_id = $1`, id).Scan(&n)
 			if n != 0 {
@@ -197,6 +197,41 @@ func (e *env) correctOptions(questionID string) []int {
 	return ans
 }
 
+// answerFor is a right or wrong answer to any question, read from its key. A wrong short answer
+// is blank, which is marked without a model.
+func (e *env) answerFor(questionID string, right bool) map[string]any {
+	var qtype string
+	var key json.RawMessage
+	var options int
+	must(e.t, e.d.DB.Admin.QueryRow(e.ctx, `select question_type, correct_answer, coalesce(cardinality(options), 0)
+		from questions where id = $1`, questionID).Scan(&qtype, &key, &options))
+	out := map[string]any{"questionId": questionID}
+	switch qtype {
+	case "numeric":
+		var n struct{ Value, Tol float64 }
+		must(e.t, json.Unmarshal(key, &n))
+		if !right {
+			n.Value += n.Tol*10 + 1
+		}
+		out["value"] = n.Value
+	case "short":
+		var k struct{ Answers []string }
+		must(e.t, json.Unmarshal(key, &k))
+		out["text"] = ""
+		if right {
+			out["text"] = k.Answers[0]
+		}
+	default:
+		var idx []int
+		must(e.t, json.Unmarshal(key, &idx))
+		if !right {
+			idx = []int{(idx[0] + 1) % options}
+		}
+		out["selectedOptions"] = idx
+	}
+	return out
+}
+
 func TestSubmitAttempt(t *testing.T) {
 	e := setup(t)
 	user := e.newUser(true)
@@ -261,8 +296,10 @@ func TestSubmitAttempt(t *testing.T) {
 		{map[string]any{"questionId": qid, "selectedOptions": []int{51}}, "selectedOptions.0: Too big: expected number to be <=50"},
 		{map[string]any{"questionId": qid, "value": 1, "timeTakenSeconds": 4000}, "timeTakenSeconds: Too big: expected number to be <=3600"},
 		{map[string]any{"questionId": qid, "value": 1, "source": "x"}, `source: Invalid option: expected one of "practice"|"assessment"|"topic_test"|"mock_test"|"revision"`},
-		{map[string]any{"questionId": qid}, "Send either selectedOptions (choice questions) or value (numeric questions), not both."},
-		{map[string]any{"questionId": qid, "value": 1, "selectedOptions": []int{0}}, "Send either selectedOptions (choice questions) or value (numeric questions), not both."},
+		{map[string]any{"questionId": qid}, errOneAnswer},
+		{map[string]any{"questionId": qid, "value": 1, "selectedOptions": []int{0}}, errOneAnswer},
+		{map[string]any{"questionId": qid, "value": 1, "text": "x"}, errOneAnswer},
+		{map[string]any{"questionId": qid, "text": 5}, "text: Invalid input: expected string, received number"},
 		{"", "Invalid input: expected object, received undefined"},
 	} {
 		res := e.call("POST", "/attempts", user, c.body).expect(t, 400, "INVALID_INPUT")
@@ -338,11 +375,9 @@ func TestDiagnostic(t *testing.T) {
 	}
 
 	// Answer the first question right, the second wrong, skip the rest.
-	answers := []map[string]any{{"questionId": a.Questions[0].ID, "selectedOptions": e.correctOptions(a.Questions[0].ID)}}
+	answers := []map[string]any{e.answerFor(a.Questions[0].ID, true)}
 	if len(a.Questions) > 1 {
-		q := a.Questions[1]
-		answers = append(answers, map[string]any{"questionId": q.ID,
-			"selectedOptions": []int{(e.correctOptions(q.ID)[0] + 1) % len(q.Options)}})
+		answers = append(answers, e.answerFor(a.Questions[1].ID, false))
 	}
 	path := "/assessments/" + a.ID + "/submit"
 	e.call("POST", path, user, map[string]any{"answers": []any{map[string]any{"questionId": "x"}}}).
@@ -411,8 +446,7 @@ func TestMockTest(t *testing.T) {
 	if res.Error.Message != "secondsTaken: Invalid input: expected number, received undefined" {
 		t.Fatal(res.Error.Message)
 	}
-	q := tv.Questions[0]
-	answers := []map[string]any{{"questionId": q.ID, "selectedOptions": e.correctOptions(q.ID)}}
+	answers := []map[string]any{e.answerFor(tv.Questions[0].ID, true)}
 	res = e.call("POST", path, user, map[string]any{"answers": answers, "secondsTaken": 120}).expect(t, 200, "")
 	var submitted struct {
 		Test mockTestView `json:"test"`

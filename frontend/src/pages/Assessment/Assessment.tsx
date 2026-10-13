@@ -2,6 +2,13 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '@/components/Icon/Icon';
 import { Failed, Loading } from '@/components/Loading/States';
+import { TypedAnswer } from '@/components/Paper/Paper';
+import {
+    answerPayload,
+    typedValue,
+    withTyped,
+    type PaperAnswers,
+} from '@/components/Paper/answers';
 import { useApi } from '@/hooks/useApi';
 import { api } from '@/lib/api';
 import type { Assessment as AssessmentType, DiagnosticList } from '@/types/api';
@@ -23,7 +30,7 @@ import type { Assessment as AssessmentType, DiagnosticList } from '@/types/api';
  */
 
 type Phase = 'idle' | 'sitting' | 'done';
-type Answers = Record<string, number[] | number>;
+type Answers = PaperAnswers;
 
 export default function Assessment() {
     const navigate = useNavigate();
@@ -73,9 +80,7 @@ export default function Assessment() {
                     // Only what was answered. A question left out is recorded as skipped, and the
                     // result says so rather than folding it into the score silently.
                     answers: Object.entries(answers).map(([questionId, value]) =>
-                        Array.isArray(value)
-                            ? { questionId, selectedOptions: value }
-                            : { questionId, value }
+                        answerPayload(questionId, value)
                     ),
                 }
             );
@@ -190,24 +195,14 @@ export default function Assessment() {
                     )}
 
                     {!question.options && (
-                        <div className="field">
-                            <label htmlFor="numeric">Your answer</label>
-                            <input
-                                id="numeric"
-                                type="number"
-                                step="any"
-                                inputMode="decimal"
-                                value={typeof chosen === 'number' ? chosen : ''}
-                                onChange={(e) =>
-                                    setAnswers((current) => {
-                                        const next = { ...current };
-                                        if (e.target.value === '') delete next[question.id];
-                                        else next[question.id] = Number(e.target.value);
-                                        return next;
-                                    })
-                                }
-                            />
-                        </div>
+                        <TypedAnswer
+                            key={question.id}
+                            question={question}
+                            value={typedValue(chosen)}
+                            onChange={(raw) =>
+                                setAnswers((current) => withTyped(current, question, raw))
+                            }
+                        />
                     )}
                 </div>
 

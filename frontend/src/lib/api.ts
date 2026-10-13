@@ -221,6 +221,10 @@ export const api = {
     patch: <T>(path: string, payload: unknown) =>
         request<T>(path, { method: 'PATCH', body: JSON.stringify(payload) }),
 
+    /** Replaces a whole resource. Not retried, for the same reason as PATCH. */
+    put: <T>(path: string, payload: unknown) =>
+        request<T>(path, { method: 'PUT', body: JSON.stringify(payload) }),
+
     /** A file or a text document as the whole body, for uploads. Never retried, like POST. */
     upload: <T>(path: string, body: Blob | string, contentType: string) =>
         request<T>(path, { method: 'POST', body, headers: { 'Content-Type': contentType } }),

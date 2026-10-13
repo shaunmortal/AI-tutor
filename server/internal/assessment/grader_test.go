@@ -1,6 +1,7 @@
 package assessment
 
 import (
+	"errors"
 	"regexp"
 	"testing"
 )
@@ -66,5 +67,36 @@ func TestGradeAnswerRefusesToGuess(t *testing.T) {
 		if err == nil || !regexp.MustCompile(c.want).MatchString(err.Error()) {
 			t.Errorf("%s: got error %v, want match %s", c.name, err, c.want)
 		}
+	}
+}
+
+func TestGradeShortAnswer(t *testing.T) {
+	short := GradableQuestion{Short, []byte(`{"answers": ["mitochondria", "the mitochondrion"], "rubric": "Names the mitochondrion as the site of respiration."}`)}
+	text := func(s string) GivenAnswer { return GivenAnswer{Text: &s} }
+
+	for _, c := range []struct {
+		given string
+		want  bool
+		err   error
+	}{
+		{"Mitochondria", true, nil},
+		{"  The mitochondria. ", true, nil},
+		{"mitochondrion", true, nil}, // "the mitochondrion" minus its article
+		{"   ", false, nil},          // blank is wrong without a model call
+		{"the nucleus", false, ErrNeedsJudgement},
+	} {
+		got, err := GradeAnswer(short, text(c.given))
+		if got != c.want || !errors.Is(err, c.err) && err != c.err {
+			t.Errorf("%q: got %v, %v; want %v, %v", c.given, got, err, c.want, c.err)
+		}
+	}
+	if _, err := GradeAnswer(short, val(1)); err == nil {
+		t.Error("a number for a short question should be refused")
+	}
+	if _, err := GradeAnswer(GradableQuestion{Short, []byte(`{"answers": []}`)}, text("x")); err == nil {
+		t.Error("a key with no accepted answer should be malformed")
+	}
+	if NormaliseShort("3.14 m/s.") != "3.14 m s" {
+		t.Errorf("decimals survive normalising: %q", NormaliseShort("3.14 m/s."))
 	}
 }

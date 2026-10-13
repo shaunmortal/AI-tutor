@@ -85,6 +85,27 @@ func (r *Topics) FindCandidatesForLearner(ctx context.Context, userID string, no
 		}
 		out[i] = c
 	}
+
+	// What the planner and the engine also need: self-rated priors for unmeasured topics, and
+	// prerequisites, so a weak basis is recommended before what builds on it.
+	ids := make([]string, len(topics))
+	for i, t := range topics {
+		ids[i] = t.ID
+	}
+	priors, err := selfRatedPriors(ctx, r.q, userID, ids)
+	if err != nil {
+		return nil, err
+	}
+	prereqs, err := findPrerequisites(ctx, r.q, ids)
+	if err != nil {
+		return nil, err
+	}
+	for i := range out {
+		if p, ok := priors[out[i].TopicID]; ok && out[i].MasteryScore == nil {
+			out[i].PriorMastery = &p
+		}
+		out[i].Prerequisites = prereqs[out[i].TopicID]
+	}
 	return out, nil
 }
 

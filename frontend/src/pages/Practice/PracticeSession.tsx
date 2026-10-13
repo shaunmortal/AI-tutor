@@ -1,4 +1,6 @@
 import { OpenSourceButton } from '@/components/Citations/Citations';
+import { TypedAnswer } from '@/components/Paper/Paper';
+import { describeKey } from '@/components/Paper/answers';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Empty, Failed, Loading } from '@/components/Loading/States';
@@ -38,7 +40,8 @@ export function PracticeSession({
 
     const [index, setIndex] = useState(0);
     const [selected, setSelected] = useState<number[]>([]);
-    const [numericValue, setNumericValue] = useState('');
+    // What was typed for a numeric or short-answer question.
+    const [typed, setTyped] = useState('');
     const [result, setResult] = useState<AttemptResult | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
@@ -97,10 +100,10 @@ export function PracticeSession({
     }
 
     const isLast = index === questions.length - 1;
-    const isChoice = question.question_type !== 'numeric';
+    const isChoice = question.question_type === 'mcq' || question.question_type === 'msq';
     const isMulti = question.question_type === 'msq';
 
-    const canSubmit = isChoice ? selected.length > 0 : numericValue.trim() !== '';
+    const canSubmit = isChoice ? selected.length > 0 : typed.trim() !== '';
 
     function toggleOption(optionIndex: number) {
         if (result) return; // answered; the options are now read-only
@@ -123,7 +126,11 @@ export function PracticeSession({
             const payload = {
                 questionId: question.id,
                 // Exactly one of these, matching what the backend's schema requires.
-                ...(isChoice ? { selectedOptions: selected } : { value: Number(numericValue) }),
+                ...(isChoice
+                    ? { selectedOptions: selected }
+                    : question.question_type === 'short'
+                      ? { text: typed }
+                      : { value: Number(typed) }),
                 timeTakenSeconds: Math.min(3600, Math.round((Date.now() - startedAt) / 1000)),
                 source: 'practice' as const,
             };
@@ -139,7 +146,7 @@ export function PracticeSession({
     function next() {
         setIndex((i) => i + 1);
         setSelected([]);
-        setNumericValue('');
+        setTyped('');
         setResult(null);
         setSubmitError(null);
         setStartedAt(Date.now());
@@ -207,18 +214,13 @@ export function PracticeSession({
                 )}
 
                 {!isChoice && (
-                    <div className="field">
-                        <label htmlFor="answer">Your answer</label>
-                        <input
-                            id="answer"
-                            type="number"
-                            step="any"
-                            inputMode="decimal"
-                            value={numericValue}
-                            disabled={result !== null}
-                            onChange={(e) => setNumericValue(e.target.value)}
-                        />
-                    </div>
+                    <TypedAnswer
+                        key={question.id}
+                        question={question}
+                        value={typed}
+                        disabled={result !== null}
+                        onChange={setTyped}
+                    />
                 )}
 
                 {submitError && <div className="banner banner--error">{submitError}</div>}
@@ -240,6 +242,26 @@ export function PracticeSession({
                     <div className={`banner banner--${result.isCorrect ? 'good' : 'error'}`}>
                         <strong>{result.isCorrect ? 'Correct' : 'Not quite'}</strong>
                     </div>
+
+                    {/* A typed answer has no options to colour, so the key is said in words. */}
+                    {!isChoice && !result.isCorrect && (
+                        <p style={{ margin: 0 }}>
+                            <span className="faint">Answer: </span>
+                            {describeKey(
+                                question.question_type,
+                                question.options,
+                                result.correctAnswer
+                            )}
+                        </p>
+                    )}
+
+                    {result.feedback && <p style={{ margin: 0 }}>{result.feedback}</p>}
+
+                    {result.misconception && (
+                        <div className="banner">
+                            <strong>Likely misconception:</strong> {result.misconception}
+                        </div>
+                    )}
 
                     {result.explanation && (
                         <div>

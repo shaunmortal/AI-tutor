@@ -15,6 +15,7 @@ import (
 	"github.com/shaunmortal/AI-tutor/server/internal/ai"
 	"github.com/shaunmortal/AI-tutor/server/internal/ai/validate"
 	"github.com/shaunmortal/AI-tutor/server/internal/app"
+	"github.com/shaunmortal/AI-tutor/server/internal/assessment"
 	"github.com/shaunmortal/AI-tutor/server/internal/auth"
 	"github.com/shaunmortal/AI-tutor/server/internal/httpx"
 	"github.com/shaunmortal/AI-tutor/server/internal/store"
@@ -351,7 +352,12 @@ func generateForTopic(ctx context.Context, d *app.Deps, in genInput) (*genResult
 		res.Usage.Calls++
 
 		g := store.GeneratedQuestion{TopicID: in.topicID, QuestionType: q.QuestionType, Body: q.Body, Options: q.Options,
-			CorrectOptionIndexes: q.CorrectOptionIndexes, Explanation: q.Explanation, Difficulty: q.Difficulty, IsVerified: verified}
+			CorrectOptionIndexes: q.CorrectOptionIndexes, OptionMisconceptions: q.OptionMisconceptions,
+			AcceptedAnswers: q.AcceptedAnswers, Rubric: q.Rubric, Explanation: q.Explanation, Difficulty: q.Difficulty,
+			IsVerified: verified}
+		if q.NumericAnswer != nil {
+			g.NumericValue, g.NumericTolerance = q.NumericAnswer.Value, q.NumericAnswer.Tolerance
+		}
 		if in.userID != "" {
 			g.CreatedBy = &in.userID
 		}
@@ -374,10 +380,10 @@ func generateForTopic(ctx context.Context, d *app.Deps, in genInput) (*genResult
 // checkAnswer solves the question in a fresh request that never saw the proposed answer. A
 // checker failure is not a crash: the question just stays unverified.
 func checkAnswer(ctx context.Context, client *ai.Client, q validate.GeneratedQuestion, excerpt *store.ChunkRow) (bool, string, ai.Usage) {
-	prompt := ai.AnswerCheckPrompt(q.Body, q.Options)
-	if excerpt != nil {
-		prompt = "Answer according to this course excerpt:\n<excerpt>\n" + excerpt.Content + "\n</excerpt>\n\n" + prompt
+	if q.Typed() {
+		return checkTypedAnswer(ctx, client, q, withExcerpt(excerpt, ai.TypedAnswerCheckPrompt(q.Body)))
 	}
+	prompt := withExcerpt(excerpt, ai.AnswerCheckPrompt(q.Body, q.Options))
 	var raw json.RawMessage
 	usage, err := client.JSON(ctx, ai.Request{System: ai.QuestionCheckerSystem, Prompt: prompt,
 		Schema: ai.AnswerCheckSchema, MaxTokens: 2000, Quality: ai.High}, &raw)
@@ -391,6 +397,48 @@ func checkAnswer(ctx context.Context, client *ai.Client, q validate.GeneratedQue
 	}
 	verified, reason := validate.AgreesWithProposedAnswer(q.CorrectOptionIndexes, check)
 	return verified, reason, usage
+}
+
+func withExcerpt(excerpt *store.ChunkRow, prompt string) string {
+	if excerpt == nil {
+		return prompt
+	}
+	return "Answer according to this course excerpt:\n<excerpt>\n" + excerpt.Content + "\n</excerpt>\n\n" + prompt
+}
+
+// checkTypedAnswer is checkAnswer for a numeric or short question: the checker writes its own
+// answer cold, which must land within the tolerance, or match an accepted wording or satisfy the
+// rubric — the same grader a learner's answer goes through.
+func checkTypedAnswer(ctx context.Context, client *ai.Client, q validate.GeneratedQuestion, prompt string) (bool, string, ai.Usage) {
+	var raw json.RawMessage
+	usage, err := client.JSON(ctx, ai.Request{System: ai.TypedAnswerCheckerSystem, Prompt: prompt,
+		Schema: ai.TypedAnswerCheckSchema, MaxTokens: 2000, Quality: ai.High}, &raw)
+	if err != nil {
+		return false, "the answer could not be independently checked", ai.Usage{}
+	}
+	check, err := validate.ParseTypedCheck(raw)
+	if err != nil {
+		return false, "the answer check came back in an unusable shape", usage
+	}
+	if q.QuestionType == "numeric" {
+		verified, reason := validate.AgreesWithNumericAnswer(*q.NumericAnswer, check)
+		return verified, reason, usage
+	}
+	if ok, reason := validate.TrustsTypedCheck(check); !ok {
+		return false, reason, usage
+	}
+	key := assessment.ShortKey{Answers: q.AcceptedAnswers, Rubric: q.Rubric}
+	if assessment.MatchesShort(key, check.Answer) {
+		return true, "independent check agreed with the answer", usage
+	}
+	g, err := rubricGrader(ctx, client, q.Body, key, check.Answer)
+	if err != nil {
+		return false, "the answer could not be independently checked", usage
+	}
+	if !g.Correct {
+		return false, "checker answered " + strconv.Quote(check.Answer) + ", which the rubric does not accept", usage
+	}
+	return true, "independent answer met the rubric", usage
 }
 
 // excerptsByBody reads which excerpt each question cites from the raw reply (validation keeps

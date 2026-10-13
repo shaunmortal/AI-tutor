@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"regexp"
 	"slices"
 	"strconv"
@@ -22,6 +23,8 @@ type Citation struct {
 	// "p. 42", "slide 7", "12:05": what the chip shows.
 	Location string `json:"location"`
 	Excerpt  string `json:"excerpt"`
+	// The topic the course map tagged the excerpt with; nil before the course is organised.
+	TopicID *string `json:"topicId,omitempty"`
 }
 
 // Grounding says how much of an answer came from the learner's own material.
@@ -86,6 +89,10 @@ type Conversations interface {
 	ListMessages(ctx context.Context, conversationID string, limit int) ([]Message, error)
 	AddMessage(ctx context.Context, m NewMessage) (Message, error)
 	FindTutorFacts(ctx context.Context, userID string, topicID *string) (TutorFacts, error)
+	// SetTopic records what a conversation turned out to be about.
+	SetTopic(ctx context.Context, conversationID, topicID string) error
+	// SaveCheck stores a quick check question for this learner and returns its id.
+	SaveCheck(ctx context.Context, userID string, c CheckQuestion) (string, error)
 }
 
 // Material is the learner's course material, as far as the tutor needs it.
@@ -198,6 +205,29 @@ type TutorReply struct {
 	// Both messages, so the client renders the exchange without a second request.
 	Messages []MessageView `json:"messages"`
 	Usage    TutorUsage    `json:"usage"`
+	// The topic the conversation is about, when known (given, or inferred from the citations).
+	TopicID *string `json:"topicId"`
+	// One multiple-choice question on what was just explained; nil when none was written.
+	// Answered through POST /ai/checks/{questionId}/answer, which grades it and records it.
+	Check *QuickCheck `json:"check"`
+}
+
+// CheckQuestion is a validated quick check, ready to store as an (unverified) question.
+type CheckQuestion struct {
+	TopicID      string
+	Body         string
+	Options      []string
+	CorrectIndex int
+	Explanation  string
+	ChunkID      string
+}
+
+// QuickCheck is a check question as the learner sees it: no answer until they commit to one.
+type QuickCheck struct {
+	QuestionID string   `json:"questionId"`
+	Body       string   `json:"body"`
+	Options    []string `json:"options"`
+	Citation   Citation `json:"citation"`
 }
 
 // Answer is a tutor reply before it is stored.
@@ -211,6 +241,11 @@ type Answer struct {
 	Retrieved []Citation
 	Usage     Usage
 	Model     string
+	// A quick check on the answer, already validated against the cited excerpts. Only set by
+	// AnswerFromMaterial.
+	Check *CheckQuestion
+	// The excerpt Check was written from.
+	CheckCitation Citation
 }
 
 // Ask is one question, one answer, both stored.
@@ -282,6 +317,23 @@ func (t *Tutor) Ask(ctx context.Context, in AskInput) (TutorReply, error) {
 	if reply.Grounding != nil {
 		stored = reply.Citations
 	}
+	// What the conversation is about: as given, or else what the cited excerpts are tagged with.
+	if topicID == nil {
+		if inferred := TopicOf(reply.Citations); inferred != nil {
+			if err := t.Conversations.SetTopic(ctx, conv.ID, *inferred); err != nil {
+				return TutorReply{}, err
+			}
+			topicID = inferred
+		}
+	}
+	var check *QuickCheck
+	if reply.Check != nil {
+		id, err := t.Conversations.SaveCheck(ctx, in.UserID, *reply.Check)
+		if err != nil {
+			return TutorReply{}, err
+		}
+		check = &QuickCheck{QuestionID: id, Body: reply.Check.Body, Options: reply.Check.Options, Citation: reply.CheckCitation}
+	}
 	answer, err := t.Conversations.AddMessage(ctx, NewMessage{
 		ConversationID: conv.ID,
 		Role:           "tutor",
@@ -305,9 +357,33 @@ func (t *Tutor) Ask(ctx context.Context, in AskInput) (TutorReply, error) {
 			{Role: "learner", Content: question, CreatedAt: answer.CreatedAt, Citations: []Citation{}},
 			toView(answer),
 		},
-		Usage: TutorUsage{InputTokens: reply.Usage.InputTokens, OutputTokens: reply.Usage.OutputTokens, Model: reply.Model},
+		Usage:   TutorUsage{InputTokens: reply.Usage.InputTokens, OutputTokens: reply.Usage.OutputTokens, Model: reply.Model},
+		TopicID: topicID,
+		Check:   check,
 	}, nil
 }
+
+// TopicOf is the topic most of the cited excerpts are tagged with (the earliest cited wins a
+// tie), or nil when none is tagged.
+func TopicOf(cited []Citation) *string {
+	counts := map[string]int{}
+	var best *string
+	for _, c := range cited {
+		if c.TopicID == nil {
+			continue
+		}
+		counts[*c.TopicID]++
+		if best == nil || counts[*c.TopicID] > counts[*best] {
+			best = c.TopicID
+		}
+	}
+	return best
+}
+
+// NoMaterialLabel heads every answer given to a learner with no course material, in the same
+// words CheckGrounding uses for outside knowledge, so it is never mistaken for their course.
+const NoMaterialLabel = "General knowledge, not from your course material — you have not added any yet. " +
+	"Upload your notes, slides or lecture videos on the Sources page and answers will come from them, with citations."
 
 // AnswerFreely answers from general knowledge, for a learner with no course material.
 func AnswerFreely(ctx context.Context, c *Client, question string, tc TutorContext, history []Turn) (Answer, error) {
@@ -323,14 +399,24 @@ func AnswerFreely(ctx context.Context, c *Client, question string, tc TutorConte
 	if err != nil {
 		return Answer{}, err
 	}
-	return Answer{Text: res.Text, Citations: []Citation{}, Usage: res.Usage, Model: res.Model}, nil
+	return Answer{Text: NoMaterialLabel + "\n\n" + jsTrim(res.Text), Citations: []Citation{}, Usage: res.Usage, Model: res.Model}, nil
 }
 
 // GroundedReply is the model's raw answer to a grounded question, not yet trusted.
 type GroundedReply struct {
-	Grounding        string `json:"grounding"`
-	Answer           string `json:"answer"`
-	OutsideKnowledge string `json:"outsideKnowledge"`
+	Grounding        string    `json:"grounding"`
+	Answer           string    `json:"answer"`
+	OutsideKnowledge string    `json:"outsideKnowledge"`
+	Check            *RawCheck `json:"check"`
+}
+
+// RawCheck is the model's quick check question, not yet trusted: see ValidCheck.
+type RawCheck struct {
+	Question      string   `json:"question"`
+	Options       []string `json:"options"`
+	CorrectIndex  int      `json:"correctIndex"`
+	Explanation   string   `json:"explanation"`
+	SourceExcerpt int      `json:"sourceExcerpt"`
 }
 
 // AnswerFromMaterial answers from the learner's course material, with citations that open
@@ -340,7 +426,7 @@ type GroundedReply struct {
 // The model labels its own answer source, partial or none, but the label is not trusted on its
 // own: see CheckGrounding.
 func AnswerFromMaterial(ctx context.Context, c *Client, m Material, userID, question string, tc TutorContext, history []Turn) (Answer, error) {
-	query := question
+	query := SearchQuery(ctx, c, question, tc.PreferredLanguage)
 	if tc.TopicName != nil && *tc.TopicName != "" {
 		if query != "" {
 			query += " "
@@ -375,7 +461,73 @@ func AnswerFromMaterial(ctx context.Context, c *Client, m Material, userID, ques
 	}
 
 	text, grounding, cited := CheckGrounding(raw, excerpts)
-	return Answer{Text: text, Grounding: &grounding, Citations: cited, Retrieved: excerpts, Usage: res.Usage, Model: res.Model}, nil
+	out := Answer{Text: text, Grounding: &grounding, Citations: cited, Retrieved: excerpts, Usage: res.Usage, Model: res.Model}
+	if raw != nil {
+		out.Check, out.CheckCitation = ValidCheck(raw.Check, cited)
+	}
+	return out, nil
+}
+
+// ValidCheck keeps a quick check only if it can be trusted to grade a learner: a question, four
+// distinct options, a correct index among them, and written from an excerpt the answer actually
+// cited that is tagged with a topic (the attempt has to be recorded against something). cited is
+// empty for an ungrounded answer, so those never get a check.
+func ValidCheck(raw *RawCheck, cited []Citation) (*CheckQuestion, Citation) {
+	if raw == nil || jsTrim(raw.Question) == "" || len(raw.Options) != 4 || raw.CorrectIndex < 0 || raw.CorrectIndex >= 4 {
+		return nil, Citation{}
+	}
+	options := make([]string, 4)
+	for i, o := range raw.Options {
+		options[i] = jsTrim(o)
+		if options[i] == "" || slices.Contains(options[:i], options[i]) {
+			return nil, Citation{}
+		}
+	}
+	for _, c := range cited {
+		if c.N == raw.SourceExcerpt && c.TopicID != nil {
+			return &CheckQuestion{TopicID: *c.TopicID, Body: truncate(jsTrim(raw.Question), 1000), Options: options,
+				CorrectIndex: raw.CorrectIndex, Explanation: jsTrim(raw.Explanation), ChunkID: c.ChunkID}, c
+		}
+	}
+	return nil, Citation{}
+}
+
+// SearchQuery is what to search the learner's (English-indexed) material with. Full-text search
+// finds nothing for a question in Devanagari or Hinglish, so such a question is translated to
+// English with a small cheap call and searched together with the original (the search ORs its
+// words, so both count). A failed translation falls back to the question alone: an answer from
+// fewer excerpts beats no answer.
+func SearchQuery(ctx context.Context, c *Client, question, preferredLanguage string) string {
+	if !NeedsTranslation(question, preferredLanguage) {
+		return question
+	}
+	res, err := c.Text(ctx, Request{System: TranslateSystem, Prompt: TranslatePrompt(question), Quality: Standard, MaxTokens: 200})
+	if err != nil {
+		slog.Warn("tutor: could not translate the question for search", "err", err)
+		return question
+	}
+	if english := jsTrim(res.Text); english != "" {
+		return question + " " + english
+	}
+	return question
+}
+
+// NeedsTranslation: the question is not mostly ASCII (Devanagari, say), or the learner studies in
+// Hindi or Hinglish, where even Latin-script words ("kya hota hai") are not English.
+func NeedsTranslation(question, preferredLanguage string) bool {
+	if preferredLanguage == "hindi" || preferredLanguage == "hinglish" {
+		return true
+	}
+	letters, ascii := 0, 0
+	for _, r := range question {
+		if unicode.IsLetter(r) {
+			letters++
+			if r < unicode.MaxASCII {
+				ascii++
+			}
+		}
+	}
+	return letters > 0 && ascii*10 < letters*8 // under 80% ASCII letters
 }
 
 var citationMarker = regexp.MustCompile(`\[(\d+)\]`)

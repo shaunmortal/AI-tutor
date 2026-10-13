@@ -2,10 +2,12 @@ package practice
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/shaunmortal/AI-tutor/server/internal/adaptive"
 	"github.com/shaunmortal/AI-tutor/server/internal/app"
@@ -33,13 +35,37 @@ type mockTestView struct {
 	ScorePercent    *float64                    `json:"scorePercent"`
 	Questions       []adaptive.PracticeQuestion `json:"questions,omitzero"` // only while open
 	Result          *mockResult                 `json:"result,omitzero"`    // only once submitted
-	Coverage        []mockCoverage              `json:"coverage,omitzero"`
-	Omitted         []assessment.OmittedTopic   `json:"omitted,omitzero"`
+	// Review is every question with the answer given, the answer key, the explanation and the
+	// excerpt it came from — only once submitted, which is the first time the key leaves the server.
+	Review   []reviewItem              `json:"review,omitzero"`
+	Coverage []mockCoverage            `json:"coverage,omitzero"`
+	Omitted  []assessment.OmittedTopic `json:"omitted,omitzero"`
 }
 
 type mockResult struct {
 	assessment.MockTestResult
 	ByTopic []namedTopicScore `json:"byTopic"`
+	// Misconceptions are the learner's recurring ones on this test's weak topics, with where to
+	// revisit each.
+	Misconceptions []topicMisconceptions `json:"misconceptions"`
+}
+
+// reviewItem is one question of a submitted test.
+type reviewItem struct {
+	QuestionID   string   `json:"questionId"`
+	TopicID      *string  `json:"topicId"`
+	TopicName    string   `json:"topicName"`
+	QuestionType string   `json:"questionType"`
+	Body         string   `json:"body"`
+	Options      []string `json:"options"`
+	// Status is correct | wrong | skipped | unmarked (answered, but the question could not be marked).
+	Status        string          `json:"status"`
+	GivenAnswer   json.RawMessage `json:"givenAnswer"`
+	CorrectAnswer json.RawMessage `json:"correctAnswer"`
+	Explanation   *string         `json:"explanation"`
+	Feedback      *string         `json:"feedback"`
+	Misconception *string         `json:"misconception"`
+	Source        *citation       `json:"source"`
 }
 
 type namedTopicScore struct {
@@ -80,12 +106,18 @@ func listTests(d *app.Deps) httpx.Handler {
 		if row, err := tests.FindOpenTest(ctx, userID); err != nil {
 			return err
 		} else if row != nil {
-			if open, err = viewTest(ctx, tests, userID, row.ID); err != nil {
+			if open, err = viewTest(ctx, d, userID, row.ID); err != nil {
 				return err
 			}
 		}
-		httpx.OK(w, http.StatusOK, map[string]any{"tests": views, "open": open, "limits": map[string]int{
-			"min": assessment.MockMinQuestions, "max": assessment.MockMaxQuestions, "default": assessment.MockDefaultQuestions}})
+		// What a learner may pick from to scope a test themselves: their goal's topics.
+		scope, err := topicsFromGoal(ctx, tests, store.NewPlans(d.DB.Admin), store.NewLearners(d.DB.Admin), userID)
+		if err != nil {
+			return err
+		}
+		httpx.OK(w, http.StatusOK, map[string]any{"tests": views, "open": open, "topics": nonNilSlice(scope),
+			"limits": map[string]int{
+				"min": assessment.MockMinQuestions, "max": assessment.MockMaxQuestions, "default": assessment.MockDefaultQuestions}})
 		return nil
 	}
 }
@@ -96,7 +128,7 @@ func getTest(d *app.Deps) httpx.Handler {
 		if !isUUID(id) {
 			return errNoTest // same answer as a test that is not yours
 		}
-		view, err := viewTest(r.Context(), store.NewMockTests(d.DB.Admin), auth.UserID(r), id)
+		view, err := viewTest(r.Context(), d, auth.UserID(r), id)
 		if err != nil {
 			return err
 		}
@@ -105,9 +137,10 @@ func getTest(d *app.Deps) httpx.Handler {
 	}
 }
 
-// viewTest is one test: question bodies (no answers) while open; the result, and not the
-// questions, once submitted.
-func viewTest(ctx context.Context, tests *store.MockTests, userID, testID string) (*mockTestView, error) {
+// viewTest is one test: question bodies (no answers) while open; the result and the review once
+// submitted.
+func viewTest(ctx context.Context, d *app.Deps, userID, testID string) (*mockTestView, error) {
+	tests := store.NewMockTests(d.DB.Admin)
 	test, err := tests.FindTest(ctx, testID, userID)
 	if err != nil {
 		return nil, err
@@ -122,16 +155,26 @@ func viewTest(ctx context.Context, tests *store.MockTests, userID, testID string
 	view := toMockView(*test)
 
 	if test.Status == "submitted" {
-		marked := make([]assessment.MarkedQuestion, len(rows))
-		for i, row := range rows {
-			marked[i] = assessment.MarkedQuestion{TopicID: deref(row.TopicID), IsCorrect: row.IsCorrect != nil && *row.IsCorrect,
-				Answered: len(row.GivenAnswer) > 0 && string(row.GivenAnswer) != "null"}
+		var marked []assessment.MarkedQuestion
+		for _, row := range rows {
+			answered := given(row.GivenAnswer)
+			if answered && row.IsCorrect == nil {
+				continue // could not be marked: left out of the score rather than counted wrong
+			}
+			marked = append(marked, assessment.MarkedQuestion{TopicID: deref(row.TopicID),
+				IsCorrect: row.IsCorrect != nil && *row.IsCorrect, Answered: answered})
 		}
 		result, err := markRows(ctx, tests, rows, marked)
 		if err != nil {
 			return nil, err
 		}
+		if result.Misconceptions, err = weakTopicMisconceptions(ctx, d, userID, result.ByTopic); err != nil {
+			return nil, err
+		}
 		view.Result = result
+		if view.Review, err = reviewTest(ctx, d, userID, test.ID, result.ByTopic); err != nil {
+			return nil, err
+		}
 		return &view, nil
 	}
 
@@ -167,7 +210,8 @@ func markRows(ctx context.Context, tests *store.MockTests, rows []store.MockTest
 		names[id] = dt.Name
 	}
 	res := assessment.MarkMockTest(marked, names)
-	out := &mockResult{MockTestResult: res, ByTopic: make([]namedTopicScore, len(res.ByTopic))}
+	out := &mockResult{MockTestResult: res, ByTopic: make([]namedTopicScore, len(res.ByTopic)),
+		Misconceptions: []topicMisconceptions{}}
 	for i, t := range res.ByTopic {
 		name, ok := names[t.TopicID]
 		if !ok {
@@ -195,6 +239,10 @@ func generateTest(d *app.Deps) httpx.Handler {
 		if count != nil {
 			requested = *count
 		}
+		chosen, err := uuidList(m, "topicIds", assessment.MockMaxQuestions)
+		if err != nil {
+			return err
+		}
 
 		admin := d.DB.Admin
 		tests, plans := store.NewMockTests(admin), store.NewPlans(admin)
@@ -203,9 +251,18 @@ func generateTest(d *app.Deps) httpx.Handler {
 			return err
 		}
 		var candidates []assessment.MockTestTopic
-		if plan != nil {
+		switch {
+		case chosen != nil:
+			// The learner's own pick, from their goal's topics and nothing else.
+			if candidates, err = topicsFromGoal(ctx, tests, plans, store.NewLearners(admin), userID); err != nil {
+				return err
+			}
+			if candidates, err = onlyChosen(candidates, chosen); err != nil {
+				return err
+			}
+		case plan != nil:
 			candidates, err = topicsFromPlan(ctx, tests, plans, userID, plan.ID)
-		} else {
+		default:
 			candidates, err = topicsFromGoal(ctx, tests, plans, store.NewLearners(admin), userID)
 		}
 		if err != nil {
@@ -237,7 +294,7 @@ func generateTest(d *app.Deps) httpx.Handler {
 		perTopic := make([][]string, len(built.Allocations))
 		longest := 0
 		for i, al := range built.Allocations {
-			if perTopic[i], err = tests.FindQuestionsForTopic(ctx, al.TopicID, al.QuestionCount); err != nil {
+			if perTopic[i], err = tests.FindQuestionsForTopic(ctx, userID, al.TopicID, al.QuestionCount); err != nil {
 				return err
 			}
 			longest = max(longest, len(perTopic[i]))
@@ -258,7 +315,10 @@ func generateTest(d *app.Deps) httpx.Handler {
 			return err
 		}
 		source, planID := "goal", (*string)(nil)
-		if plan != nil {
+		switch {
+		case chosen != nil:
+			source = "chosen"
+		case plan != nil:
 			source, planID = "plan", &plan.ID
 		}
 		plural := "s"
@@ -274,7 +334,7 @@ func generateTest(d *app.Deps) httpx.Handler {
 		if err := tests.AddQuestions(ctx, test.ID, questionIDs); err != nil {
 			return err
 		}
-		view, err := viewTest(ctx, tests, userID, test.ID)
+		view, err := viewTest(ctx, d, userID, test.ID)
 		if err != nil {
 			return err
 		}
@@ -385,8 +445,7 @@ func submitTest(d *app.Deps) httpx.Handler {
 			return errNoTest
 		}
 
-		admin := d.DB.Admin
-		tests, attempts := store.NewMockTests(admin), store.NewAttempts(admin)
+		tests := store.NewMockTests(d.DB.Admin)
 		test, err := tests.FindTest(ctx, testID, userID)
 		if err != nil {
 			return err
@@ -396,52 +455,105 @@ func submitTest(d *app.Deps) httpx.Handler {
 		}
 		// Idempotent: re-marking would write a second set of attempts.
 		if test.Status != "submitted" {
-			rows, err := tests.FindTestQuestions(ctx, test.ID)
-			if err != nil {
-				return err
-			}
-			given := answersByQuestion(answers)
-			var marks []store.QuestionMark
-			marked := make([]assessment.MarkedQuestion, len(rows))
-			for i, row := range rows {
-				marked[i].TopicID = deref(row.TopicID)
-				answer := given[row.QuestionID]
-				if answer == nil {
-					continue
-				}
-				// The answer key is read here, server side, for the first time in this test's life.
-				q, err := attempts.FindForGrading(ctx, row.QuestionID)
-				if err != nil {
-					return err
-				}
-				isCorrect := gradeOrWrong(q, answer)
-				marks = append(marks, store.QuestionMark{QuestionID: row.QuestionID, GivenAnswer: answer.json(), IsCorrect: isCorrect})
-				marked[i].IsCorrect, marked[i].Answered = isCorrect, true
-				// A real attempt with its own source, so the test counts as evidence.
-				if _, err := attempts.Insert(ctx, store.NewAttempt{UserID: userID, QuestionID: row.QuestionID,
-					IsCorrect: isCorrect, GivenAnswer: answer.json(), Source: "mock_test"}); err != nil {
-					return err
-				}
-			}
-			if err := tests.MarkQuestions(ctx, test.ID, marks); err != nil {
-				return err
-			}
-			result, err := markRows(ctx, tests, rows, marked)
-			if err != nil {
-				return err
-			}
-			if _, err := tests.SubmitTest(ctx, test.ID, store.MockTestResult{CorrectCount: result.CorrectCount,
-				ScorePercent: result.ScorePercent, SecondsTaken: int(math.Max(0, math.Min(86_400, float64(secondsTaken))))}); err != nil {
+			if err := markTest(ctx, d, userID, test.ID, answersByQuestion(answers), secondsTaken); err != nil {
 				return err
 			}
 		}
-		view, err := viewTest(ctx, tests, userID, test.ID)
+		view, err := viewTest(ctx, d, userID, test.ID)
 		if err != nil {
 			return err
 		}
 		httpx.OK(w, http.StatusOK, map[string]any{"test": view})
 		return nil
 	}
+}
+
+// markTest grades the paper (outside any transaction: typed answers may need model calls), then
+// records the attempts, moves the learner model and writes the marking in one transaction. A
+// question that cannot be marked keeps its answer, unmarked, and is left out of the score.
+func markTest(ctx context.Context, d *app.Deps, userID, testID string, given map[string]*givenAnswer, secondsTaken int) error {
+	rows, err := store.NewMockTests(d.DB.Admin).FindTestQuestions(ctx, testID)
+	if err != nil {
+		return err
+	}
+	ids := make([]string, len(rows))
+	for i, row := range rows {
+		ids[i] = row.QuestionID
+	}
+	paper, err := markPaper(ctx, d, ids, given)
+	if err != nil {
+		return err
+	}
+	daysUntilExam, err := examDays(ctx, d, userID)
+	if err != nil {
+		return err
+	}
+
+	var batch []graded
+	var marks []store.QuestionMark
+	var marked []assessment.MarkedQuestion
+	for _, row := range rows {
+		mk := paper[row.QuestionID]
+		if mk == nil {
+			marked = append(marked, assessment.MarkedQuestion{TopicID: deref(row.TopicID)})
+			continue
+		}
+		mark := store.QuestionMark{QuestionID: row.QuestionID, GivenAnswer: mk.answer.json()}
+		if mk.marked {
+			// A real attempt with its own source, so the test counts as evidence.
+			batch = append(batch, graded{questionID: row.QuestionID, given: mark.GivenAnswer, verdict: mk.verdict})
+			mark.IsCorrect, mark.Feedback, mark.Misconception = &mk.IsCorrect, mk.Feedback, mk.Misconception
+			marked = append(marked, assessment.MarkedQuestion{TopicID: deref(row.TopicID), IsCorrect: mk.IsCorrect, Answered: true})
+		}
+		marks = append(marks, mark)
+	}
+
+	return inTx(ctx, d, func(tx pgx.Tx) error {
+		tests := store.NewMockTests(tx)
+		if open, err := tests.LockOpen(ctx, testID); err != nil || !open {
+			return err // already marked by a racing submit
+		}
+		if _, _, err := recordAnswers(ctx, tx, userID, "mock_test", batch, daysUntilExam); err != nil {
+			return err
+		}
+		if err := tests.MarkQuestions(ctx, testID, marks); err != nil {
+			return err
+		}
+		result, err := markRows(ctx, tests, rows, marked)
+		if err != nil {
+			return err
+		}
+		_, err = tests.SubmitTest(ctx, testID, store.MockTestResult{CorrectCount: result.CorrectCount,
+			ScorePercent: result.ScorePercent, SecondsTaken: max(0, min(86_400, secondsTaken))})
+		return err
+	})
+}
+
+// onlyChosen narrows the goal's topics to the ones the learner picked, refusing any outside it.
+func onlyChosen(scope []assessment.MockTestTopic, chosen []string) ([]assessment.MockTestTopic, error) {
+	byID := make(map[string]assessment.MockTestTopic, len(scope))
+	for _, t := range scope {
+		byID[t.TopicID] = t
+	}
+	out := make([]assessment.MockTestTopic, 0, len(chosen))
+	for _, id := range chosen {
+		t, ok := byID[id]
+		if !ok {
+			return nil, invalid("topicIds", "Pick topics from your current goal.")
+		}
+		out = append(out, t)
+	}
+	return out, nil
+}
+
+// given reports whether a stored given_answer holds an answer.
+func given(raw json.RawMessage) bool { return len(raw) > 0 && string(raw) != "null" }
+
+func nonNilSlice[T any](s []T) []T {
+	if s == nil {
+		return []T{}
+	}
+	return s
 }
 
 func deref(s *string) string {

@@ -21,12 +21,31 @@ import (
 
 // GeneratedQuestion is one question the model wrote, after the schema gate.
 type GeneratedQuestion struct {
-	QuestionType         string   `json:"questionType"` // "mcq" or "msq"
+	QuestionType         string   `json:"questionType"` // "mcq", "msq", "numeric" or "short"
 	Body                 string   `json:"body"`
 	Options              []string `json:"options"`
 	CorrectOptionIndexes []int    `json:"correctOptionIndexes"`
-	Explanation          string   `json:"explanation"`
-	Difficulty           string   `json:"difficulty"` // "easy", "medium" or "hard"
+	// OptionMisconceptions is aligned with Options: why each wrong option tempts a learner, ""
+	// for correct ones. Nil when the model gave none that line up.
+	OptionMisconceptions []string `json:"optionMisconceptions,omitempty"`
+	// AcceptedAnswers and Rubric are a short question's answer key.
+	AcceptedAnswers []string `json:"acceptedAnswers,omitempty"`
+	Rubric          string   `json:"rubric,omitempty"`
+	// NumericAnswer is a numeric question's answer key.
+	NumericAnswer *NumericAnswer `json:"numericAnswer,omitempty"`
+	Explanation   string         `json:"explanation"`
+	Difficulty    string         `json:"difficulty"` // "easy", "medium" or "hard"
+}
+
+// NumericAnswer is a numeric question's value and the tolerance a right answer may be off by.
+type NumericAnswer struct {
+	Value     float64 `json:"value"`
+	Tolerance float64 `json:"tolerance"`
+}
+
+// Typed reports whether the learner types the answer rather than choosing an option.
+func (q GeneratedQuestion) Typed() bool {
+	return q.QuestionType == "numeric" || q.QuestionType == "short"
 }
 
 // Failure is a rejected question. Index is its position in the batch, or -1 when the whole
@@ -56,6 +75,9 @@ var danglingReferences = []string{
 // BusinessCheck applies the per-question rules. It returns "" when the question is usable, or
 // the reason it is not.
 func BusinessCheck(q GeneratedQuestion) string {
+	if q.Typed() {
+		return typedCheck(q)
+	}
 	idx := q.CorrectOptionIndexes
 
 	// A single-answer question with two answers is a broken question, not a hard one.
@@ -88,6 +110,22 @@ func BusinessCheck(q GeneratedQuestion) string {
 		return "options refer to their own ordering"
 	}
 
+	if problem := bodyCheck(q); problem != "" {
+		return problem
+	}
+	// A correct option quoted verbatim in the question gives the answer away.
+	lowerBody := strings.ToLower(q.Body)
+	for _, i := range idx {
+		if text := trimmed[i]; jsLen(text) > 12 && strings.Contains(lowerBody, text) {
+			return "the question text contains the correct answer"
+		}
+	}
+	return ""
+}
+
+// bodyCheck is the rules every question type shares: nothing the learner cannot see, and an
+// explanation that explains.
+func bodyCheck(q GeneratedQuestion) string {
 	lowerBody := strings.ToLower(q.Body)
 	for _, phrase := range danglingReferences {
 		if strings.Contains(lowerBody, phrase) {
@@ -98,13 +136,38 @@ func BusinessCheck(q GeneratedQuestion) string {
 	if fold(q.Explanation) == strings.TrimFunc(lowerBody, isJSSpace) {
 		return "explanation only repeats the question"
 	}
-	// A correct option quoted verbatim in the question gives the answer away.
-	for _, i := range idx {
-		if text := trimmed[i]; jsLen(text) > 12 && strings.Contains(lowerBody, text) {
-			return "the question text contains the correct answer"
+	return ""
+}
+
+// typedCheck is the rules for a question answered by typing.
+func typedCheck(q GeneratedQuestion) string {
+	if len(q.Options) > 0 || len(q.CorrectOptionIndexes) > 0 {
+		return "a typed-answer question has options"
+	}
+	switch q.QuestionType {
+	case "numeric":
+		n := q.NumericAnswer
+		if n == nil {
+			return "numeric question has no answer"
+		}
+		if math.IsNaN(n.Value) || math.IsInf(n.Value, 0) || n.Tolerance < 0 || math.IsNaN(n.Tolerance) || math.IsInf(n.Tolerance, 0) {
+			return "numeric answer or tolerance is not a usable number"
+		}
+	case "short":
+		if len(q.AcceptedAnswers) == 0 {
+			return "short-answer question has no accepted answer"
+		}
+		if jsLen(strings.TrimFunc(q.Rubric, isJSSpace)) < 15 {
+			return "short-answer question has no usable rubric"
+		}
+		lowerBody := strings.ToLower(q.Body)
+		for _, a := range q.AcceptedAnswers {
+			if text := fold(a); jsLen(text) > 12 && strings.Contains(lowerBody, text) {
+				return "the question text contains the correct answer"
+			}
 		}
 	}
-	return ""
+	return bodyCheck(q)
 }
 
 // ValidateGeneratedQuestions runs both gates over a raw provider reply.
@@ -133,9 +196,96 @@ func ValidateGeneratedQuestions(raw []byte) Outcome {
 			continue
 		}
 		seenBodies[fp] = true
+		q.OptionMisconceptions = alignMisconceptions(q)
 		out.Accepted = append(out.Accepted, q)
 	}
 	return out
+}
+
+// alignMisconceptions keeps the per-option misconceptions only when there is one per option,
+// and blanks the correct options' entries: a label on a right answer would mislabel a learner
+// who chose it. Nil when nothing usable is left.
+func alignMisconceptions(q GeneratedQuestion) []string {
+	if q.Typed() || len(q.OptionMisconceptions) != len(q.Options) {
+		return nil
+	}
+	out := make([]string, len(q.Options))
+	any := false
+	for i, m := range q.OptionMisconceptions {
+		if slices.Contains(q.CorrectOptionIndexes, i) {
+			continue
+		}
+		if m = strings.TrimFunc(m, isJSSpace); m != "" {
+			out[i], any = m, true
+		}
+	}
+	if !any {
+		return nil
+	}
+	return out
+}
+
+// TypedCheck is the independent solver's own answer to a numeric or short question.
+type TypedCheck struct {
+	Answer       string   `json:"answer"`
+	NumericValue *float64 `json:"numericValue"`
+	Confidence   string   `json:"confidence"`
+	Unanswerable bool     `json:"unanswerable"`
+}
+
+// ParseTypedCheck is the schema gate for the typed-answer checker's reply.
+func ParseTypedCheck(raw []byte) (TypedCheck, error) {
+	var w struct {
+		Answer       *string  `json:"answer"`
+		NumericValue *float64 `json:"numericValue"`
+		Confidence   *string  `json:"confidence"`
+		Unanswerable *bool    `json:"unanswerable"`
+	}
+	if err := decode(raw, &w); err != nil {
+		return TypedCheck{}, err
+	}
+	var c TypedCheck
+	var err error
+	if c.Answer, err = str("answer", w.Answer, 0, 1000); err != nil {
+		return c, err
+	}
+	c.NumericValue = w.NumericValue
+	if c.Confidence, err = enum("confidence", w.Confidence, "low", "medium", "high"); err != nil {
+		return c, err
+	}
+	if w.Unanswerable == nil {
+		return c, errors.New("unanswerable invalid input: expected boolean")
+	}
+	c.Unanswerable = *w.Unanswerable
+	return c, nil
+}
+
+// TrustsTypedCheck is the part of the bar every typed question shares: the checker found it
+// answerable and was confident.
+func TrustsTypedCheck(check TypedCheck) (ok bool, reason string) {
+	if check.Unanswerable {
+		return false, "checker judged the question unanswerable"
+	}
+	if check.Confidence == "low" {
+		return false, "checker was not confident in any answer"
+	}
+	return true, ""
+}
+
+// AgreesWithNumericAnswer decides a numeric question the same way as a choice one: an
+// independent solve, within the stored tolerance.
+func AgreesWithNumericAnswer(proposed NumericAnswer, check TypedCheck) (verified bool, reason string) {
+	if ok, reason := TrustsTypedCheck(check); !ok {
+		return false, reason
+	}
+	if check.NumericValue == nil {
+		return false, "checker did not answer with a number"
+	}
+	if math.Abs(*check.NumericValue-proposed.Value) > proposed.Tolerance {
+		return false, fmt.Sprintf("checker answered %s but the question claims %s",
+			strconv.FormatFloat(*check.NumericValue, 'g', -1, 64), strconv.FormatFloat(proposed.Value, 'g', -1, 64))
+	}
+	return true, "independent check agreed with the answer"
 }
 
 // AnswerCheck is the independent solver's verdict on a generated question.
@@ -223,8 +373,15 @@ func parseQuestions(raw []byte) ([]GeneratedQuestion, error) {
 		Body                 *string     `json:"body"`
 		Options              *[]*string  `json:"options"`
 		CorrectOptionIndexes *[]*float64 `json:"correctOptionIndexes"`
-		Explanation          *string     `json:"explanation"`
-		Difficulty           *string     `json:"difficulty"`
+		OptionMisconceptions *[]*string  `json:"optionMisconceptions"`
+		AcceptedAnswers      *[]*string  `json:"acceptedAnswers"`
+		Rubric               *string     `json:"rubric"`
+		NumericAnswer        *struct {
+			Value     *float64 `json:"value"`
+			Tolerance *float64 `json:"tolerance"`
+		} `json:"numericAnswer"`
+		Explanation *string `json:"explanation"`
+		Difficulty  *string `json:"difficulty"`
 	}
 	var w struct {
 		Questions *[]wireQuestion `json:"questions"`
@@ -241,30 +398,48 @@ func parseQuestions(raw []byte) ([]GeneratedQuestion, error) {
 		p := fmt.Sprintf("questions.%d.", i)
 		var q GeneratedQuestion
 		var err error
-		if q.QuestionType, err = enum(p+"questionType", wq.QuestionType, "mcq", "msq"); err != nil {
+		if q.QuestionType, err = enum(p+"questionType", wq.QuestionType, "mcq", "msq", "numeric", "short"); err != nil {
 			return nil, err
 		}
+		typed := q.Typed()
 		if q.Body, err = str(p+"body", wq.Body, 15, 2000); err != nil {
 			return nil, err
 		}
-		if wq.Options == nil {
+		if wq.Options == nil && !typed {
 			return nil, errors.New(p + "options invalid input: expected array")
 		}
-		for j, o := range *wq.Options {
-			opt, err := str(fmt.Sprintf("%soptions.%d", p, j), o, 1, 500)
-			if err != nil {
-				return nil, err
-			}
-			q.Options = append(q.Options, opt)
-		}
-		if n := len(q.Options); n < 2 || n > 6 {
-			return nil, fmt.Errorf("%soptions too %s: expected array to have %s items", p, bigOrSmall(n < 2), bounds(n < 2, 2, 6))
-		}
-		if q.CorrectOptionIndexes, err = indexes(p+"correctOptionIndexes", wq.CorrectOptionIndexes); err != nil {
+		if q.Options, err = strs(p+"options", wq.Options, 1, 500); err != nil {
 			return nil, err
 		}
-		if len(q.CorrectOptionIndexes) < 1 {
+		if n := len(q.Options); !typed && (n < 2 || n > 6) {
+			return nil, fmt.Errorf("%soptions too %s: expected array to have %s items", p, bigOrSmall(n < 2), bounds(n < 2, 2, 6))
+		}
+		if wq.CorrectOptionIndexes != nil || !typed {
+			if q.CorrectOptionIndexes, err = indexes(p+"correctOptionIndexes", wq.CorrectOptionIndexes); err != nil {
+				return nil, err
+			}
+		}
+		if len(q.CorrectOptionIndexes) < 1 && !typed {
 			return nil, errors.New(p + "correctOptionIndexes too small: expected array to have >=1 items")
+		}
+		// The typed-answer keys and the misconceptions are optional at this gate: the business
+		// check decides whether a question of a given type has what it needs.
+		if q.OptionMisconceptions, err = strs(p+"optionMisconceptions", wq.OptionMisconceptions, 0, 300); err != nil {
+			return nil, err
+		}
+		if q.AcceptedAnswers, err = strs(p+"acceptedAnswers", wq.AcceptedAnswers, 1, 200); err != nil {
+			return nil, err
+		}
+		if wq.Rubric != nil {
+			if q.Rubric, err = str(p+"rubric", wq.Rubric, 0, 1000); err != nil {
+				return nil, err
+			}
+		}
+		if n := wq.NumericAnswer; n != nil {
+			if n.Value == nil || n.Tolerance == nil {
+				return nil, errors.New(p + "numericAnswer invalid input: expected value and tolerance")
+			}
+			q.NumericAnswer = &NumericAnswer{Value: *n.Value, Tolerance: *n.Tolerance}
 		}
 		if q.Explanation, err = str(p+"explanation", wq.Explanation, 20, 2000); err != nil {
 			return nil, err
@@ -306,6 +481,22 @@ func str(path string, p *string, minLen, maxLen int) (string, error) {
 		return "", fmt.Errorf("%s too %s: expected string to have %s characters", path, bigOrSmall(n < minLen), bounds(n < minLen, minLen, maxLen))
 	}
 	return *p, nil
+}
+
+// strs is an optional array of strings, each minLen..maxLen long; nil when absent.
+func strs(path string, p *[]*string, minLen, maxLen int) ([]string, error) {
+	if p == nil {
+		return nil, nil
+	}
+	var out []string
+	for j, o := range *p {
+		v, err := str(fmt.Sprintf("%s.%d", path, j), o, minLen, maxLen)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, v)
+	}
+	return out, nil
 }
 
 func enum(path string, p *string, allowed ...string) (string, error) {

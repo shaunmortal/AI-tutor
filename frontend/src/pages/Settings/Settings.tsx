@@ -5,7 +5,7 @@ import { useApi } from '@/hooks/useApi';
 import { type Theme, useTheme } from '@/hooks/useTheme';
 import { api } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
-import type { LearnerProfile } from '@/types/api';
+import type { LearnerProfile, PreferredLanguage } from '@/types/api';
 
 /**
  * Settings: what to call you, which timezone your days are in, and how the app looks.
@@ -47,6 +47,7 @@ export default function Settings() {
 
     const [name, setName] = useState('');
     const [timezone, setTimezone] = useState('Asia/Kolkata');
+    const [language, setLanguage] = useState<PreferredLanguage>('english');
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -62,6 +63,7 @@ export default function Settings() {
         setFilled(true);
         setName(current.displayName ?? '');
         setTimezone(current.timezone);
+        setLanguage(current.preferredLanguage ?? 'english');
     }, [profile.data, filled]);
 
     async function save(event: FormEvent) {
@@ -76,6 +78,7 @@ export default function Settings() {
             const result = await api.patch<{ profile: LearnerProfile }>('/learner/profile', {
                 displayName: name.trim(),
                 timezone,
+                preferredLanguage: language,
             });
 
             profile.setData({ profile: result.profile });
@@ -187,6 +190,24 @@ export default function Settings() {
                     <span className="faint">
                         This decides when your day starts and ends — your streak, whether a session
                         counts as missed, and when a revision falls due.
+                    </span>
+                </div>
+
+                <div className="field">
+                    <label htmlFor="language">Tutor language</label>
+                    <select
+                        id="language"
+                        value={language}
+                        disabled={saving}
+                        onChange={(e) => setLanguage(e.target.value as PreferredLanguage)}
+                    >
+                        <option value="english">English</option>
+                        <option value="hindi">हिन्दी (Hindi)</option>
+                        <option value="hinglish">Hinglish</option>
+                    </select>
+                    <span className="faint">
+                        The language Ask Adigam explains in. Questions in Hindi or Hinglish still
+                        find the right pages in English material.
                     </span>
                 </div>
 

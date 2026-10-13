@@ -220,6 +220,13 @@ func (s *planService) generate(ctx context.Context, userID string, goal *goals.V
 		in.DueRevisions = append(in.DueRevisions, planning.DueRevision{TopicID: d.TopicID, Name: d.Name,
 			SubjectName: d.SubjectName, DueOn: d.DueOn, Lapses: d.Lapses, LastReviewAccuracy: d.LastReviewAccuracy})
 	}
+	ids := make([]string, len(topics))
+	for i, t := range topics {
+		ids[i] = t.TopicID
+	}
+	if in.Prerequisites, err = s.plans.FindPrerequisites(ctx, ids); err != nil {
+		return nil, err
+	}
 	built := planning.BuildPlan(in)
 	if len(built.Sessions) == 0 {
 		return nil, httpx.E(http.StatusBadRequest, "PLAN_EMPTY",

@@ -212,7 +212,7 @@ func TestLearning(t *testing.T) {
 		p := r.Data["profile"].(map[string]any)
 		check(t, p["email"] == u1+"@adigam.test" && p["timezone"] == "Asia/Kolkata", "profile %v", p)
 
-		e.expect(e.call(u1, "PATCH", "/learner/profile", `{"other":1}`), 400, "INVALID_INPUT", "send a displayName or a timezone")
+		e.expect(e.call(u1, "PATCH", "/learner/profile", `{"other":1}`), 400, "INVALID_INPUT", "send a displayName, a timezone or a preferredLanguage")
 		e.expect(e.call(u1, "PATCH", "/learner/profile", `{"timezone":"Mars/Phobos"}`), 400, "INVALID_INPUT",
 			"timezone: is not a timezone this server recognises")
 		r = e.call(u1, "PATCH", "/learner/profile", `{"displayName":" Ada ","timezone":"Europe/London"}`)

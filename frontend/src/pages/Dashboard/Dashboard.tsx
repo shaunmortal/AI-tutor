@@ -3,6 +3,7 @@ import { ActivityHeatmap } from '@/components/Activity/ActivityHeatmap';
 import { Icon } from '@/components/Icon/Icon';
 import { Badges } from '@/components/Activity/Badges';
 import { Empty, Failed, Loading } from '@/components/Loading/States';
+import { MisconceptionsCard } from '@/components/Misconceptions/Misconceptions';
 import { useApi } from '@/hooks/useApi';
 import { api } from '@/lib/api';
 import type {
@@ -89,12 +90,12 @@ export default function Dashboard() {
                 <div className="card stack">
                     <span className="label">Start here</span>
                     <p style={{ margin: 0 }}>
-                        You have not set a goal yet, so practice is being drawn from the whole
-                        syllabus. Tell us your exam and how much time you have and it will focus on
-                        what matters.
+                        Tell us your exam and how much time you have, add your course material, and
+                        take a short knowledge check. You will get a day-by-day plan built from your
+                        own material.
                     </p>
-                    <button type="button" className="primary" onClick={() => navigate('/goals')}>
-                        Set your goal
+                    <button type="button" className="primary" onClick={() => navigate('/start')}>
+                        Set up your course
                     </button>
                 </div>
             )}
@@ -301,6 +302,8 @@ export default function Dashboard() {
                             </p>
                         </div>
                     )}
+
+                    <MisconceptionsCard />
                 </>
             )}
         </div>

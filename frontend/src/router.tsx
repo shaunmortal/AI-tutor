@@ -24,6 +24,8 @@ const MockTest = lazy(() => import('@/pages/MockTest/MockTest'));
 const Assessment = lazy(() => import('@/pages/Assessment/Assessment'));
 const ExamReadiness = lazy(() => import('@/pages/ExamReadiness/ExamReadiness'));
 const Sources = lazy(() => import('@/pages/Sources/Sources'));
+const SmartRevision = lazy(() => import('@/pages/SmartRevision/SmartRevision'));
+const Onboarding = lazy(() => import('@/pages/Onboarding/Onboarding'));
 
 /**
  * Everything behind this needs a session.
@@ -80,6 +82,8 @@ export function AppRoutes() {
                     <Route path="/assessment" element={<Assessment />} />
                     <Route path="/readiness" element={<ExamReadiness />} />
                     <Route path="/settings" element={<Settings />} />
+                    <Route path="/revision" element={<SmartRevision />} />
+                    <Route path="/start" element={<Onboarding />} />
                 </Route>
 
                 {/* Anything unknown goes to the dashboard, which itself redirects to login

@@ -64,6 +64,20 @@ func (r *Learners) FindProfile(ctx context.Context, userID string) (*learner.Pro
 // RecordAttemptOnProfile bumps the learner-level counters after one answer and moves the
 // habits (streak, speed, consistency) along with them. A missing profile row is a no-op.
 func (r *Learners) RecordAttemptOnProfile(ctx context.Context, userID string, wasCorrect bool, today string, secondsTaken *float64) error {
+	correct := 0
+	if wasCorrect {
+		correct = 1
+	}
+	return r.RecordAnswersOnProfile(ctx, userID, 1, correct, today, secondsTaken)
+}
+
+// RecordAnswersOnProfile is RecordAttemptOnProfile for a batch of answers given today (a marked
+// paper): the counters move by the batch, the habits by one day's activity. secondsTaken, the
+// time per answer, may be nil.
+func (r *Learners) RecordAnswersOnProfile(ctx context.Context, userID string, answered, correctNow int, today string, secondsTaken *float64) error {
+	if answered <= 0 {
+		return nil
+	}
 	current, err := r.FindProfile(ctx, userID)
 	if err != nil {
 		return err
@@ -80,9 +94,7 @@ func (r *Learners) RecordAttemptOnProfile(ctx context.Context, userID string, wa
 		}
 		correct = current.CorrectAttempts
 	}
-	if wasCorrect {
-		correct++
-	}
+	correct += correctNow
 	habits := learner.NextHabits(state, learner.HabitEvent{
 		Today:        today,
 		SecondsTaken: secondsTaken,
@@ -95,7 +107,7 @@ func (r *Learners) RecordAttemptOnProfile(ctx context.Context, userID string, wa
 		   current_streak_days = $5, longest_streak_days = $6, avg_seconds_per_question = $7,
 		   consistency_score = coalesce($8, consistency_score), computed_at = now()
 		 where user_id = $1`,
-		userID, state.TotalAttempts+1, correct, habits.LastActivityDate, habits.CurrentStreakDays,
+		userID, state.TotalAttempts+answered, correct, habits.LastActivityDate, habits.CurrentStreakDays,
 		habits.LongestStreakDays, habits.AvgSecondsPerQuestion, habits.ConsistencyScore)
 }
 

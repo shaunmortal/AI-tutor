@@ -2,6 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '@/components/Icon/Icon';
 import { Failed, Loading } from '@/components/Loading/States';
+import { Misconceptions } from '@/components/Misconceptions/Misconceptions';
+import { ReviewList, TypedAnswer } from '@/components/Paper/Paper';
+import {
+    answerPayload,
+    typedValue,
+    withTyped,
+    type PaperAnswers,
+} from '@/components/Paper/answers';
 import { useApi } from '@/hooks/useApi';
 import { api } from '@/lib/api';
 import type { MockTest, MockTestList } from '@/types/api';
@@ -25,7 +33,7 @@ import type { MockTest, MockTestList } from '@/types/api';
 type Phase = 'idle' | 'sitting' | 'done';
 
 /** Answers held in the browser until submission. Keyed by question id. */
-type Answers = Record<string, number[] | number>;
+type Answers = PaperAnswers;
 
 function mmss(totalSeconds: number): string {
     const minutes = Math.floor(Math.max(0, totalSeconds) / 60);
@@ -44,6 +52,8 @@ export default function MockTest() {
     const [elapsed, setElapsed] = useState(0);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // Topics the learner picked by hand. Empty means "from my plan", the default.
+    const [picked, setPicked] = useState<string[]>([]);
 
     // A test left open in a previous visit is offered rather than lost. The answers are gone — they
     // only ever lived in this component — so it restarts, which is honest: an interrupted paper is not
@@ -72,6 +82,7 @@ export default function MockTest() {
         try {
             const result = await api.post<{ test: MockTest }>('/mock-tests', {
                 ...(questionCount ? { questionCount } : {}),
+                ...(picked.length > 0 ? { topicIds: picked } : {}),
             });
 
             setTest(result.test);
@@ -115,9 +126,7 @@ export default function MockTest() {
                 // Only what was actually answered. A question left out is recorded as skipped,
                 // which the result reports separately from wrong.
                 answers: Object.entries(answers).map(([questionId, value]) =>
-                    Array.isArray(value)
-                        ? { questionId, selectedOptions: value }
-                        : { questionId, value }
+                    answerPayload(questionId, value)
                 ),
                 secondsTaken: elapsed,
             });
@@ -248,26 +257,14 @@ export default function MockTest() {
                     )}
 
                     {!question.options && (
-                        <div className="field">
-                            <label htmlFor="numeric">Your answer</label>
-                            <input
-                                id="numeric"
-                                type="number"
-                                step="any"
-                                inputMode="decimal"
-                                value={typeof chosen === 'number' ? chosen : ''}
-                                onChange={(e) =>
-                                    setAnswers((current) => {
-                                        const next = { ...current };
-
-                                        if (e.target.value === '') delete next[question.id];
-                                        else next[question.id] = Number(e.target.value);
-
-                                        return next;
-                                    })
-                                }
-                            />
-                        </div>
+                        <TypedAnswer
+                            key={question.id}
+                            question={question}
+                            value={typedValue(chosen)}
+                            onChange={(raw) =>
+                                setAnswers((current) => withTyped(current, question, raw))
+                            }
+                        />
                     )}
                 </div>
 
@@ -377,6 +374,14 @@ export default function MockTest() {
                     ))}
                 </div>
 
+                {/* Why the weak topics went wrong, and the page or moment to reread. */}
+                <Misconceptions
+                    topics={result.misconceptions ?? []}
+                    title="Misconceptions on your weak topics"
+                />
+
+                {test.review && <ReviewList items={test.review} />}
+
                 <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
                     <Link to="/practice" className="primary btn-link">
                         Practise the weakest topic
@@ -400,6 +405,8 @@ export default function MockTest() {
     if (list.error) return <Failed error={list.error} onRetry={list.reload} />;
 
     const history = (list.data?.tests ?? []).filter((entry) => entry.status === 'submitted');
+    // Only topics with enough questions to test are worth offering.
+    const scope = (list.data?.topics ?? []).filter((topic) => topic.availableQuestions >= 2);
 
     return (
         <div className="worksplit">
@@ -447,6 +454,55 @@ export default function MockTest() {
                             what you knew walking in.
                         </p>
                     </div>
+
+                    {scope.length > 0 && (
+                        <details>
+                            <summary className="faint" style={{ cursor: 'pointer' }}>
+                                {picked.length > 0
+                                    ? `${picked.length} topic${picked.length === 1 ? '' : 's'} chosen`
+                                    : 'Choose topics yourself (optional)'}
+                            </summary>
+                            <div className="stack" style={{ gap: 6, marginTop: 10 }}>
+                                {scope.map((topic) => {
+                                    const on = picked.includes(topic.topicId);
+
+                                    return (
+                                        <button
+                                            key={topic.topicId}
+                                            type="button"
+                                            className="option"
+                                            aria-pressed={on}
+                                            onClick={() =>
+                                                setPicked((current) =>
+                                                    on
+                                                        ? current.filter(
+                                                              (id) => id !== topic.topicId
+                                                          )
+                                                        : [...current, topic.topicId]
+                                                )
+                                            }
+                                        >
+                                            <span className="option__mark">{on ? '✓' : ''}</span>
+                                            <span>
+                                                {topic.name}
+                                                <span className="faint">
+                                                    {' '}
+                                                    · {topic.subjectName ?? 'Topic'}
+                                                    {topic.masteryScore !== null &&
+                                                        ` · mastery ${Math.round(topic.masteryScore)}`}
+                                                </span>
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                                {picked.length > 0 && (
+                                    <button type="button" onClick={() => setPicked([])}>
+                                        Back to my plan's topics
+                                    </button>
+                                )}
+                            </div>
+                        </details>
+                    )}
 
                     <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
                         {[10, 15, 25].map((count) => (

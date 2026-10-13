@@ -49,6 +49,9 @@ const (
 
 	// How many runners-up to hand back alongside the recommendation.
 	alternativesReturned = 2
+
+	// A prerequisite below this mastery is learned before the topic built on it (as the planner).
+	weakPrerequisiteBelow = 60
 )
 
 // LearningAction is the kind of session a topic calls for.
@@ -74,6 +77,11 @@ type TopicCandidate struct {
 	RecentAttempts       int      `json:"recentAttempts"`
 	TotalAttempts        int      `json:"totalAttempts"`
 	DaysSinceLastAttempt *float64 `json:"daysSinceLastAttempt"`
+	// PriorMastery stands in for an unmeasured MasteryScore: the learner's self-rated confidence
+	// in the topic's area. Nil means a full gap.
+	PriorMastery *float64 `json:"priorMastery,omitempty"`
+	// Prerequisites are the ids of topics this one builds on.
+	Prerequisites []string `json:"prerequisites,omitempty"`
 }
 
 // RecommendationInput is everything the engine decides from.
@@ -133,6 +141,8 @@ type SessionPlan struct {
 	RequestedQuestionCount int           `json:"requestedQuestionCount"`
 	SecondsPerQuestion     float64       `json:"secondsPerQuestion"`
 	Alternatives           []RankedTopic `json:"alternatives"`
+	// Unlocks is the topic that ranked first but builds on this weak one, which goes first.
+	Unlocks *TopicRef `json:"unlocks,omitempty"`
 }
 
 func clamp01(v float64) float64 { return math.Min(1, math.Max(0, v)) }
@@ -141,8 +151,11 @@ func clamp01(v float64) float64 { return math.Min(1, math.Max(0, v)) }
 // full gap, because unknown is not the same as fine.
 func PriorityScore(c TopicCandidate) float64 {
 	gap := 1.0
-	if c.MasteryScore != nil {
-		gap = clamp01((100 - *c.MasteryScore) / 100)
+	if m := c.MasteryScore; m != nil || c.PriorMastery != nil {
+		if m == nil {
+			m = c.PriorMastery
+		}
+		gap = clamp01((100 - *m) / 100)
 	}
 	// Never attempted counts as maximally stale: it has been waiting since day one.
 	staleness := 1.0
@@ -179,6 +192,13 @@ func chooseAction(c TopicCandidate) LearningAction {
 // the requested ones: promising five questions and serving one is the kind of small
 // dishonesty that makes people stop trusting the recommendation.
 func sentenceFor(plan SessionPlan, questionCount int) string {
+	if plan.Unlocks != nil {
+		return sentenceForAction(plan, questionCount) + " It comes before " + plan.Unlocks.Name + ", which builds on it."
+	}
+	return sentenceForAction(plan, questionCount)
+}
+
+func sentenceForAction(plan SessionPlan, questionCount int) string {
 	c := plan.Candidate
 	name := c.Name
 	mastery := int(jsRound(orZero(c.MasteryScore)))
@@ -244,7 +264,7 @@ func PlanSession(in RecommendationInput) *SessionPlan {
 		return cmp.Or(cmp.Compare(b.score, a.score), localeCompare(a.c.Name, b.c.Name))
 	})
 
-	winner := ranked[0].c
+	winner, unlocks := WeakPrerequisiteFirst(ranked[0].c, in.Candidates)
 	action := chooseAction(winner)
 	dc := ChooseDifficulty(DifficultySignals{
 		MasteryScore:   orZero(winner.MasteryScore),
@@ -276,7 +296,10 @@ func PlanSession(in RecommendationInput) *SessionPlan {
 	}
 
 	alternatives := []RankedTopic{}
-	for _, r := range ranked[1:min(len(ranked), 1+alternativesReturned)] {
+	for _, r := range ranked {
+		if r.c.TopicID == winner.TopicID || len(alternatives) == alternativesReturned {
+			continue
+		}
 		alternatives = append(alternatives, RankedTopic{
 			TopicID:      r.c.TopicID,
 			Name:         r.c.Name,
@@ -294,7 +317,46 @@ func PlanSession(in RecommendationInput) *SessionPlan {
 		RequestedQuestionCount: requested,
 		SecondsPerQuestion:     secondsPerQuestion,
 		Alternatives:           alternatives,
+		Unlocks:                unlocks,
 	}
+}
+
+// WeakPrerequisiteFirst swaps the top-ranked topic for a weak prerequisite of it, if one is in
+// scope, following the chain down to the topic to learn first. Practising joins on a shaky grasp
+// of keys only rehearses the confusion. Unlocks is the topic that ranked first (nil if no swap).
+func WeakPrerequisiteFirst(top TopicCandidate, candidates []TopicCandidate) (TopicCandidate, *TopicRef) {
+	byID := make(map[string]TopicCandidate, len(candidates))
+	for _, c := range candidates {
+		byID[c.TopicID] = c
+	}
+	chosen, seen := top, map[string]bool{top.TopicID: true}
+next:
+	for {
+		for _, id := range chosen.Prerequisites {
+			p, ok := byID[id]
+			if ok && !seen[id] && effectiveMastery(p) < weakPrerequisiteBelow {
+				seen[id] = true
+				chosen = p
+				continue next
+			}
+		}
+		break
+	}
+	if chosen.TopicID == top.TopicID {
+		return top, nil
+	}
+	return chosen, &TopicRef{ID: top.TopicID, Name: top.Name}
+}
+
+// effectiveMastery is measured, else self-rated, else the neutral 35 an unknown topic is assumed.
+func effectiveMastery(c TopicCandidate) float64 {
+	switch {
+	case c.MasteryScore != nil:
+		return *c.MasteryScore
+	case c.PriorMastery != nil:
+		return *c.PriorMastery
+	}
+	return 35
 }
 
 // FinaliseAction is phase two: fix the plan to the number of questions the bank could

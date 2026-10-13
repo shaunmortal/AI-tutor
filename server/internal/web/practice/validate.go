@@ -115,6 +115,38 @@ func uuidField(path string, v any, present bool) (string, error) {
 	return s, nil
 }
 
+// uuidList is z.array(z.string().uuid()).min(1).max(maxLen).optional(), duplicates dropped: nil
+// when absent.
+func uuidList(m map[string]any, key string, maxLen int) ([]string, error) {
+	v, present := m[key]
+	if !present {
+		return nil, nil
+	}
+	list, ok := v.([]any)
+	if !ok {
+		return nil, expected(key, "array", v, true)
+	}
+	if len(list) == 0 {
+		return nil, invalid(key, "Too small: expected array to have >=1 items")
+	}
+	if len(list) > maxLen {
+		return nil, invalid(key, "Too big: expected array to have <="+strconv.Itoa(maxLen)+" items")
+	}
+	out := []string{}
+	seen := map[string]bool{}
+	for i, item := range list {
+		id, err := uuidField(key+"."+strconv.Itoa(i), item, true)
+		if err != nil {
+			return nil, err
+		}
+		if !seen[id] {
+			seen[id] = true
+			out = append(out, id)
+		}
+	}
+	return out, nil
+}
+
 // intList is z.array(z.number().int().min(0).max(hi)), with .max(maxLen) when maxLen >= 0.
 // The result is never nil, so an empty selection stays distinguishable from none.
 func intList(path string, v any, hi float64, maxLen int) ([]int, error) {
@@ -152,21 +184,42 @@ func enumField(m map[string]any, key, def string, options ...string) (string, er
 	return "", invalid(key, `Invalid option: expected one of "`+strings.Join(options, `"|"`)+`"`)
 }
 
-// givenAnswer is what the learner sent: Options non-nil for choice questions, else Value.
+// givenAnswer is what the learner sent: Options non-nil for choice questions, Value for numeric
+// ones, Text for short ones. Exactly one is set.
 type givenAnswer struct {
 	Options []int
 	Value   *float64
+	Text    *string
 }
 
 // json is the answer as recorded in question_attempts.given_answer.
 func (a givenAnswer) json() json.RawMessage {
 	var raw []byte
-	if a.Options != nil {
+	switch {
+	case a.Options != nil:
 		raw, _ = json.Marshal(map[string]any{"selectedOptions": a.Options})
-	} else {
+	case a.Text != nil:
+		raw, _ = json.Marshal(map[string]any{"text": a.Text})
+	default:
 		raw, _ = json.Marshal(map[string]any{"value": a.Value})
 	}
 	return raw
+}
+
+// maxTextAnswer bounds a typed answer: a short answer is a word or a phrase, and the text goes
+// to a model.
+const maxTextAnswer = 2000
+
+// textField is z.string().max(2000) on a present value.
+func textField(path string, v any) (*string, error) {
+	s, ok := v.(string)
+	if !ok {
+		return nil, expected(path, "string", v, true)
+	}
+	if len([]rune(s)) > maxTextAnswer {
+		return nil, invalid(path, "Too big: expected string to have <="+strconv.Itoa(maxTextAnswer)+" characters")
+	}
+	return &s, nil
 }
 
 // --- schemas ---
@@ -200,6 +253,11 @@ func parseAttempt(w http.ResponseWriter, r *http.Request) (attemptInput, error) 
 		}
 		in.Answer.Value = &f
 	}
+	if v, present := m["text"]; present {
+		if in.Answer.Text, err = textField("text", v); err != nil {
+			return in, err
+		}
+	}
 	if v := m["timeTakenSeconds"]; v != nil { // absent or null both mean null
 		n, err := intIn("timeTakenSeconds", v, 0, 3600)
 		if err != nil {
@@ -211,15 +269,23 @@ func parseAttempt(w http.ResponseWriter, r *http.Request) (attemptInput, error) 
 		"practice", "assessment", "topic_test", "mock_test", "revision"); err != nil {
 		return in, err
 	}
-	if (in.Answer.Options == nil) == (in.Answer.Value == nil) {
-		return in, invalid("", "Send either selectedOptions (choice questions) or value (numeric questions), not both.")
+	sent := 0
+	for _, set := range []bool{in.Answer.Options != nil, in.Answer.Value != nil, in.Answer.Text != nil} {
+		if set {
+			sent++
+		}
+	}
+	if sent != 1 {
+		return in, invalid("", errOneAnswer)
 	}
 	return in, nil
 }
 
+const errOneAnswer = "Send exactly one of selectedOptions (choice questions), value (numeric questions) or text (short-answer questions)."
+
 type paperAnswer struct {
 	QuestionID string
-	Answer     *givenAnswer // nil when neither selectedOptions nor value was sent
+	Answer     *givenAnswer // nil when none of selectedOptions, value or text was sent
 }
 
 // parseAnswers is the shared `answers` array of the diagnostic and mock test submissions.
@@ -255,11 +321,19 @@ func parseAnswers(m map[string]any, maxLen int) ([]paperAnswer, error) {
 			}
 			a.Value = &f
 		}
-		// selectedOptions wins when both are sent, as in the TS mapping.
-		if a.Options != nil {
+		if tv, present := obj["text"]; present {
+			if a.Text, err = textField(path+".text", tv); err != nil {
+				return nil, err
+			}
+		}
+		// selectedOptions wins when several are sent, as in the TS mapping, then value.
+		switch {
+		case a.Options != nil:
 			out[i].Answer = &givenAnswer{Options: a.Options}
-		} else if a.Value != nil {
+		case a.Value != nil:
 			out[i].Answer = &givenAnswer{Value: a.Value}
+		case a.Text != nil:
+			out[i].Answer = &givenAnswer{Text: a.Text}
 		}
 	}
 	if len(list) > maxLen {

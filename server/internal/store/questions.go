@@ -20,10 +20,16 @@ type TopicWithSubject struct {
 // GeneratedQuestion is an AI-written question to store.
 type GeneratedQuestion struct {
 	TopicID              string
-	QuestionType         string // mcq | msq
+	QuestionType         string // mcq | msq | numeric | short
 	Body                 string
-	Options              []string
-	CorrectOptionIndexes []int
+	Options              []string // nil for numeric and short
+	CorrectOptionIndexes []int    // mcq | msq
+	// OptionMisconceptions is aligned with Options ("" for correct options), or nil.
+	OptionMisconceptions []string
+	NumericValue         float64 // numeric
+	NumericTolerance     float64
+	AcceptedAnswers      []string // short
+	Rubric               string
 	Explanation          string
 	Difficulty           string // easy | medium | hard
 	IsVerified           bool
@@ -110,13 +116,22 @@ func (r *Questions) InsertGenerated(ctx context.Context, g GeneratedQuestion) (*
 	if g.Difficulty == "easy" {
 		marks = 1
 	}
+	// The answer key's shape follows the type (003_questions.sql, 025_short_answer_questions.sql).
+	var key any = nonNil(g.CorrectOptionIndexes)
+	options := g.Options
+	switch g.QuestionType {
+	case "numeric":
+		key, options = map[string]float64{"value": g.NumericValue, "tol": g.NumericTolerance}, nil
+	case "short":
+		key, options = map[string]any{"answers": g.AcceptedAnswers, "rubric": g.Rubric}, nil
+	}
 	ids, err := colOf[string](ctx, r.q, "questions.insertGenerated",
 		`insert into questions (topic_id, question_type, body, options, correct_answer, explanation, difficulty,
-		   marks, is_ai_generated, is_verified, created_by, source_chunk_id)
-		 values ($1, $2, $3, $4, $5, $6, $7, $8, true, $9, $10, $11)
+		   marks, is_ai_generated, is_verified, created_by, source_chunk_id, option_misconceptions)
+		 values ($1, $2, $3, $4, $5, $6, $7, $8, true, $9, $10, $11, $12)
 		 on conflict do nothing returning id::text`,
-		g.TopicID, g.QuestionType, g.Body, g.Options, nonNil(g.CorrectOptionIndexes), g.Explanation, g.Difficulty,
-		marks, g.IsVerified, g.CreatedBy, g.SourceChunkID)
+		g.TopicID, g.QuestionType, g.Body, options, key, g.Explanation, g.Difficulty,
+		marks, g.IsVerified, g.CreatedBy, g.SourceChunkID, g.OptionMisconceptions)
 	if err != nil || len(ids) == 0 {
 		return nil, err
 	}

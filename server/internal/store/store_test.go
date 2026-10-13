@@ -448,7 +448,7 @@ func TestAssessments(t *testing.T) {
 	topics, err := r.FindAssessableTopics(f.ctx, goal.ID)
 	must(t, err)
 	check(t, len(topics) > 0 && topics[0].SubjectID == f.subjectID, "assessable %+v", topics)
-	one, err := r.FindOneQuestionForTopic(f.ctx, f.topicID)
+	one, err := r.FindOneQuestionForTopic(f.ctx, f.u1, f.topicID)
 	must(t, err)
 	check(t, one != nil, "one question")
 	subj, err := r.FindTopicSubjects(f.ctx, []string{f.topicID, f.subjectID})
@@ -494,7 +494,7 @@ func TestMockTests(t *testing.T) {
 	counts, err := r.CountQuestionsByTopic(f.ctx, []string{f.topicID})
 	must(t, err)
 	check(t, counts[f.topicID] > 0, "counts %v", counts)
-	ids, err := r.FindQuestionsForTopic(f.ctx, f.topicID, 2)
+	ids, err := r.FindQuestionsForTopic(f.ctx, f.u1, f.topicID, 2)
 	must(t, err)
 	check(t, len(ids) > 0 && len(ids) <= 2, "ids %v", ids)
 	details, err := r.FindTopicDetails(f.ctx, []string{f.topicID, f.subjectID})
@@ -507,7 +507,7 @@ func TestMockTests(t *testing.T) {
 	open, err := r.FindOpenTest(f.ctx, f.u1)
 	must(t, err)
 	check(t, open != nil && open.ID == m.ID, "open test")
-	must(t, r.MarkQuestions(f.ctx, m.ID, []QuestionMark{{QuestionID: f.questionID, GivenAnswer: json.RawMessage(`{"selectedOptions":[0]}`), IsCorrect: true}}))
+	must(t, r.MarkQuestions(f.ctx, m.ID, []QuestionMark{{QuestionID: f.questionID, GivenAnswer: json.RawMessage(`{"selectedOptions":[0]}`), IsCorrect: new(true)}}))
 	qs, err := r.FindTestQuestions(f.ctx, m.ID)
 	must(t, err)
 	check(t, len(qs) == 1 && qs[0].SortOrder == 0 && qs[0].IsCorrect != nil && *qs[0].IsCorrect && qs[0].TopicID != nil, "questions %+v", qs)
@@ -727,4 +727,116 @@ func TestSources(t *testing.T) {
 	check(t, removed.StoragePath != nil, "remove returns the row")
 	_, err = r.Find(f.ctx, s.ID, f.u1)
 	check(t, errors.As(err, &he) && he.Code == "SOURCE_NOT_FOUND", "gone, got %v", err)
+}
+
+func TestFreshQuestionsComeFirst(t *testing.T) {
+	f := setup(t)
+	var n int
+	must(t, f.tx.QueryRow(f.ctx, `select count(*) from questions where topic_id = $1 and is_verified`, f.topicID).Scan(&n))
+	if n < 2 {
+		t.Skip("topic has one question")
+	}
+	r := NewMockTests(f.tx)
+	// u1 has answered f.questionID: it must never come before a question they have not seen.
+	f.attempt(t, f.u1, true)
+	for range 5 {
+		ids, err := r.FindQuestionsForTopic(f.ctx, f.u1, f.topicID, n)
+		must(t, err)
+		check(t, len(ids) == n && ids[n-1] == f.questionID, "seen question not last: %v", ids)
+	}
+	// A question on a paper counts as seen even when it was skipped.
+	ids, err := r.FindQuestionsForTopic(f.ctx, f.u2, f.topicID, 1)
+	must(t, err)
+	m, err := r.CreateTest(f.ctx, NewMockTest{UserID: f.u2, Title: "Mock", Source: "goal", TotalQuestions: 1, DurationMinutes: 10})
+	must(t, err)
+	must(t, r.AddQuestions(f.ctx, m.ID, ids))
+	next, err := NewAssessments(f.tx).FindOneQuestionForTopic(f.ctx, f.u2, f.topicID)
+	must(t, err)
+	check(t, next != nil && *next != ids[0], "diagnostic repeated the paper's question %v", ids)
+}
+
+func TestMistakes(t *testing.T) {
+	f := setup(t)
+	r := NewMistakes(f.tx)
+	first, second := f.attempt(t, f.u1, false), f.attempt(t, f.u1, false)
+	must(t, r.Record(f.ctx, f.u1, f.topicID, "Confuses mass with weight", first.ID))
+	must(t, r.Record(f.ctx, f.u1, f.topicID, "confuses mass with weight ", second.ID)) // same one, other case
+	must(t, r.Record(f.ctx, f.u1, f.topicID, "thinks heavier falls faster", second.ID))
+	must(t, r.Record(f.ctx, f.u1, f.topicID, "  ", second.ID)) // nothing to record
+
+	top, err := r.Top(f.ctx, f.u1, nil, 1, 10)
+	must(t, err)
+	check(t, len(top) == 1 && top[0].Label == "Confuses mass with weight" && top[0].Occurrences == 2 && top[0].TopicName != "",
+		"top %+v", top)
+	all, err := r.Top(f.ctx, f.u1, []string{f.topicID}, 5, 10)
+	must(t, err)
+	check(t, len(all) == 2, "per topic %+v", all)
+	none, err := r.Top(f.ctx, f.u1, []string{f.subjectID}, 5, 10)
+	must(t, err)
+	check(t, len(none) == 0, "filtered %+v", none)
+
+	var evidence []string
+	must(t, f.tx.QueryRow(f.ctx, `select evidence_attempt_ids::text[] from mistake_patterns
+		where user_id = $1 and lower(misconception) = 'confuses mass with weight'`, f.u1).Scan(&evidence))
+	check(t, len(evidence) == 2 && evidence[1] == second.ID, "evidence %v", evidence)
+	for range maxEvidence + 5 {
+		must(t, r.Record(f.ctx, f.u1, f.topicID, "Confuses mass with weight", second.ID))
+	}
+	must(t, f.tx.QueryRow(f.ctx, `select evidence_attempt_ids::text[] from mistake_patterns
+		where user_id = $1 and lower(misconception) = 'confuses mass with weight'`, f.u1).Scan(&evidence))
+	check(t, len(evidence) == maxEvidence, "evidence capped at %d, got %d", maxEvidence, len(evidence))
+
+	// RLS: a learner reads their own patterns, nobody else's, and cannot write any.
+	f.asUser(t, f.u1, func(q Q) {
+		mine, err := NewMistakes(q).Top(f.ctx, f.u1, nil, 5, 10)
+		must(t, err)
+		check(t, len(mine) == 2, "own patterns %d", len(mine))
+	})
+	f.asUser(t, f.u2, func(q Q) {
+		theirs, err := NewMistakes(q).Top(f.ctx, f.u1, nil, 5, 10)
+		must(t, err)
+		check(t, len(theirs) == 0, "read another learner's patterns")
+	})
+	f.asUser(t, f.u1, func(q Q) {
+		check(t, NewMistakes(q).Record(f.ctx, f.u1, f.topicID, "self-written", first.ID) != nil, "learner wrote a pattern")
+	})
+	// The per-option misconceptions would say which options are right: never readable as a learner.
+	f.asUser(t, f.u1, func(q Q) {
+		_, err := q.Exec(f.ctx, `select option_misconceptions from questions limit 1`)
+		check(t, err != nil, "learner read option_misconceptions")
+	})
+}
+
+func TestTypedQuestionsAndCitations(t *testing.T) {
+	f := setup(t)
+	r := NewQuestions(f.tx)
+	id, err := r.InsertGenerated(f.ctx, GeneratedQuestion{TopicID: f.topicID, QuestionType: "short", Body: "Short store test " + f.u1,
+		AcceptedAnswers: []string{"inertia"}, Rubric: "Names inertia.", Explanation: "because", Difficulty: "easy", IsVerified: true})
+	must(t, err)
+	graded, err := NewAttempts(f.tx).FindManyForGrading(f.ctx, []string{*id, f.questionID})
+	must(t, err)
+	check(t, len(graded) == 2 && strings.Contains(string(graded[*id].CorrectAnswer), `"answers": ["inertia"]`),
+		"short key %s", graded[*id].CorrectAnswer)
+	mcq, err := r.InsertGenerated(f.ctx, GeneratedQuestion{TopicID: f.topicID, QuestionType: "mcq", Body: "Mcq store test " + f.u1,
+		Options: []string{"a", "b"}, CorrectOptionIndexes: []int{0}, OptionMisconceptions: []string{"", "thinks b"},
+		Explanation: "because", Difficulty: "easy"})
+	must(t, err)
+	unverified, err := NewAttempts(f.tx).FindManyForGrading(f.ctx, []string{*mcq})
+	must(t, err)
+	check(t, len(unverified) == 0, "an unverified question is not gradable")
+	must(t, f.tx.QueryRow(f.ctx, `select count(*) from questions where id = $1 and option_misconceptions[2] = 'thinks b'`, *mcq).Scan(new(int)))
+
+	src, err := NewSources(f.tx).Create(f.ctx, NewSource{UserID: f.u1, Kind: "pdf", Title: "Notes", StoragePath: ptr("test/notes.pdf")})
+	must(t, err)
+	must(t, NewSources(f.tx).InsertChunks(f.ctx, *src, []NewChunk{{Modality: "text", Page: ptr(4), Content: "Inertia is ..."}}))
+	var chunkID string
+	must(t, f.tx.QueryRow(f.ctx, `select id from source_chunks where source_id = $1`, src.ID).Scan(&chunkID))
+	cited, err := NewSources(f.tx).FindCited(f.ctx, f.u1, []string{chunkID})
+	must(t, err)
+	c := cited[chunkID]
+	check(t, c.SourceTitle == "Notes" && c.Kind == "pdf" && c.Location() == "p. 4", "cited %+v", c)
+	other, err := NewSources(f.tx).FindCited(f.ctx, f.u2, []string{chunkID})
+	must(t, err)
+	check(t, len(other) == 0, "another learner's excerpt was cited")
+	check(t, ChunkRow{StartSec: ptr(3725)}.Location() == "1:02:05", "clock")
 }
