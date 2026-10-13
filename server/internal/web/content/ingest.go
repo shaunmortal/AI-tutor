@@ -339,6 +339,9 @@ func organizeFailedKey(userID string) string  { return "organize:failed:" + user
 const organizeKeyTTL = 24 * time.Hour
 
 func (s *svc) organizeIfPending(ctx context.Context, userID string) {
+	if s.d.Redis == nil { // in-process ingestion (IngestNow) has no queue and nothing pending
+		return
+	}
 	ctx = context.WithoutCancel(ctx)
 	if n, err := s.d.Redis.Exists(ctx, organizePendingKey(userID)).Result(); err != nil || n == 0 {
 		return
