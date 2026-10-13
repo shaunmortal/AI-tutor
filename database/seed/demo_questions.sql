@@ -19,16 +19,23 @@ begin;
 -- ---------------------------------------------------------------------------
 -- Subjects
 -- ---------------------------------------------------------------------------
-insert into public.topics (id, parent_id, name, weight, sort_order) values
+insert into public.topics (id, parent_id, name, weight, sort_order, curriculum_id)
+select v.id::uuid, v.parent_id::uuid, v.name, v.weight, v.sort_order,
+       (select id from public.curricula where slug = 'computer-science-fundamentals')
+from (values
     ('a0000000-0000-4000-8000-000000000001', null, 'Data Structures & Algorithms', 2.00, 1),
     ('a0000000-0000-4000-8000-000000000002', null, 'Database Systems',             1.50, 2),
     ('a0000000-0000-4000-8000-000000000003', null, 'Quantitative Aptitude',        1.00, 3)
+) as v(id, parent_id, name, weight, sort_order)
 on conflict do nothing;
 
 -- ---------------------------------------------------------------------------
 -- Topics
 -- ---------------------------------------------------------------------------
-insert into public.topics (id, parent_id, name, weight, sort_order) values
+insert into public.topics (id, parent_id, name, weight, sort_order, curriculum_id)
+select v.id::uuid, v.parent_id::uuid, v.name, v.weight, v.sort_order,
+       (select id from public.curricula where slug = 'computer-science-fundamentals')
+from (values
     -- Data Structures & Algorithms
     ('b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'Arrays & Strings',    1.00, 1),
     ('b0000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000001', 'Linked Lists',        1.00, 2),
@@ -47,6 +54,7 @@ insert into public.topics (id, parent_id, name, weight, sort_order) values
     ('b0000000-0000-4000-8000-00000000000d', 'a0000000-0000-4000-8000-000000000003', 'Ratio & Proportion',  1.00, 2),
     ('b0000000-0000-4000-8000-00000000000e', 'a0000000-0000-4000-8000-000000000003', 'Probability',         1.25, 3),
     ('b0000000-0000-4000-8000-00000000000f', 'a0000000-0000-4000-8000-000000000003', 'Speed, Time & Distance', 1.00, 4)
+) as v(id, parent_id, name, weight, sort_order)
 on conflict do nothing;
 
 -- ---------------------------------------------------------------------------
