@@ -5,34 +5,31 @@
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Adigam AI — Adaptive Learning</title>
-        <meta name="theme-color" content="#0e1117" />
+        <meta name="theme-color" content="#e8eefa" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+            rel="stylesheet"
+        />
         <!--
-      Applies the saved theme before the first paint.
-
-      Inline and blocking on purpose. Doing this from React means the dark palette renders and then
-      flips a frame later — a white flash on every load, which is worse than not offering light mode
-      at all. It has to run before the browser paints, so it cannot live in the bundle.
-
-      Wrapped in try/catch because localStorage throws outright in a private window on some
-      browsers, and a themed page is not worth a blank one.
+      Applies the saved theme before the first paint, so there is no flash of the wrong palette.
+      Day (light) unless the learner chose night, or chose "match device" on a dark device.
+      try/catch: localStorage throws in some private windows, and a themed page isn't worth a blank one.
     -->
         <script>
             try {
-                // Dark unless the learner explicitly asked for light.
-                //
-                // This used to follow the operating system when no preference was stored, which meant anybody
-                // whose machine is in light mode — most machines, by default — opened a study app in a bright
-                // palette they never chose. Dark is the brand and the better default for the hours this gets
-                // used in, so it is the default rather than a coin flip on somebody's system settings.
-                //
-                // "Match device" is still available in Settings; choosing it stores 'system' and this reads it.
+                // ?theme=dark|light picks a theme from a link (handy for demos) and remembers it.
+                var asked = new URLSearchParams(location.search).get('theme');
+                if (asked === 'dark' || asked === 'light') localStorage.setItem('adigam-theme', asked);
                 var saved = localStorage.getItem('adigam-theme');
-                var wantsLight =
-                    saved === 'light' ||
-                    (saved === 'system' &&
-                        window.matchMedia('(prefers-color-scheme: light)').matches);
-                if (wantsLight) document.documentElement.setAttribute('data-theme', 'light');
-            } catch (e) {}
+                var dark =
+                    saved === 'dark' ||
+                    (saved === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
         </script>
     </head>
     <body>

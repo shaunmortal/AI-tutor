@@ -16,34 +16,7 @@
  */
 
 :root {
-    /* Very dark navy rather than neutral grey: it reads as a product rather than a terminal,
-       and blue-tinted darks make the blue accent look intentional instead of pasted on. */
-    --bg: #070b14;
-    --surface: #111827;
-    --surface-raised: #151c28;
-    --border: #1f2a3c;
-    --border-strong: #2b3a52;
-
-    --text: #e8eef7;
-    --text-dim: #94a3b8;
-    --text-faint: #64748b;
-
-    --accent: #3b82f6;
-    --accent-dim: #1e3a8a;
-    --violet: #8b5cf6;
-    --violet-dim: #4c1d95;
-    --good: #22c55e;
-    --bad: #ef4444;
-    --warn: #f59e0b;
-    --fire: #fb923c;
-
-    /* One gradient, reused. Two or three competing ones is what makes an interface look busy. */
-    --grad: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-    --grad-hover: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-
-    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
-    --shadow-lift: 0 8px 24px -6px rgb(0 0 0 / 0.5);
-    --glow: 0 0 0 1px rgb(59 130 246 / 0.25), 0 4px 20px -4px rgb(99 102 241 / 0.35);
+    /* Colours, depth and gradients live in styles/theme.css. */
 
     /* Every transition in the app, so nothing is faster or slower than its neighbour. */
     --ease: 180ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -51,7 +24,6 @@
     --radius: 10px;
     --gap: 16px;
 
-    color-scheme: dark;
     font-family:
         system-ui,
         -apple-system,
@@ -627,29 +599,6 @@ input:focus {
     display: block;
     height: 100%;
     background: var(--accent);
-}
-
-/* ---------------------------------------------------------------- light theme
-   Chosen against white, not derived from the dark palette. The accent and status colours are
-   darkened because #4c8dff on white fails contrast at small sizes, and a study app puts a lot of
-   small text in front of people. */
-[data-theme='light'] {
-    --bg: #f6f8fa;
-    --surface: #ffffff;
-    --surface-raised: #f0f3f6;
-    --border: #d5dbe2;
-
-    --text: #1c2128;
-    --text-dim: #57606a;
-    --text-faint: #7d8590;
-
-    --accent: #0a58ca;
-    --accent-dim: #9ec5fe;
-    --good: #1a7f37;
-    --bad: #cf222e;
-    --warn: #9a6700;
-
-    color-scheme: light;
 }
 
 /* The heatmap's greens are set explicitly rather than through variables, so they need their own

@@ -26,12 +26,60 @@ if (!url || !publishableKey) {
     );
 }
 
+/**
+ * "Remember me". Ticked, the session lives in localStorage and survives closing the browser;
+ * unticked, it lives in sessionStorage and ends with the tab — the right default on a shared
+ * college computer. Reads check both, so a session written either way is found on reload.
+ */
+const REMEMBER_KEY = 'adigam-remember';
+
+export function setRemember(remember: boolean): void {
+    try {
+        localStorage.setItem(REMEMBER_KEY, remember ? '1' : '0');
+    } catch {
+        // Storage blocked: the session simply lasts as long as the page.
+    }
+}
+
+function remembered(): boolean {
+    try {
+        return localStorage.getItem(REMEMBER_KEY) !== '0';
+    } catch {
+        return false;
+    }
+}
+
+const storage = {
+    getItem(key: string) {
+        try {
+            return localStorage.getItem(key) ?? sessionStorage.getItem(key);
+        } catch {
+            return null;
+        }
+    },
+    setItem(key: string, value: string) {
+        try {
+            (remembered() ? localStorage : sessionStorage).setItem(key, value);
+        } catch {
+            // Private mode: nothing persists, the in-memory session still works.
+        }
+    },
+    removeItem(key: string) {
+        try {
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+        } catch {
+            // Nothing stored, nothing to remove.
+        }
+    },
+};
+
 const auth = new AuthClient({
+    storage,
     // The paths supabase-js would have built for us.
     url: `${url}/auth/v1`,
     headers: { apikey: publishableKey, Authorization: `Bearer ${publishableKey}` },
-    // Keep the session in localStorage and refresh it in the background, exactly as the full
-    // client does, so a learner stays signed in across reloads.
+    // Persist (where "Remember me" says) and refresh in the background, as the full client does.
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,

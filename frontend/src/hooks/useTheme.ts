@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 /**
- * Dark, light, or whatever the device prefers.
+ * Day (light), night (dark), or whatever the device prefers.
  *
  * The theme itself is applied by an inline script in `index.html`, before React exists — doing it
  * here would render the dark palette and then flip a frame later, which is a white flash on every
@@ -20,21 +20,17 @@ export type Theme = 'dark' | 'light' | 'system';
 const STORAGE_KEY = 'adigam-theme';
 
 /**
- * Reads whatever the inline script stored, tolerating storage being unavailable.
- *
- * Falls back to `dark` rather than `system`, and that default matters: following the operating system
- * meant anybody on a light-mode machine opened a study app in a palette they never picked. Dark is the
- * brand, and it is the right default for the hours this is used in. `system` is now something a learner
- * opts into rather than something they get by accident.
+ * Reads whatever the inline script stored, tolerating storage being unavailable. Day (light) is
+ * the default look; night is one tap away in Settings, and "match device" is opt-in.
  */
 function storedTheme(): Theme {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
 
-        return saved === 'dark' || saved === 'light' || saved === 'system' ? saved : 'dark';
+        return saved === 'dark' || saved === 'light' || saved === 'system' ? saved : 'light';
     } catch {
         // Private windows throw on localStorage in some browsers.
-        return 'dark';
+        return 'light';
     }
 }
 
@@ -47,14 +43,13 @@ function prefersLight(): boolean {
 function apply(theme: Theme): void {
     const light = theme === 'light' || (theme === 'system' && prefersLight());
 
-    if (light) document.documentElement.setAttribute('data-theme', 'light');
-    else document.documentElement.removeAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', light ? 'light' : 'dark');
 
     // Keeps the browser's own chrome — the address bar on Android, the notch area on iOS — matching
     // the page. Without it a light page sits under a dark status bar, which reads as a rendering bug.
     document
         .querySelector('meta[name="theme-color"]')
-        ?.setAttribute('content', light ? '#f6f8fa' : '#0e1117');
+        ?.setAttribute('content', light ? '#e8eefa' : '#080d24');
 }
 
 export function useTheme(): {
@@ -84,9 +79,8 @@ export function useTheme(): {
         setStored(next);
 
         try {
-            // All three are stored explicitly now, including 'system'. When the default was 'system'
-            // an absent key could stand in for it; now that the default is dark, "follow the device"
-            // has to be recorded or it would be lost on the next load.
+            // All three are stored explicitly, including 'system', so "follow the device" survives
+            // a reload rather than falling back to the default.
             localStorage.setItem(STORAGE_KEY, next);
         } catch {
             // The theme still applies for this session; it just will not be remembered.

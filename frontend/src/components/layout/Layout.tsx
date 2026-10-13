@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Icon, type IconName, Logo } from '@/components/Icon/Icon';
+import { ThemeToggle } from '@/components/ThemeToggle/ThemeToggle';
 import { useAuth } from '@/features/auth/AuthProvider';
 
 /**
@@ -109,6 +110,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 </nav>
 
                 <div className="topbar__account">
+                    <ThemeToggle />
                     <span className="faint topbar__email" title={email}>
                         {email}
                     </span>

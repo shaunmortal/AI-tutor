@@ -33,10 +33,10 @@ const Sources = lazy(() => import('@/pages/Sources/Sources'));
  * authenticated learner to the login screen on every reload.
  */
 function RequireAuth() {
-    const { session, loading } = useAuth();
+    const { session, loading, recovering } = useAuth();
 
     if (loading) return <Loading label="Checking your session…" />;
-    if (!session) return <Navigate to="/login" replace />;
+    if (!session || recovering) return <Navigate to="/login" replace />;
 
     return (
         <Layout>
@@ -47,10 +47,10 @@ function RequireAuth() {
 
 /** The login screen is pointless once signed in. */
 function RedirectIfSignedIn({ children }: { children: React.ReactNode }) {
-    const { session, loading } = useAuth();
+    const { session, loading, recovering } = useAuth();
 
     if (loading) return <Loading />;
-    if (session) return <Navigate to="/dashboard" replace />;
+    if (session && !recovering) return <Navigate to="/dashboard" replace />;
 
     return <>{children}</>;
 }

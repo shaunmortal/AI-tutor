@@ -1,0 +1,825 @@
+/*
+ * Soft 3D design system — "day" (light, neumorphic) and "night" (deep navy glass with neon rims).
+ *
+ * Loaded after index.css. index.css owns layout and per-screen pieces; this file owns colour,
+ * depth, motion and the shared primitives (cards, buttons, inputs, shell, sign-in). Every screen
+ * reads the same custom properties, so the whole app changes theme with one attribute on <html>.
+ *
+ * Depth comes from light, not from borders: in day mode every raised surface carries a white
+ * highlight top-left and a blue-grey shadow bottom-right (neumorphism), and inset controls flip
+ * that pair. Night mode can't do that — a white highlight on navy reads as a smudge — so surfaces
+ * become frosted glass lit from the edge by a blue/violet rim.
+ */
+
+@property --spin {
+    syntax: '<angle>';
+    inherits: false;
+    initial-value: 0deg;
+}
+
+/* ============================================================ tokens: day (default) */
+:root,
+[data-theme='light'] {
+    --bg: #e8eefa;
+    --bg-paint:
+        radial-gradient(1200px 700px at 10% -10%, #f5f8ff 0%, transparent 60%),
+        radial-gradient(900px 600px at 110% 20%, #dfe8fb 0%, transparent 60%),
+        linear-gradient(165deg, #eef3fd 0%, #e3eaf8 55%, #dbe4f6 100%);
+    --surface: #edf2fc;
+    --surface-raised: #f4f7fe;
+    --surface-glass: rgb(240 245 253 / 0.78);
+    --border: rgb(255 255 255 / 0.75);
+    --border-strong: #c9d5ee;
+    --rim: rgb(255 255 255 / 0.85);
+
+    --text: #0e1a3a;
+    --text-dim: #45537a;
+    --text-faint: #7684a6;
+
+    --accent: #0a66ff;
+    --accent-dim: #cfe0ff;
+    --violet: #6d5cff;
+    --violet-dim: #e4defe;
+    --good: #15904a;
+    --bad: #d92d3a;
+    --warn: #a86b00;
+    --fire: #f07a1a;
+
+    --grad: linear-gradient(95deg, #00c3ff 0%, #0a86ff 50%, #0050ff 100%);
+    --grad-hover: linear-gradient(95deg, #00b2f0 0%, #0074f0 50%, #0045e6 100%);
+    --line-a: #38c7ff;
+    --line-b: #0a5cff;
+
+    --neu-out: 14px 14px 32px rgb(146 166 210 / 0.42), -12px -12px 28px rgb(255 255 255 / 0.95);
+    --neu-out-sm: 6px 6px 14px rgb(146 166 210 / 0.45), -6px -6px 14px rgb(255 255 255 / 0.95);
+    --neu-in: inset 5px 5px 12px rgb(146 166 210 / 0.42), inset -6px -6px 12px rgb(255 255 255 / 0.95);
+    --btn-glow: 0 14px 30px -8px rgb(0 104 255 / 0.55), 0 0 22px -6px rgb(0 180 255 / 0.45);
+
+    --shadow-card: var(--neu-out-sm);
+    --shadow-lift: var(--neu-out);
+    --glow: var(--btn-glow);
+
+    --sphere: radial-gradient(circle at 32% 28%, #ffffff 0%, #eef3fe 30%, #cdd9f3 72%, #b6c6ea 100%);
+    --sphere-shadow: 18px 22px 40px rgb(140 160 205 / 0.45), inset -8px -10px 22px rgb(150 170 215 / 0.35);
+    --blob: linear-gradient(150deg, rgb(255 255 255 / 0.9) 0%, rgb(226 234 250 / 0.85) 60%, rgb(210 222 246 / 0.8) 100%);
+    --blob-shadow: 30px 40px 80px rgb(140 160 205 / 0.35), inset 10px 10px 30px rgb(255 255 255 / 0.9),
+        inset -16px -18px 40px rgb(170 188 228 / 0.45);
+
+    --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color-scheme: light;
+}
+
+/* ============================================================ tokens: night */
+[data-theme='dark'] {
+    --bg: #080d24;
+    --bg-paint:
+        radial-gradient(900px 600px at 0% 0%, rgb(56 62 180 / 0.35) 0%, transparent 60%),
+        radial-gradient(900px 700px at 100% 100%, rgb(94 58 220 / 0.3) 0%, transparent 60%),
+        linear-gradient(170deg, #0b1230 0%, #080d24 55%, #060a1c 100%);
+    --surface: rgb(19 26 58 / 0.72);
+    --surface-raised: rgb(28 37 78 / 0.75);
+    --surface-glass: rgb(16 22 52 / 0.62);
+    --border: rgb(128 140 255 / 0.16);
+    --border-strong: rgb(128 140 255 / 0.32);
+    --rim: rgb(132 146 255 / 0.22);
+
+    --text: #f2f5ff;
+    --text-dim: #aab4d9;
+    --text-faint: #7480ab;
+
+    --accent: #4d8dff;
+    --accent-dim: rgb(77 141 255 / 0.18);
+    --violet: #8b6dff;
+    --violet-dim: rgb(139 109 255 / 0.2);
+    --good: #34d17c;
+    --bad: #ff5a6a;
+    --warn: #f6b23c;
+    --fire: #ff9a4d;
+
+    --grad: linear-gradient(95deg, #00d4ff 0%, #2f86ff 50%, #6a4dff 100%);
+    --grad-hover: linear-gradient(95deg, #00c2f0 0%, #2775f0 50%, #5c3ff0 100%);
+    --line-a: #3fd0ff;
+    --line-b: #7a5cff;
+
+    --neu-out: 0 28px 60px -14px rgb(0 0 0 / 0.65), inset 0 1px 0 rgb(255 255 255 / 0.06),
+        0 0 46px -18px rgb(99 102 241 / 0.45);
+    --neu-out-sm: 0 12px 28px -10px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.05);
+    --neu-in: inset 0 3px 10px rgb(0 0 0 / 0.5), inset 0 0 0 1px rgb(128 140 255 / 0.12);
+    --btn-glow: 0 14px 34px -8px rgb(80 90 255 / 0.65), 0 0 26px -4px rgb(0 200 255 / 0.4);
+
+    --shadow-card: var(--neu-out-sm);
+    --shadow-lift: var(--neu-out);
+    --glow: var(--btn-glow);
+
+    --sphere: radial-gradient(circle at 32% 28%, #8fa8ff 0%, #4a5fe0 22%, #26318f 58%, #0e1450 100%);
+    --sphere-shadow: 0 0 40px rgb(80 90 255 / 0.45), inset -10px -12px 26px rgb(4 6 30 / 0.6);
+    --blob: linear-gradient(150deg, rgb(40 52 130 / 0.55) 0%, rgb(20 26 70 / 0.5) 60%, rgb(12 16 46 / 0.5) 100%);
+    --blob-shadow: 0 0 0 1.5px rgb(110 120 255 / 0.35), 0 0 60px -6px rgb(90 100 255 / 0.55),
+        inset 8px 8px 40px rgb(120 130 255 / 0.18), inset -20px -20px 50px rgb(0 0 0 / 0.45);
+
+    color-scheme: dark;
+}
+
+/* ============================================================ base */
+html {
+    font-family: var(--font-display);
+}
+
+body {
+    background: var(--bg-paint), var(--bg);
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+}
+
+/* Everything sits above the scene. */
+#root {
+    position: relative;
+    z-index: 1;
+}
+
+/* ============================================================ 3D scene (background) */
+.scene {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.scene__blob,
+.scene__sphere {
+    position: absolute;
+    /* Pointer parallax: deeper layers move less. --mx/--my are -1..1 set from the pointer. */
+    translate: calc(var(--mx, 0) * var(--depth) * 1px) calc(var(--my, 0) * var(--depth) * 1px);
+    transition: translate 600ms cubic-bezier(0.2, 0.7, 0.2, 1);
+    will-change: transform;
+}
+
+.scene__blob {
+    background: var(--blob);
+    box-shadow: var(--blob-shadow);
+    animation: blob-morph 18s ease-in-out infinite alternate, blob-drift 26s ease-in-out infinite alternate;
+}
+
+.scene__sphere {
+    border-radius: 50%;
+    background: var(--sphere);
+    box-shadow: var(--sphere-shadow);
+    animation: sphere-float 9s ease-in-out infinite alternate;
+}
+
+[data-theme='dark'] .scene__blob {
+    backdrop-filter: blur(2px);
+}
+
+@keyframes blob-morph {
+    0% {
+        border-radius: 42% 58% 62% 38% / 45% 40% 60% 55%;
+    }
+    50% {
+        border-radius: 58% 42% 38% 62% / 55% 62% 38% 45%;
+    }
+    100% {
+        border-radius: 48% 52% 55% 45% / 38% 55% 45% 62%;
+    }
+}
+
+@keyframes blob-drift {
+    from {
+        transform: rotate(-4deg) scale(1);
+    }
+    to {
+        transform: rotate(6deg) scale(1.06);
+    }
+}
+
+@keyframes sphere-float {
+    from {
+        transform: translate3d(0, 0, 0);
+    }
+    to {
+        transform: translate3d(8px, -26px, 0);
+    }
+}
+
+/* ============================================================ the running line
+   A comet of light travelling round the edge of a control. Drawn with a rotating conic gradient
+   masked to a 1.5px ring, so it follows any border-radius and costs one compositor animation. */
+.runline,
+.inputwrap,
+.authcard {
+    position: relative;
+}
+
+.runline::after,
+.inputwrap:focus-within::after,
+.authcard::after {
+    content: '';
+    position: absolute;
+    inset: -1.5px;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+        from var(--spin),
+        transparent 0deg 250deg,
+        var(--line-a) 300deg,
+        var(--line-b) 345deg,
+        transparent 360deg
+    );
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: spin 3.2s linear infinite;
+    pointer-events: none;
+}
+
+/* The card's own line is slower and fainter: ambient, not a call to action. */
+.authcard::after {
+    animation-duration: 7s;
+    opacity: 0.7;
+}
+
+@keyframes spin {
+    to {
+        --spin: 360deg;
+    }
+}
+
+/* ============================================================ surfaces */
+.card {
+    background: var(--surface);
+    border: 1px solid var(--rim);
+    border-radius: 22px;
+    padding: 20px;
+    box-shadow: var(--neu-out-sm);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+.card--accent {
+    background:
+        linear-gradient(160deg, var(--accent-dim) 0%, transparent 55%),
+        var(--surface);
+    border-color: var(--rim);
+}
+
+.card--hover:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--neu-out);
+    border-color: var(--rim);
+}
+
+.card--glow {
+    border-color: var(--rim);
+    box-shadow: var(--neu-out), var(--btn-glow);
+}
+
+/* ============================================================ buttons */
+button,
+.btn {
+    border-radius: 14px;
+    border: 1px solid var(--rim);
+    background: var(--surface-raised);
+    color: var(--text);
+    box-shadow: var(--neu-out-sm);
+    font-weight: 600;
+}
+
+button:hover:not(:disabled) {
+    border-color: var(--rim);
+    transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+    box-shadow: var(--neu-in);
+    transform: translateY(0);
+}
+
+button.primary,
+.primary {
+    background: var(--grad);
+    border: 0;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    box-shadow: var(--btn-glow);
+    text-shadow: 0 1px 1px rgb(0 40 120 / 0.25);
+}
+
+button.primary:hover:not(:disabled),
+.primary:hover:not(:disabled) {
+    background: var(--grad-hover);
+    border: 0;
+    box-shadow: var(--btn-glow), 0 0 0 4px var(--accent-dim);
+}
+
+.secondary {
+    background: var(--surface-raised);
+    border: 1px solid var(--rim);
+    color: var(--accent);
+}
+
+.secondary:hover:not(:disabled) {
+    background: var(--surface-raised);
+    border-color: var(--border-strong);
+}
+
+button.link,
+.linkish {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+button.link:hover,
+.linkish:hover {
+    transform: none;
+    text-decoration: underline;
+}
+
+/* ============================================================ inputs */
+input,
+select,
+textarea {
+    border-radius: 14px;
+    border: 1px solid transparent;
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--neu-in);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--text-faint);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: transparent;
+    box-shadow:
+        var(--neu-in),
+        0 0 0 3px var(--accent-dim);
+}
+
+.inputwrap {
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: var(--neu-in);
+    overflow: visible;
+}
+
+.inputwrap:focus-within {
+    border-color: transparent;
+    box-shadow: var(--neu-in);
+}
+
+.inputwrap__icon {
+    width: 52px;
+    align-self: stretch;
+    border: 0;
+    background: transparent;
+    color: var(--text-dim);
+}
+
+.inputwrap input {
+    box-shadow: none;
+    padding: 16px 14px 16px 0;
+    border-left: 0;
+}
+
+.inputwrap input:focus {
+    box-shadow: none;
+}
+
+.inputwrap__action {
+    width: 52px;
+    align-self: stretch;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    color: var(--text-dim);
+}
+
+.inputwrap__action:hover:not(:disabled) {
+    transform: none;
+    color: var(--accent);
+    background: transparent;
+}
+
+input[type='checkbox'] {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    flex: 0 0 auto;
+    border-radius: 6px;
+    border: 1.5px solid var(--text-faint);
+    box-shadow: none;
+    background: var(--surface);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+input[type='checkbox']:checked {
+    background: var(--grad);
+    border-color: transparent;
+}
+
+input[type='checkbox']:checked::before {
+    content: '';
+    width: 10px;
+    height: 6px;
+    border: solid #fff;
+    border-width: 0 0 2px 2px;
+    transform: translateY(-1px) rotate(-45deg);
+}
+
+/* ============================================================ pills, meters */
+.pill {
+    border-radius: 999px;
+    box-shadow: var(--neu-out-sm);
+}
+
+.meter {
+    border-radius: 999px;
+    box-shadow: var(--neu-in);
+    background: var(--surface);
+}
+
+.meter > div {
+    background: var(--grad);
+    border-radius: inherit;
+}
+
+/* ============================================================ shell */
+.topbar {
+    margin: 12px 12px 0;
+    border: 1px solid var(--rim);
+    border-radius: 20px;
+    background: var(--surface-glass);
+    box-shadow: var(--neu-out-sm);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    top: 12px;
+}
+
+.topnav__link {
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.topnav__link--active {
+    color: var(--accent);
+    background: var(--surface);
+    box-shadow: var(--neu-in);
+}
+
+.shellgrid {
+    gap: 16px;
+    padding: 0 12px;
+}
+
+.sidebar {
+    top: 88px;
+    max-height: calc(100vh - 100px);
+    margin-top: 16px;
+    border: 1px solid var(--rim);
+    border-radius: 22px;
+    background: var(--surface-glass);
+    box-shadow: var(--neu-out-sm);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+
+@media (max-width: 900px) {
+    .sidebar {
+        margin: 0;
+        border-radius: 0 22px 22px 0;
+        max-height: none;
+        top: 0;
+        background: var(--surface-raised);
+    }
+}
+
+.sidebar__link {
+    border-radius: 14px;
+    font-weight: 600;
+}
+
+.sidebar__link:hover {
+    background: var(--surface);
+    box-shadow: var(--neu-out-sm);
+}
+
+.sidebar__link--active,
+.sidebar__link--active:hover {
+    background: var(--grad);
+    color: #fff;
+    box-shadow: var(--btn-glow);
+}
+
+.scrim {
+    background: rgb(8 14 40 / 0.45);
+    backdrop-filter: blur(4px);
+    box-shadow: none;
+}
+
+.avatar {
+    background: var(--grad);
+    box-shadow: var(--btn-glow);
+}
+
+.tile {
+    border-radius: 14px;
+    box-shadow: var(--neu-out-sm);
+}
+
+.banner {
+    border-radius: 14px;
+    backdrop-filter: blur(12px);
+}
+
+/* ============================================================ sign-in */
+.authpage {
+    background: none;
+}
+
+.authpage__inner {
+    grid-template-columns: minmax(0, 1fr) 460px;
+    gap: 72px;
+    min-height: 100vh;
+}
+
+/* Phone: the card alone, centred over the scene, exactly as designed. */
+@media (max-width: 980px) {
+    .authpage__inner {
+        grid-template-columns: minmax(0, 1fr);
+        max-width: 480px;
+        padding: 28px 18px;
+    }
+
+    .authpage .authpitch {
+        display: none;
+    }
+}
+
+.authcard {
+    align-items: stretch;
+    gap: 22px;
+    padding: 40px 34px 34px;
+    border: 1px solid var(--rim);
+    border-radius: 40px;
+    background: var(--surface-glass);
+    box-shadow: var(--neu-out);
+    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+}
+
+@media (max-width: 480px) {
+    .authcard {
+        padding: 32px 22px 26px;
+        border-radius: 34px;
+    }
+}
+
+.auth__badge {
+    width: 104px;
+    height: 104px;
+    margin: 0 auto 4px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--surface);
+    box-shadow: var(--neu-out);
+    position: relative;
+}
+
+[data-theme='dark'] .auth__badge {
+    box-shadow:
+        0 0 0 2px rgb(110 100 255 / 0.55),
+        0 0 36px rgb(100 90 255 / 0.55),
+        inset 0 0 22px rgb(0 0 0 / 0.5);
+    background: radial-gradient(circle at 40% 35%, #1f2a66, #0f1540);
+}
+
+.auth__badge svg {
+    animation: badge-bob 4s ease-in-out infinite alternate;
+    filter: drop-shadow(0 6px 8px rgb(120 80 0 / 0.3));
+}
+
+@keyframes badge-bob {
+    from {
+        transform: translateY(2px) rotate(-3deg);
+    }
+    to {
+        transform: translateY(-3px) rotate(3deg);
+    }
+}
+
+.auth__title {
+    margin: 0;
+    text-align: center;
+    font-size: clamp(2.2rem, 7vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+[data-theme='dark'] .auth__title {
+    background: linear-gradient(180deg, #ffffff 30%, #b9c8ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.auth__subtitle {
+    margin: -12px 0 6px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 1.05rem;
+}
+
+.auth__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.92rem;
+}
+
+.auth__check {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-dim);
+    cursor: pointer;
+}
+
+.auth__submit {
+    height: 60px;
+    border-radius: 20px;
+    font-size: 1.1rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.auth__submit svg {
+    transition: transform var(--ease);
+}
+
+.auth__submit:hover:not(:disabled) svg {
+    transform: translateX(4px);
+}
+
+.auth__switch {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: var(--text-dim);
+}
+
+.auth__round {
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+    background: var(--surface);
+    box-shadow: var(--neu-out);
+}
+
+.auth__socials {
+    display: flex;
+    justify-content: center;
+    gap: 22px;
+}
+
+.auth__social {
+    width: 58px;
+    height: 58px;
+    padding: 0;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--surface);
+    box-shadow: var(--neu-out-sm);
+}
+
+/* Desktop pitch beside the card. */
+.authpitch__title {
+    font-size: clamp(2.6rem, 4.6vw, 4rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+}
+
+.authpitch__accent {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.authpitch .tile {
+    background: var(--surface);
+    color: var(--accent);
+}
+
+/* ============================================================ brand + theme toggle */
+.brand span {
+    background: var(--grad);
+    background-size: 100% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: none;
+}
+
+/* "Adigam AI": the brand is inline-flex, which trims the leading space inside the span. */
+span.brand > span,
+.brand span span {
+    margin-left: 0.24em;
+}
+
+.themetoggle {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+    background: var(--surface);
+    box-shadow: var(--neu-out-sm);
+}
+
+.themetoggle--float {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 5;
+}
+
+.authpitch__feature {
+    flex-wrap: nowrap;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+/* ============================================================ entrance motion */
+.rise {
+    animation: rise 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* Motion is decoration here, so it goes entirely for anybody who has asked for less. */
+@media (prefers-reduced-motion: reduce) {
+    .scene__blob,
+    .scene__sphere,
+    .runline::after,
+    .inputwrap:focus-within::after,
+    .authcard::after,
+    .auth__badge svg,
+    .rise {
+        animation: none;
+    }
+    .scene__blob,
+    .scene__sphere {
+        transition: none;
+    }
+}

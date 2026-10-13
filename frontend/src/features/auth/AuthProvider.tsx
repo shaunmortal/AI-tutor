@@ -23,8 +23,14 @@ interface AuthState {
         password: string,
         displayName: string
     ) => Promise<{ needsEmailConfirm: boolean }>;
-    /** Google, GitHub or Microsoft. Redirects away from the app and comes back with a session. */
+    /** Redirects away from the app and comes back with a session. */
     signInWithProvider: (provider: OAuthProvider) => Promise<void>;
+    /** Emails a reset link that lands back on /login in recovery mode. */
+    resetPassword: (email: string) => Promise<void>;
+    /** Sets a new password while recovering, then carries on into the app. */
+    updatePassword: (password: string) => Promise<void>;
+    /** True after following a reset link, until a new password is saved. */
+    recovering: boolean;
     signOut: () => Promise<void>;
 }
 
@@ -36,12 +42,12 @@ interface AuthState {
  * Supabase answers with "Unsupported provider", which is why `signInWithProvider` translates that
  * into something a person can act on instead of letting it surface raw.
  */
-export type OAuthProvider = 'google' | 'github' | 'azure';
+export type OAuthProvider = 'google' | 'facebook' | 'linkedin_oidc';
 
 const LABELS: Record<OAuthProvider, string> = {
     google: 'Google',
-    github: 'GitHub',
-    azure: 'Microsoft',
+    facebook: 'Facebook',
+    linkedin_oidc: 'LinkedIn',
 };
 
 /**
@@ -111,6 +117,7 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
+    const [recovering, setRecovering] = useState(false);
 
     useEffect(() => {
         let active = true;
@@ -122,7 +129,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(false);
         });
 
-        const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+        const { data } = supabase.auth.onAuthStateChange((event, next) => {
+            // A reset link signs the learner in; they still have to choose a new password first.
+            if (event === 'PASSWORD_RECOVERY') setRecovering(true);
             setSession(next);
             setLoading(false);
         });
@@ -137,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         () => ({
             session,
             loading,
+            recovering,
 
             async signIn(email, password) {
                 const { error } = await supabase.auth.signInWithPassword({
@@ -198,11 +208,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 window.location.href = data.url;
             },
 
+            async resetPassword(email) {
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}/login`,
+                });
+                if (error) throw new Error(friendlySignUpError(error.message));
+            },
+
+            async updatePassword(password) {
+                const { error } = await supabase.auth.updateUser({ password });
+                if (error) throw new Error(error.message);
+                setRecovering(false);
+            },
+
             async signOut() {
                 await supabase.auth.signOut();
             },
         }),
-        [session, loading]
+        [session, loading, recovering]
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

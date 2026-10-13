@@ -1,5 +1,6 @@
 import { BrowserRouter } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
+import { Scene } from '@/components/Scene/Scene';
 import { AuthProvider } from '@/features/auth/AuthProvider';
 import { AppRoutes } from '@/router';
 
@@ -15,6 +16,7 @@ import { AppRoutes } from '@/router';
 export default function App() {
     return (
         <ErrorBoundary>
+            <Scene />
             <AuthProvider>
                 <BrowserRouter>
                     <AppRoutes />
