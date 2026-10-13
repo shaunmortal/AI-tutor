@@ -11,7 +11,7 @@ func TestLive(t *testing.T) {
 	if os.Getenv("AI_LIVE") == "" {
 		t.Skip("set AI_LIVE=1 to call the real API")
 	}
-	c := New(os.Getenv("ANTHROPIC_API_KEY"))
+	c := New(Settings{AnthropicKey: os.Getenv("ANTHROPIC_API_KEY")})
 	ctx := context.Background()
 
 	var out struct {

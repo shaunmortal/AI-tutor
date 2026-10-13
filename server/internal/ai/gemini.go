@@ -22,14 +22,17 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/shaunmortal/AI-tutor/server/internal/httpx"
 )
 
 const geminiBase = "https://generativelanguage.googleapis.com/v1beta/models/"
 
-// geminiModels mirrors the Claude split: High for stored data, Standard for explanations.
+// geminiModels mirrors the Claude split. Defaults are models the free tier serves; Pro is not
+// on the free tier (429). Override with AI_MODEL_HIGH / AI_MODEL_STANDARD.
 var geminiModels = map[Quality]string{
-	High:     "gemini-pro-latest",
-	Standard: "gemini-flash-latest",
+	High:     "gemini-3.5-flash",
+	Standard: "gemini-3.5-flash-lite",
 }
 
 type gemini struct {
@@ -121,6 +124,12 @@ func (g *gemini) send(ctx context.Context, req Request) (Response, error) {
 		return Response{}, err
 	}
 	raw, err := g.post(ctx, model, payload)
+	// A busy High model is common on the free tier: answer with the Standard one rather than fail.
+	if err != nil && model != g.models[Standard] && isBusy(err) {
+		slog.Warn("gemini high model busy, using standard", "model", model)
+		model = g.models[Standard]
+		raw, err = g.post(ctx, model, payload)
+	}
 	if err != nil {
 		return Response{}, err
 	}
@@ -197,6 +206,11 @@ func (g *gemini) post(ctx context.Context, model string, payload []byte) ([]byte
 			return nil, timeoutErr()
 		}
 	}
+}
+
+func isBusy(err error) bool {
+	var e *httpx.Error
+	return errors.As(err, &e) && (e.Code == "AI_RATE_LIMITED" || e.Message == "The AI is busy right now. Try again in a moment.")
 }
 
 func geminiStatusErr(status int, body []byte) error {

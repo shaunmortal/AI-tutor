@@ -5,6 +5,7 @@ package config
 import (
 	"bufio"
 	"fmt"
+	"github.com/shaunmortal/AI-tutor/server/internal/ai"
 	"os"
 	"strconv"
 	"strings"
@@ -20,6 +21,10 @@ type Config struct {
 	DatabaseURL            string
 	RedisURL               string
 	AnthropicAPIKey        string // optional: AI features degrade without it
+	GeminiAPIKey           string
+	AIProvider             string // claude (default) or gemini
+	AIModelHigh            string // optional model overrides
+	AIModelStandard        string
 
 	// MaxInFlight caps concurrent requests per instance; the excess gets 503 + Retry-After.
 	MaxInFlight int
@@ -38,8 +43,15 @@ func Load() (*Config, error) {
 		DatabaseURL:            os.Getenv("DATABASE_URL"),
 		RedisURL:               get("REDIS_URL", "redis://localhost:6379/0"),
 		AnthropicAPIKey:        os.Getenv("ANTHROPIC_API_KEY"),
+		GeminiAPIKey:           os.Getenv("GEMINI_API_KEY"),
+		AIProvider:             get("AI_PROVIDER", "claude"),
+		AIModelHigh:            os.Getenv("AI_MODEL_HIGH"),
+		AIModelStandard:        os.Getenv("AI_MODEL_STANDARD"),
 		MaxInFlight:            256,
 		DBTransactionPooler:    os.Getenv("DB_POOL_MODE") == "transaction",
+	}
+	if c.AIProvider != "claude" && c.AIProvider != "gemini" {
+		return nil, fmt.Errorf("AI_PROVIDER: want claude or gemini, got %q", c.AIProvider)
 	}
 	if v := os.Getenv("MAX_IN_FLIGHT"); v != "" {
 		n, err := strconv.Atoi(v)
@@ -67,6 +79,12 @@ func Load() (*Config, error) {
 }
 
 // get treats an empty value as absent: `KEY=` in a .env file means "not set".
+// AISettings is what ai.New needs, read from the environment.
+func (c *Config) AISettings() ai.Settings {
+	return ai.Settings{Provider: c.AIProvider, AnthropicKey: c.AnthropicAPIKey, GeminiKey: c.GeminiAPIKey,
+		HighModel: c.AIModelHigh, StandardModel: c.AIModelStandard}
+}
+
 func get(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v

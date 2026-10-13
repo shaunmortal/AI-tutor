@@ -18,6 +18,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
@@ -39,13 +40,11 @@ const (
 	High
 )
 
-var models = map[Quality]struct {
-	id     string
-	effort anthropic.BetaOutputConfigEffort
-}{
-	// Opus 5.5 defaults to medium effort; stored data is worth the deeper pass.
-	High:     {id: "claude-opus-5-5", effort: anthropic.BetaOutputConfigEffortHigh},
-	Standard: {id: "claude-sonnet-5-5"},
+// claudeModels are the defaults; AI_MODEL_HIGH / AI_MODEL_STANDARD override them (e.g.
+// claude-haiku-5-5 for the cheap, high-volume Standard work).
+var claudeModels = map[Quality]string{
+	High:     "claude-opus-5-5",
+	Standard: "claude-sonnet-5-5",
 }
 
 const (
@@ -91,7 +90,9 @@ type Response struct {
 }
 
 type Client struct {
-	sdk *anthropic.Client
+	sdk    *anthropic.Client
+	models map[Quality]string
+	gemini *gemini
 	// fake, when set, answers instead of the API. Tests only; see NewFake.
 	fake func(Request) (string, error)
 }
@@ -100,17 +101,43 @@ type Client struct {
 // JSON, for a Schema request) the model would have returned. For tests of AI-driven behaviour.
 func NewFake(fn func(Request) (string, error)) *Client { return &Client{fake: fn} }
 
-// New returns nil when apiKey is empty: the server still starts, and only AI routes fail.
-func New(apiKey string) *Client {
-	if apiKey == "" {
+// Settings choose the provider and, optionally, the model for each Quality.
+type Settings struct {
+	Provider      string // "claude" (default) or "gemini"
+	AnthropicKey  string
+	GeminiKey     string
+	HighModel     string // optional override
+	StandardModel string // optional override
+}
+
+// New returns nil when the chosen provider has no key: the server still starts, and only AI
+// routes fail.
+func New(s Settings) *Client {
+	pick := func(defaults map[Quality]string) map[Quality]string {
+		m := map[Quality]string{High: defaults[High], Standard: defaults[Standard]}
+		if s.HighModel != "" {
+			m[High] = s.HighModel
+		}
+		if s.StandardModel != "" {
+			m[Standard] = s.StandardModel
+		}
+		return m
+	}
+	if s.Provider == "gemini" {
+		if s.GeminiKey == "" {
+			return nil
+		}
+		return &Client{gemini: &gemini{key: s.GeminiKey, http: &http.Client{Timeout: requestTimeout}, models: pick(geminiModels)}}
+	}
+	if s.AnthropicKey == "" {
 		return nil
 	}
 	c := anthropic.NewClient(
-		option.WithAPIKey(apiKey),
+		option.WithAPIKey(s.AnthropicKey),
 		option.WithRequestTimeout(requestTimeout),
 		option.WithMaxRetries(2), // 408/409/429/5xx and dropped connections
 	)
-	return &Client{sdk: &c}
+	return &Client{sdk: &c, models: pick(claudeModels)}
 }
 
 // JSON asks for a reply matching req.Schema and decodes it into out. Quality defaults
@@ -143,7 +170,10 @@ func (c *Client) send(ctx context.Context, req Request) (Response, error) {
 		text, err := c.fake(req)
 		return Response{Text: text, Model: "fake"}, err
 	}
-	m := models[req.Quality]
+	if c.gemini != nil {
+		return c.gemini.send(ctx, req)
+	}
+	model := c.models[req.Quality]
 	maxTokens := req.MaxTokens
 	if maxTokens == 0 {
 		maxTokens = defaultMaxTokens
@@ -162,14 +192,20 @@ func (c *Client) send(ctx context.Context, req Request) (Response, error) {
 	messages = append(messages, anthropic.NewBetaUserMessage(userContent(req.Prompt, req.Attachments)...))
 
 	params := anthropic.BetaMessageNewParams{
-		Model:     m.id,
+		Model:     model,
 		MaxTokens: int64(maxTokens),
 		System:    []anthropic.BetaTextBlockParam{{Text: req.System}},
 		Messages:  messages,
-		Betas:     []anthropic.AnthropicBeta{anthropic.AnthropicBetaServerSideFallback2026_07_01},
-		Fallbacks: anthropic.BetaFallbacksParamOfDefault(),
 	}
-	params.OutputConfig.Effort = m.effort
+	// Server-side refusal fallbacks exist for Opus and Sonnet, not Haiku (which rejects them).
+	if !strings.Contains(model, "haiku") {
+		params.Betas = []anthropic.AnthropicBeta{anthropic.AnthropicBetaServerSideFallback2026_07_01}
+		params.Fallbacks = anthropic.BetaFallbacksParamOfDefault()
+	}
+	// Opus 5.5 defaults to medium effort; stored data is worth the deeper pass.
+	if req.Quality == High && strings.Contains(model, "opus") {
+		params.OutputConfig.Effort = anthropic.BetaOutputConfigEffortHigh
+	}
 	if req.Schema != nil {
 		params.OutputConfig.Format = anthropic.BetaJSONOutputFormatParam{Schema: req.Schema}
 	}

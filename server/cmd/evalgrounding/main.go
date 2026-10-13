@@ -109,7 +109,7 @@ func run(userID string, ingest, dryRun bool, testsetPath, outDir string) error {
 		return nil
 	}
 
-	client := ai.New(cfg.AnthropicAPIKey)
+	client := ai.New(cfg.AISettings())
 	if client == nil && (ingest || !dryRun) {
 		return errors.New("ANTHROPIC_API_KEY is not set")
 	}

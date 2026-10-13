@@ -141,7 +141,7 @@ flowchart LR
 | API | **Go 1.27**, `net/http` (stdlib router), pgx v5, go-redis v9, Anthropic Go SDK |
 | Data | Postgres on Supabase — 25 migrations, RLS on all tables, column-level grants |
 | Queue & cache | Redis Streams (durable ingestion), Redis rate limits and auth cache |
-| AI | Claude Opus 5.5 for data that gets stored (questions, answer checks, course maps); Sonnet 5.5 for explanations; structured outputs + server-side refusal fallbacks |
+| AI | **Claude or Gemini**, switchable with one setting. Claude: Opus 5.5 for data that gets stored (questions, answer checks, course maps), Sonnet 5.5 for explanations, server-side refusal fallbacks. Gemini (free tier works): 3.5 Flash / Flash-Lite, falling back to Flash-Lite when Flash is busy |
 | Auth | Supabase Auth — email/password, password reset, Google / Facebook / LinkedIn |
 | Evaluation | RAGAS (Python), simulated-student harness |
 
@@ -200,7 +200,9 @@ cd frontend && npm install && npm run dev   # http://localhost:5173
 | `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | required — token verification |
 | `SUPABASE_SECRET_KEY` | storage of uploaded files |
 | `DATABASE_URL` | Supabase session pooler (`:5432`), or transaction pooler (`:6543`) with `DB_POOL_MODE=transaction` |
-| `ANTHROPIC_API_KEY` | AI features (the app runs without it; AI routes answer 503) |
+| `AI_PROVIDER` | `claude` (default) or `gemini` |
+| `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` | key for the chosen provider (the app runs without one; AI routes answer 503) |
+| `AI_MODEL_HIGH`, `AI_MODEL_STANDARD` | optional model per task, e.g. `claude-haiku-5-5` for cheap explanations |
 | `REDIS_URL` | default `redis://localhost:6379/0` |
 | `MAX_IN_FLIGHT` | requests per instance before shedding (default 256) |
 | `CORS_ORIGINS`, `PORT` | defaults `http://localhost:5173`, `4000` |
@@ -238,6 +240,7 @@ Everything below was actually run; nothing in this table is a projection.
 | **End-to-end flow** | Through the running API: set goal → generate plan → recommendations → 19 answers graded → mastery, readiness, plan and activity updated | ✅ |
 | **Ingestion queue** | PDF, PPTX and captions through the Redis Stream; re-runs don't duplicate excerpts; a failing job retries then marks the source failed | ✅ |
 | **Claude API (live)** | Opus 5.5 structured JSON and Sonnet 5.5 multi-turn text, with server-side refusal fallback | ✅ |
+| **Gemini API (live, free tier)** | Structured JSON and multi-turn Hindi text; busy Flash model fell back to Flash-Lite automatically | ✅ |
 | **YouTube transcripts (live)** | MIT 6.006 lecture 1 → 1,135 caption segments → 45 one-minute excerpts | ✅ |
 | **PDF extraction quality** | Word overlap with pdf.js text: MIT lecture notes 0.99, PowerPoint-exported slides 0.999, two-column paper 0.95 recall / 0.996 precision | ✅ |
 | **Overload** | Requests beyond capacity get `503 SERVER_BUSY` + `Retry-After`; health checks never shed | ✅ |
