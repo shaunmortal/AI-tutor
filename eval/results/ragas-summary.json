@@ -1,0 +1,9 @@
+{
+  "judge": "claude-sonnet-5-5",
+  "scored_questions": 28,
+  "excluded_refused_in_material": 0,
+  "faithfulness": 0.759,
+  "answer_relevancy": 0.79,
+  "llm_context_precision_with_reference": 0.483,
+  "context_recall": 0.482
+}

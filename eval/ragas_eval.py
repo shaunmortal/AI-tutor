@@ -17,18 +17,26 @@ Judge: Claude via LangChain. Embeddings for answer relevancy: a small local mode
 so no second API key is needed.
 
 Usage:
-    python3.10 -m venv eval/.venv && eval/.venv/bin/pip install -r eval/requirements.txt
+    uv venv -p 3.12 eval/.venv && VIRTUAL_ENV=eval/.venv uv pip install -r eval/requirements.txt
     ANTHROPIC_API_KEY=... eval/.venv/bin/python eval/ragas_eval.py
+
+RAGAS_METRICS=answer_relevancy (comma-separated) re-scores only those metrics and merges them into
+the existing results, so one failed metric doesn't mean paying for all four again.
 """
 
 import json
 import os
+
+# No usage telemetry from an evaluation run.
+os.environ.setdefault("RAGAS_DO_NOT_TRACK", "true")
 import statistics
 import sys
 from pathlib import Path
 
+import pandas as pd
+from fastembed import TextEmbedding
 from langchain_anthropic import ChatAnthropic
-from langchain_community.embeddings import FastEmbedEmbeddings
+from langchain_core.embeddings import Embeddings
 from ragas import EvaluationDataset, evaluate
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.llms import LangchainLLMWrapper
@@ -53,6 +61,29 @@ def source_backed(answer: str) -> str:
     return answer.split(GENERAL_KNOWLEDGE)[0].strip()
 
 
+class LocalEmbeddings(Embeddings):
+    """fastembed straight into LangChain. langchain-community's FastEmbedEmbeddings no longer
+    validates against current fastembed, so the ten lines are written out here."""
+
+    def __init__(self, model: str = "BAAI/bge-small-en-v1.5"):
+        self.model = model  # RAGAS reads .model as the model's name
+        self._encoder = TextEmbedding(model_name=model)
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return [vector.tolist() for vector in self._encoder.embed(texts)]
+
+    def embed_query(self, text: str) -> list[float]:
+        return self.embed_documents([text])[0]
+
+
+METRICS = {
+    "faithfulness": Faithfulness,
+    "answer_relevancy": ResponseRelevancy,
+    "llm_context_precision_with_reference": LLMContextPrecisionWithReference,
+    "context_recall": LLMContextRecall,
+}
+
+
 def main() -> int:
     rows = [json.loads(line) for line in (RESULTS / "grounding.jsonl").read_text().splitlines() if line]
     scored = [row for row in rows if row["type"] != "off_material" and row["grounding"] != "none"]
@@ -73,24 +104,24 @@ def main() -> int:
         ]
     )
 
-    llm = LangchainLLMWrapper(ChatAnthropic(model=JUDGE_MODEL, temperature=0, max_tokens=4096))
-    embeddings = LangchainEmbeddingsWrapper(FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5"))
+    # Current Claude models reject a non-default temperature, so none is set and RAGAS is told
+    # not to inject one.
+    llm = LangchainLLMWrapper(ChatAnthropic(model=JUDGE_MODEL, max_tokens=4096), bypass_temperature=True)
+    embeddings = LangchainEmbeddingsWrapper(LocalEmbeddings())
 
-    result = evaluate(
-        dataset,
-        metrics=[
-            Faithfulness(),
-            ResponseRelevancy(),
-            LLMContextPrecisionWithReference(),
-            LLMContextRecall(),
-        ],
-        llm=llm,
-        embeddings=embeddings,
-    )
+    wanted = [m.strip() for m in os.environ.get("RAGAS_METRICS", "").split(",") if m.strip()] or list(METRICS)
+    result = evaluate(dataset, metrics=[METRICS[m]() for m in wanted], llm=llm, embeddings=embeddings)
 
     per_question = result.to_pandas()
     per_question.insert(0, "id", [row["id"] for row in scored])
-    per_question.to_csv(RESULTS / "ragas.csv", index=False)
+    previous = RESULTS / "ragas.csv"
+    if len(wanted) < len(METRICS) and previous.exists():
+        # Merge the re-scored columns into the earlier run, row by row on question id.
+        merged = pd.read_csv(previous).set_index("id")
+        for column in wanted:
+            merged[column] = per_question.set_index("id")[column]
+        per_question = merged.reset_index()
+    per_question.to_csv(previous, index=False)
 
     metric_columns = [c for c in per_question.columns if c not in ("id", "user_input", "retrieved_contexts", "response", "reference")]
     summary = {
@@ -100,7 +131,7 @@ def main() -> int:
             1 for row in rows if row["type"] != "off_material" and row["grounding"] == "none"
         ),
         **{
-            column: round(statistics.fmean(v for v in per_question[column] if v == v), 3)
+            column: round(statistics.fmean(scores), 3) if (scores := [v for v in per_question[column] if v == v]) else None
             for column in metric_columns
         },
     }

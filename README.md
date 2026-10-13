@@ -85,16 +85,17 @@ switches off under the OS "reduce motion" setting.
 | 1d | Information from figures and diagrams | ✅ | Claude vision describes PDF figures and slide images; stored as `figure` excerpts |
 | 2a | Cited answers opening the exact location | ✅ | Citation chips open PDF at `#page=N`, YouTube at `&t=Ns`, slides show their slide number |
 | 2b | Decline / flag off-material queries | ✅ | `ai.CheckGrounding`: uncited answers become "not covered"; outside knowledge is labelled |
-| 3a | Quizzes and mock exams, tagged | ✅ MCQ, multi-select, numerical | Each question carries topic, difficulty and source excerpt. *Short-answer: planned* |
+| 3a | Quizzes and mock exams, tagged | ✅ | MCQ, multi-select, numerical and **short answer** (rubric-graded server-side); mock tests on learner-chosen topics; every question carries topic, difficulty and source excerpt |
 | 3b | Verify correctness, avoid repeats | ✅ | Independent re-solve must agree before `is_verified`; selector prefers unseen, then oldest-seen |
-| 3c | Cited feedback + post-assessment report | ✅ partial | Per-answer explanation with source; weakest-topic report. *Misconception clustering: planned* |
-| 4a | Mastery updated after every quiz | ✅ | Evidence-based mastery + SM-2 after every graded answer. *Tutor chat → mastery: planned* |
-| 4b | New students | ✅ | Diagnostic knowledge check feeds the first plan |
-| 5a/b | RAGAS-style evaluation on a team-built test set | 🧪 harness ready | 36-question set on MIT 6.006 (in-material, figures, off-material); `eval/ragas_eval.py` + `server/cmd/evalgrounding`. *Results to be published with the demo run* |
+| 3c | Cited feedback + post-assessment report | ✅ | Per-question review with the source to revisit; weak-topic report; **misconceptions** from each wrong option's label and the short-answer grader, tracked per learner |
+| 4a | Mastery updated after every quiz and conversation | ✅ | Evidence-based mastery + SM-2 after every practice answer, paper and **tutor quick-check** |
+| 4b | New students | ✅ | **Onboarding**: intake (course, exam date, language, self-rated confidence as a mastery prior) → upload → automatic course map → diagnostic → plan |
+| 5a/b | RAGAS evaluation on a team-built test set | ✅ | 36 questions on MIT 6.006 lectures 1–3 (PDF notes + lecture videos) — [results below](#-grounding--ragas-5ab) |
 | 5c | Simulated students across sessions | ✅ | 4 learner profiles × 10 sessions × 5 seeds — [results below](#-simulated-students-5c) |
+| 6b | Revision material for weak topics | ✅ flashcards | Cited flashcards for due and weak topics, reviewed with SM-2. *Audio briefs: planned* |
 | 6a | Course flow map | ✅ list view | Topics with "needs first" prerequisites. *Graph view: planned* |
 | 6c | Study schedule from weak topics, forgetting curves, exam date | ✅ | `internal/planning` + `internal/learner/srs.go` |
-| 6d | English lectures, Hindi explanations | ✅ | Tutor replies in the learner's language over English material |
+| 6d | English lectures, Hindi explanations | ✅ | Tutor replies in the learner's language; Hindi/Hinglish questions are translated before retrieval |
 | 6e | Audio tutoring | ✅ | Voice in (speech recognition), voice out (speech synthesis) |
 
 ---
@@ -271,6 +272,24 @@ ceiling is ~65 req/s — the 15-connection limit and 48 ms network round trip, n
 Two bugs were found by these tests and fixed: token verification kept only 2 pooled connections (throughput
 1,300 → 2,800 req/s, and spurious 401s gone), and the connection pool exceeded the free-tier pooler limit.
 
+### 🎯 Grounding & RAGAS (5a/b)
+
+The tutor's real retrieval and answering (`server/cmd/evalgrounding`) on **36 questions** with known
+source locations over MIT 6.006 lectures 1–3 — three PDF lecture-note sets and three lecture videos,
+ingested through the normal pipeline. RAGAS 0.4.3 scores the 28 in-material answers with Claude Sonnet 5.5
+as judge (`eval/ragas_eval.py`); per-question rows are in `eval/results/`.
+
+| RAGAS metric | Score | | Grounding metric | Result |
+|---|---|---|---|---|
+| Faithfulness | **0.76** | | Off-material questions correctly declined | **100 %** (8/8) |
+| Answer relevancy | **0.79** | | In-material questions wrongly declined | **0 %** |
+| Context precision | 0.48 | | Retrieval hit rate (right excerpt retrieved) | 78.6 % |
+| Context recall | 0.48 | | Citation accuracy / precision | 75 % / 50 % |
+
+**Honest reading.** Refusals are exactly right and answers stay close to their sources. Retrieval is the weak
+point: Postgres full-text search finds the right lecture but often ranks neighbouring excerpts first (context
+precision/recall 0.48). The next step is hybrid retrieval — embeddings (pgvector) alongside full text.
+
 ### 🧑‍🎓 Simulated students (5c)
 
 8 topics, 10 sessions two days apart, 15 questions per session, 5 random seeds, adaptive policy vs. a
@@ -301,11 +320,9 @@ novice and uneven learners; no advantage for forgetful and advanced profiles yet
 
 ## 🛣️ Roadmap
 
-- Publish the RAGAS run (faithfulness, answer relevancy, context precision/recall) on the MIT 6.006 set
-- Short-answer questions graded against a rubric; misconception clustering in the post-test report
-- Tutor conversations as learner-model evidence; an onboarding conversation for brand-new learners
-- Speech-to-text for lecture videos without captions; multilingual retrieval for Devanagari questions
-- Flashcards and audio revision briefs for weak topics; the course map as an interactive graph
+- Hybrid retrieval (pgvector embeddings + full text) to lift context precision and recall
+- Speech-to-text for lecture videos without captions, and OCR for scanned PDFs
+- Audio revision briefs; the course map as an interactive graph
 
 ---
 

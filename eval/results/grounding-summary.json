@@ -1,0 +1,10 @@
+{
+  "questions": 36,
+  "inMaterial": 28,
+  "offMaterial": 8,
+  "retrievalHitRatePct": 78.6,
+  "citationAccuracyPct": 75,
+  "citationPrecisionPct": 50,
+  "falseRefusalRatePct": 0,
+  "correctRefusalRatePct": 100
+}
