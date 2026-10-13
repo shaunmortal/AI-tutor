@@ -1,0 +1,277 @@
+# Deployment
+
+Frontend on Vercel, backend on Render, database already on Supabase. Follow the parts in order —
+each one needs a URL from the step before it.
+
+Committed configuration: `render.yaml` (repository root) and `frontend/vercel.json`. Neither
+contains a secret; every secret is entered once in the host's dashboard.
+
+**Why `frontend/vercel.json` has no comments.** Vercel validates the file against a strict
+schema and rejects any property it does not recognise, including the `"//"` key some tools
+accept as a comment — the import fails with *"should NOT have additional property `//`"*. So the
+reasoning lives here instead: the `rewrites` entry exists because this is a single-page app and
+only `index.html` is on disk. Without it, opening `https://…/dashboard` directly (or reloading
+on it) asks the CDN for a `/dashboard` file, gets a 404, and the learner never reaches the
+router. The `headers` entries cache hashed asset filenames hard, because they are immutable,
+and forbid caching `index.html`, because a deploy would otherwise leave browsers pointing at
+asset filenames that no longer exist.
+
+---
+
+## Before you start
+
+Both hosts deploy from GitHub, so the code has to be pushed first. **That means a commit** —
+which, per the project's own rule, happens from the venue and only when you decide to.
+
+You will also need the values already in `backend/.env`:
+
+```
+SUPABASE_URL
+SUPABASE_PUBLISHABLE_KEY
+SUPABASE_SECRET_KEY          ⚠️ never paste this anywhere public
+ANTHROPIC_API_KEY
+```
+
+`DATABASE_URL` is **not** needed in production. It exists for running migrations and SQL tests
+from a laptop; the backend talks to Supabase over HTTPS with the keys above.
+
+---
+
+## Part 1 — Backend on Render
+
+1. Go to [dashboard.render.com](https://dashboard.render.com) → **New** → **Blueprint**.
+2. Connect the GitHub repository. Render finds `render.yaml` and proposes a service called
+   `adigam-api`.
+3. It will ask for each `sync: false` variable — the four Supabase / Anthropic secrets.
+   `CORS_ORIGINS` is **not** among them: it is committed in `render.yaml`, because a frontend
+   URL is not a secret and hard-coding it means nobody has to remember to set it again.
+4. **Apply**. The first build takes 2-4 minutes.
+5. Copy the service URL, which looks like `https://adigam-api.onrender.com`, and check it:
+
+```bash
+curl https://adigam-api.onrender.com/api/v1/health
+# {"success":true,"data":{"status":"ok","uptime":…},"error":null}
+```
+
+If that returns JSON, the backend is live.
+
+---
+
+## Part 2 — Frontend on Vercel
+
+1. Go to [vercel.com/new](https://vercel.com/new) and import the same repository.
+2. Set **Root Directory** to `frontend`. Vercel detects Vite; leave the build command and
+   output directory alone.
+3. Add three environment variables:
+
+| Name | Value |
+|---|---|
+| `VITE_API_URL` | `https://adigam-api.onrender.com/api/v1` — the Render URL **plus `/api/v1`** |
+| `VITE_SUPABASE_URL` | same as `SUPABASE_URL` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | same as `SUPABASE_PUBLISHABLE_KEY` |
+
+**Never add `SUPABASE_SECRET_KEY` or `ANTHROPIC_API_KEY` here.** Everything prefixed `VITE_`
+is compiled into the JavaScript the browser downloads — a secret there is a secret published
+on the internet.
+
+4. **Deploy**, then copy the URL (`https://adigamai.vercel.app`).
+
+---
+
+## Part 3 — Point the backend at the frontend
+
+Until this is right, every browser request is blocked by CORS and the app looks broken while
+both halves are perfectly healthy. It is the single most common way a working deployment
+appears to fail.
+
+`CORS_ORIGINS` lives in `render.yaml`, so this is a code change rather than a dashboard visit:
+
+```yaml
+- key: CORS_ORIGINS
+  value: https://adigamai.vercel.app,http://localhost:5173
+```
+
+No trailing slash and no path — the browser sends the bare origin. Push, and Render redeploys.
+
+If a Vercel deploy ever produces a different domain, update that line and push. To check it is
+right, ask the API to describe what it allows:
+
+```bash
+curl -s -D- -o /dev/null -X OPTIONS \
+  https://adigam-api.onrender.com/api/v1/learner/summary \
+  -H "Origin: https://adigamai.vercel.app" \
+  -H "Access-Control-Request-Method: GET" | grep -i access-control-allow-origin
+```
+
+No header in the output means the origin is not allowed.
+
+---
+
+## Part 4 — Keep the backend awake (do not skip this)
+
+Render's free plan **stops the service after 15 minutes with no traffic**, and the next request
+waits roughly 50 seconds while it starts again. If a judge opens the app cold, that is what they
+see first.
+
+The fix is a free ping every 10 minutes:
+
+1. [cron-job.org](https://cron-job.org) → create a free account → **Create cronjob**.
+2. URL: `https://adigam-api.onrender.com/api/v1/health`
+3. Schedule: every 10 minutes.
+4. Save and enable.
+
+`/api/v1/health` needs no authentication, touches no database and returns a few bytes, so this
+costs nothing.
+
+**Belt and braces on the day:** open the app yourself 2-3 minutes before presenting. Even with
+the cron running, a warm service is one less thing to hope for.
+
+---
+
+## Part 5 — Supabase settings for a live demo
+
+Two dashboard changes, both found by testing signup for real:
+
+1. **Authentication → Sign In / Providers → turn off *Confirm email*.** With it on, signing up
+   sends an email and returns no session, and Supabase's built-in mailer allows only a couple of
+   messages per hour on the free plan — the third person to sign up at the venue gets
+   `email rate limit exceeded`. With it off, sign-up signs the learner straight in.
+2. **Use a real email domain when signing up.** Supabase rejects `@example.com`, `@adigam.test`
+   and similar reserved domains with `email_address_invalid`.
+
+Supabase's own URL configuration does not need changing for this app: it uses password sign-in,
+not magic links or OAuth redirects, so there is no callback URL to allow-list.
+
+---
+
+## Why the repository is public
+
+Vercel's Hobby plan does not support collaboration on **private** repositories. On a private repo it
+deploys only commits whose author has contributing access to the Vercel project — every commit by
+anybody else is refused with `Deployment Blocked: the commit author did not have contributing access`.
+
+This project's Vercel account and its GitHub repository belong to different team members, so every
+push from another member piled up as Blocked while the site stayed on the one deployment the owner
+had triggered by hand. Four commits' worth of screens were missing from the live site, and nothing
+in the app or the build reported a problem — the deployments simply never ran.
+
+Making the repository public lifts the restriction at no cost, and a hackathon submission has to be
+readable by judges anyway. The alternatives, for the record: the project owner clicks Redeploy after
+every push, deploys from the CLI (`npx vercel --prod`), or the account upgrades to Pro.
+
+**What had to be true first.** A public repository is a one-way door for anything already committed,
+so before flipping it: the whole git history was scanned for Supabase keys, Anthropic keys, Postgres
+connection strings, JWTs and any committed `.env` — all clean, since `.env` has been gitignored from
+the first commit. One real leak did turn up: the demo account's password, written into
+`docs/CONTINUE-HERE.md`. A working login in a readable repository is a way for a stranger to spend
+the project's AI credit through the tutor endpoint, so it was removed from the file and the password
+was rotated, which also makes the copy left in git history useless. Demo credentials now live in
+`.demo-login.txt`, which is gitignored.
+
+## Why the frontend build fails on a missing variable
+
+Vite replaces `import.meta.env.VITE_X` with a literal at build time. When a variable is missing it
+becomes `undefined`, the guard in `lib/supabase.ts` turns into an unconditional throw, and Rollup
+tree-shakes the auth client away as unreachable. The build then succeeds, weighs 25 kB less
+(measured: 98 kB gzip with the variables, 73 kB without) and white-screens on load.
+
+`vite.config.ts` therefore checks for them and fails the build, naming what is missing. `vite dev`
+still starts, so local development is told by the app rather than by a failed command.
+
+**A green build is not proof the app works.** Two checks that are:
+
+```bash
+# The bundle must contain the routes you expect. A 200 on /tutor proves nothing —
+# the SPA rewrite returns index.html for every path, including ones that do not exist.
+curl -s https://adigamai.vercel.app > /tmp/h
+JS=$(grep -o '/assets/index-[^"]*\.js' /tmp/h | head -1)
+curl -s "https://adigamai.vercel.app$JS" | grep -c '/tutor'   # must be > 0
+
+# The lazy chunks must exist. One per page.
+curl -s "https://adigamai.vercel.app$JS" | grep -o 'assets/[A-Za-z]*-[A-Za-z0-9_-]*\.js' | sort -u
+```
+
+## Verifying the deployment
+
+```bash
+API=https://adigam-api.onrender.com/api/v1
+SITE=https://adigamai.vercel.app
+
+# 1. backend alive
+curl -s $API/health
+
+# 2. auth is enforced — must be 401, not 200
+curl -s -o /dev/null -w '%{http_code}\n' $API/learner/summary
+
+# 3. CORS allows the real frontend — must echo the site URL
+curl -s -D- -o /dev/null -X OPTIONS $API/learner/summary \
+  -H "Origin: $SITE" -H "Access-Control-Request-Method: GET" | grep -i access-control-allow-origin
+
+# 4. SPA routing — opening a deep link directly must serve the app, not a 404
+curl -s -o /dev/null -w '%{http_code}\n' $SITE/dashboard
+
+# 5. no secret leaked into the bundle — must print nothing
+curl -s $SITE/assets/*.js 2>/dev/null | grep -c 'sb_secret\|sk-ant' || true
+```
+
+Then in a browser: sign in, reach the dashboard, answer a question, and watch the mastery number
+move. That last step is the only one that proves the whole stack.
+
+---
+
+## If something is wrong
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Site loads, every request fails, console says CORS | `CORS_ORIGINS` does not exactly match the site origin | Set it in Render with no trailing slash and no path |
+| First request takes ~50 seconds | Render free plan spun the service down | Part 4 |
+| Reloading `/dashboard` gives 404 | SPA rewrite missing | `frontend/vercel.json` is committed — confirm Root Directory is `frontend` |
+| Backend exits immediately on deploy | A required environment variable is missing | Intentional: `config/environment.ts` refuses to boot on bad config. The Render log names the variable |
+| Frontend build fails naming `VITE_` variables | One is missing in Vercel's settings | Intentional. Without the check, the build would succeed and ship a white screen — see below |
+| Vercel shows an old version of the app | Auto-deploy is not wired to the repo | Vercel → project → Settings → Git: confirm the repository is connected and production branch is `main`. Then Deployments → Redeploy |
+| Vercel deployments say **Blocked** | Hobby plan + private repo: only the project owner's commits deploy | The repository is public, which lifts it. See below |
+| Sign-up says `email rate limit exceeded` | Supabase's mailer cap | Part 5, item 1 |
+| Sign-up says `email_address_invalid` | Reserved test domain | Part 5, item 2 |
+| Question generation returns 503 | `ANTHROPIC_API_KEY` not set on Render | Add it in Render → Environment |
+| Everything works but mastery never changes | The frontend is talking to a different backend | Check `VITE_API_URL` includes `/api/v1` |
+
+## Keeping the free tier awake
+
+Two free-tier deadlines apply, and neither is a billing problem — nothing here is on a paid plan and no
+card is attached.
+
+**The backend sleeps.** Render's free plan spins the instance down after roughly fifteen minutes without
+a request. The next visitor waits through a cold start, which on a slow morning is long enough that
+somebody opening the link would reasonably conclude the site is broken. This is also why the client's
+fetch timeout is sixty seconds rather than ten: a ten-second timeout would abort the very request that
+was waking the server up.
+
+**The database pauses.** Supabase pauses a free project after about a week of inactivity, and a paused
+project is not a slow app — it is a dead one that needs somebody to log into a dashboard and resume it.
+
+`.github/workflows/keep-alive.yml` pings `GET /api/v1/health/deep` every ten minutes. Ten rather than
+fifteen because GitHub's scheduler is routinely several minutes late under load, and a fifteen-minute
+interval would race the timeout it exists to prevent. It can also be run by hand from the Actions tab,
+which is the thing to do a few minutes before a demo.
+
+**Why the deep check and not `/health`.** The shallow one returns `process.uptime()` and touches nothing
+else, so pinging it would keep the instance warm and quietly let the database pause anyway. The deep
+check does one counted read against a two-row table — about as small as a real round trip gets — so a
+single request satisfies both deadlines. It is unauthenticated because a scheduled job has no session,
+and it returns nothing but a status, a latency and an uptime; there is no data in it to leak.
+
+It answers 503 rather than 200 when the database is unreachable, and the workflow retries five times
+with a widening gap before failing the run. Both of those are deliberate: a keep-alive that reports
+green while the thing it watches is down is worse than not having one, and a single failed attempt
+during a cold start is the expected case rather than an outage.
+
+### The limit to watch
+
+Render's free plan allows 750 instance hours a month across the account. A service kept awake around the
+clock uses roughly 730 of them, which fits — with **one** service. A second free service on the same
+account would push the total past the limit and get the whole thing suspended until the next month,
+which is considerably worse than cold starts. Check the Render dashboard before assuming this is safe.
+
+If that becomes a problem, the schedule can be narrowed to the hours a demo actually needs, or the
+workflow left on `workflow_dispatch` only and triggered by hand.
+

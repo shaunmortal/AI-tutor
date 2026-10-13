@@ -1,0 +1,61 @@
+# Render blueprint for the Adigam AI backend.
+#
+# Render reads this from the repository root, so `rootDir` points it at backend/. With the
+# blueprint checked in, a redeploy is a git push rather than a form to fill in again.
+#
+# Secrets are deliberately NOT here: `sync: false` means Render prompts for the value once and
+# stores it encrypted. Committing a service-role key or an API key to the repository would be
+# the single worst thing this project could do.
+services:
+    - type: web
+      name: adigam-api
+      runtime: node
+      plan: free
+      region: singapore # closest Render region to India
+      rootDir: backend
+
+      buildCommand: npm ci
+      startCommand: npm start
+
+      # healthCheckPath is deliberately NOT set.
+      #
+      # With it configured, Render polls that path and stops routing traffic to an instance
+      # whose check fails. On the free plan there is only one instance, so a single failed or
+      # slow check takes the whole service offline and the edge answers with its own
+      # plain-text 404 (x-render-routing: no-server). Measured on this service: the app's own
+      # uptime counter climbed steadily with no restart, while roughly half of external
+      # requests were refused at the edge — the process was healthy the whole time and the
+      # routing layer was flapping.
+      #
+      # Without it, Render routes as long as the process holds the port, which is the right
+      # behaviour for a single-instance service. /api/v1/health still exists and is still
+      # what the keep-alive ping hits; it just no longer decides whether traffic flows.
+
+      envVars:
+          - key: NODE_ENV
+            value: production
+
+          # Render assigns the port and expects the app to bind to it. The app already reads
+          # PORT from the environment.
+          - key: PORT
+            value: 10000
+
+          # The origins allowed to call this API. A frontend URL is not a secret, so it is
+          # committed rather than typed into a dashboard: the deployed site is documented in
+          # the repository and nobody has to remember to set it again after a rebuild.
+          #
+          # No trailing slash and no path — the browser sends the bare origin, and a mismatch
+          # blocks every request while both halves of the app are perfectly healthy.
+          # localhost stays in the list so local development keeps working against either the
+          # local or the deployed API.
+          - key: CORS_ORIGINS
+            value: https://adigamai.vercel.app,http://localhost:5173
+
+          - key: SUPABASE_URL
+            sync: false
+          - key: SUPABASE_PUBLISHABLE_KEY
+            sync: false
+          - key: SUPABASE_SECRET_KEY
+            sync: false
+          - key: ANTHROPIC_API_KEY
+            sync: false

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!--
+    The Adigam AI mark: an open book, in the same blue-to-violet gradient the app uses for every
+    primary action. It replaced a purple mark that shared nothing with the interface — a favicon that
+    does not match the product it stands for is worse than no favicon, because it reads as somebody
+    else's tab.
+
+    Drawn on a 64 grid with a rounded square behind it so it stays legible at 16px, where a bare
+    outline turns to mush.
+  -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="15" fill="#0b1120"/>
+  <rect x="1.25" y="1.25" width="61.5" height="61.5" rx="13.75" fill="none" stroke="url(#g)" stroke-opacity=".45" stroke-width="2.5"/>
+
+  <g fill="none" stroke="url(#g)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M13 18.5A2.5 2.5 0 0 1 15.5 16H27a5 5 0 0 1 5 5v27a4 4 0 0 0-4-4H15.5A2.5 2.5 0 0 1 13 41.5Z"/>
+    <path d="M51 18.5A2.5 2.5 0 0 0 48.5 16H37a5 5 0 0 0-5 5v27a4 4 0 0 1 4-4h12.5a2.5 2.5 0 0 0 2.5-2.5Z"/>
+  </g>
+</svg>

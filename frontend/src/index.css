@@ -1,0 +1,2419 @@
+/*
+ * All of Adigam's styling. Plain CSS, no framework.
+ *
+ * Three screens do not need a design system, and every kB of CSS is a kB a learner on a slow
+ * connection waits for. Custom properties give the consistency a framework would, at no
+ * transfer cost.
+ *
+ * Dark by default: this is a study app, often used at night, and a dark surface is easier on
+ * the eyes than a bright one. Light is available and is a real palette rather than an inversion —
+ * flipping the dark one produces grey text on grey that nobody can read in daylight, which is the
+ * condition light mode exists for.
+ *
+ * The theme is a `data-theme` attribute on <html> overriding these same custom properties, so
+ * switching costs one attribute write and no re-render. Nothing below this block knows a theme
+ * exists.
+ */
+
+:root {
+    /* Very dark navy rather than neutral grey: it reads as a product rather than a terminal,
+       and blue-tinted darks make the blue accent look intentional instead of pasted on. */
+    --bg: #070b14;
+    --surface: #111827;
+    --surface-raised: #151c28;
+    --border: #1f2a3c;
+    --border-strong: #2b3a52;
+
+    --text: #e8eef7;
+    --text-dim: #94a3b8;
+    --text-faint: #64748b;
+
+    --accent: #3b82f6;
+    --accent-dim: #1e3a8a;
+    --violet: #8b5cf6;
+    --violet-dim: #4c1d95;
+    --good: #22c55e;
+    --bad: #ef4444;
+    --warn: #f59e0b;
+    --fire: #fb923c;
+
+    /* One gradient, reused. Two or three competing ones is what makes an interface look busy. */
+    --grad: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    --grad-hover: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-lift: 0 8px 24px -6px rgb(0 0 0 / 0.5);
+    --glow: 0 0 0 1px rgb(59 130 246 / 0.25), 0 4px 20px -4px rgb(99 102 241 / 0.35);
+
+    /* Every transition in the app, so nothing is faster or slower than its neighbour. */
+    --ease: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 10px;
+    --gap: 16px;
+
+    color-scheme: dark;
+    font-family:
+        system-ui,
+        -apple-system,
+        'Segoe UI',
+        Roboto,
+        sans-serif;
+    line-height: 1.55;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    /* Comfortable on a phone; the layout is capped rather than fluid on desktop. */
+    font-size: 16px;
+}
+
+h1,
+h2,
+h3 {
+    margin: 0 0 8px;
+    line-height: 1.25;
+}
+
+h1 {
+    font-size: 1.5rem;
+}
+h2 {
+    font-size: 1.15rem;
+}
+h3 {
+    font-size: 1rem;
+}
+
+p {
+    margin: 0 0 12px;
+}
+
+a {
+    color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- layout */
+
+.shell {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 20px 16px 64px;
+}
+
+.sidebar__close {
+    padding: 4px 6px;
+}
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* Wraps rather than overflowing. Seven links, an email and a button do not fit across a 360 px
+       phone, and a bar that scrolls sideways hides exactly the items at the end of it. */
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.brand {
+    text-decoration: none;
+    color: inherit;
+}
+
+.topnav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    /* Takes the middle of the bar on a wide screen and a full row of its own once it wraps. */
+    flex: 1 1 auto;
+}
+
+.topnav__link {
+    padding: 5px 9px;
+    border-radius: 7px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    color: var(--text-faint);
+}
+
+.topnav__link:hover {
+    color: var(--text);
+    background: var(--surface-raised);
+}
+
+/* Which page you are on, stated rather than inferred from the heading. Both a background and a
+   colour change: colour alone is not enough for anybody who cannot distinguish these two. */
+.topnav__link--active {
+    color: var(--text);
+    background: var(--surface-raised);
+    font-weight: 600;
+}
+
+.topbar__account {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.topbar__email {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* On a narrow screen the email is the first thing worth losing — the signed-in account matters
+   during a demo on a laptop, not to a learner on their own phone. */
+@media (max-width: 560px) {
+    .topbar__email {
+        display: none;
+    }
+}
+
+.brand {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.brand span {
+    color: var(--accent);
+}
+
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.spread {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+/* ---------------------------------------------------------------- card */
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+}
+
+.card--accent {
+    border-color: var(--accent-dim);
+    background: linear-gradient(180deg, #182337 0%, var(--surface) 70%);
+}
+
+/* ---------------------------------------------------------------- text */
+
+.muted {
+    color: var(--text-dim);
+}
+
+.faint {
+    color: var(--text-faint);
+    font-size: 0.85rem;
+}
+
+.label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+}
+
+.big {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.mono {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- button */
+
+button {
+    font: inherit;
+    cursor: pointer;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-raised);
+    color: var(--text);
+    padding: 10px 16px;
+    transition:
+        border-color 0.12s,
+        background 0.12s;
+}
+
+button:hover:not(:disabled) {
+    border-color: var(--text-faint);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #06101f;
+    font-weight: 600;
+}
+
+button.primary:hover:not(:disabled) {
+    background: #6ba0ff;
+    border-color: #6ba0ff;
+}
+
+button.link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    padding: 0;
+    text-decoration: underline;
+}
+
+button.wide {
+    width: 100%;
+}
+
+/* ---------------------------------------------------------------- form */
+
+input,
+select {
+    font: inherit;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+}
+
+input:focus {
+    outline: 2px solid var(--accent-dim);
+    outline-offset: 1px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field > label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+}
+
+/* ---------------------------------------------------------------- pills */
+
+.pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-raised);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.pill--easy {
+    color: var(--good);
+    border-color: #235c2c;
+}
+.pill--medium {
+    color: var(--warn);
+    border-color: #5c4a12;
+}
+.pill--hard {
+    color: var(--bad);
+    border-color: #6b2320;
+}
+
+/* ---------------------------------------------------------------- dial */
+
+/* The readiness score, as an arc. A conic gradient masked into a ring rather than a chart
+   library: one arc is not worth ~30 kB gzipped, which is a third of the whole app.
+
+   The percentage arrives as the --dial custom property, so React sets one inline value and the
+   shape is entirely CSS. */
+.dial {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 96px;
+    height: 96px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--dial-tone) 0 var(--dial, 0%),
+        var(--surface-raised) var(--dial, 0%) 100%
+    );
+}
+
+/* Punches the middle out, which is what turns the disc into a ring. Cheaper than an SVG and it
+   inherits the card background, so it stays correct in both themes. */
+.dial::after {
+    content: '';
+    position: absolute;
+    inset: 9px;
+    border-radius: 50%;
+    background: var(--surface);
+}
+
+.dial__value {
+    position: relative;
+    z-index: 1;
+    font-size: 26px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+/* A learner four months out is *supposed* to score low, so a low band is not red. Red would say
+   "something is wrong" about a number that is behaving exactly as expected. */
+.dial--warn {
+    --dial-tone: var(--warn);
+}
+.dial--ok {
+    --dial-tone: var(--good);
+}
+
+/* ---------------------------------------------------------------- meter */
+
+.meter {
+    height: 7px;
+    border-radius: 999px;
+    background: var(--surface-raised);
+    overflow: hidden;
+}
+
+.meter > div {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+    /* The one animation in the app: mastery moving after an answer is the whole point of
+       the product, so it is worth showing rather than snapping. */
+    transition: width 0.5s ease-out;
+}
+
+/* ---------------------------------------------------------------- options */
+
+.option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    padding: 12px 14px;
+    line-height: 1.45;
+}
+
+.option[aria-pressed='true'] {
+    border-color: var(--accent);
+    background: #17243a;
+}
+
+.option--correct {
+    border-color: var(--good);
+    background: #12261a;
+}
+
+.option--wrong {
+    border-color: var(--bad);
+    background: #2a1618;
+}
+
+.option__mark {
+    flex: 0 0 22px;
+    font-weight: 700;
+    color: var(--text-faint);
+}
+
+/* ---------------------------------------------------------------- states */
+
+.state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+}
+
+.spinner {
+    width: 26px;
+    height: 26px;
+    margin: 0 auto 12px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Respect a learner who has asked for less motion. */
+@media (prefers-reduced-motion: reduce) {
+    .spinner {
+        animation-duration: 2s;
+    }
+    .meter > div {
+        transition: none;
+    }
+}
+
+.banner {
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-raised);
+    font-size: 0.9rem;
+}
+
+.banner--error {
+    border-color: #6b2320;
+    background: #241516;
+    color: #ffb4ae;
+}
+
+.banner--good {
+    border-color: #235c2c;
+    background: #13251a;
+    color: #7ee787;
+}
+
+/* ---------------------------------------------------------------- activity heatmap
+   A year of study as one grid, the shape GitHub and LeetCode use, because seeing the gaps
+   alongside the work motivates more than any single number does.
+
+   Plain CSS grid and 365 divs. A calendar-heatmap library would have cost more gzipped than
+   the whole of this app's own code, and this has to run on phones with 2-4 GB of RAM.
+
+   The columns are weeks and the rows are weekdays, filled top-to-bottom then left-to-right —
+   `grid-auto-flow: column` does that in one line, so the cells can be emitted in plain date
+   order with no week-bucketing in JS. */
+.heatmap {
+    display: grid;
+    grid-template-rows: repeat(7, 1fr);
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 3px;
+    /* Scrolls rather than shrinks on a narrow phone: squares small enough to fit 53 weeks on a
+       360 px screen would be too small to read as anything. */
+    min-width: 620px;
+}
+
+.heatmap__scroll {
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.heatmap__cell {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    background: var(--surface-raised);
+}
+
+/* Four shades of the same green used for correctness elsewhere, so the colour keeps one meaning
+   across the app. Steps are perceptual rather than even — the darkest has to read as clearly more
+   than the one below it on a cheap screen in daylight. */
+.heatmap__cell[data-level='1'] {
+    background: #0e4429;
+}
+.heatmap__cell[data-level='2'] {
+    background: #196c34;
+}
+.heatmap__cell[data-level='3'] {
+    background: #26a641;
+}
+.heatmap__cell[data-level='4'] {
+    background: #3fb950;
+}
+
+.heatmap__months {
+    display: flex;
+    justify-content: space-between;
+    min-width: 620px;
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--text-faint);
+}
+
+.heatmap__legend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-faint);
+}
+
+.heatmap__legend .heatmap__cell {
+    width: 10px;
+    height: 10px;
+    aspect-ratio: auto;
+}
+
+/* ---------------------------------------------------------------- badges */
+.badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.badge {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-raised);
+    min-width: 132px;
+}
+
+.badge__name {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.badge__meta {
+    font-size: 11px;
+    color: var(--text-faint);
+}
+
+/* An earned badge is coloured; a target is outlined. The difference has to be obvious at a glance
+   or the shelf reads as things already won and stops being a reason to come back. */
+.badge--earned {
+    border-color: var(--good);
+}
+
+.badge__bar {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.badge__bar span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+}
+
+/* ---------------------------------------------------------------- light theme
+   Chosen against white, not derived from the dark palette. The accent and status colours are
+   darkened because #4c8dff on white fails contrast at small sizes, and a study app puts a lot of
+   small text in front of people. */
+[data-theme='light'] {
+    --bg: #f6f8fa;
+    --surface: #ffffff;
+    --surface-raised: #f0f3f6;
+    --border: #d5dbe2;
+
+    --text: #1c2128;
+    --text-dim: #57606a;
+    --text-faint: #7d8590;
+
+    --accent: #0a58ca;
+    --accent-dim: #9ec5fe;
+    --good: #1a7f37;
+    --bad: #cf222e;
+    --warn: #9a6700;
+
+    color-scheme: light;
+}
+
+/* The heatmap's greens are set explicitly rather than through variables, so they need their own
+   light values — the dark shades disappear against a white card. */
+[data-theme='light'] .heatmap__cell {
+    background: #e6eaef;
+}
+[data-theme='light'] .heatmap__cell[data-level='1'] {
+    background: #aceebb;
+}
+[data-theme='light'] .heatmap__cell[data-level='2'] {
+    background: #4ac26b;
+}
+[data-theme='light'] .heatmap__cell[data-level='3'] {
+    background: #2da44e;
+}
+[data-theme='light'] .heatmap__cell[data-level='4'] {
+    background: #116329;
+}
+
+/* ---------------------------------------------------------------- subject grid
+   Two or three across on a desktop, one on a phone. `auto-fill` with a minimum rather than fixed
+   breakpoints, so the number of columns follows the space available instead of a guess about
+   device widths. */
+.subjects {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.subjects__bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--surface-raised);
+    overflow: hidden;
+}
+
+.subjects__bar span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+}
+
+/* ============================================================================
+   App shell — topbar, sidebar, workspace
+
+   One grid: sidebar and content. The sidebar is a real column on a desktop and a slide-over
+   on a phone, which is the only layout that works at both ends without duplicating markup.
+   ============================================================================ */
+
+.shellgrid {
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
+    align-items: start;
+    min-height: calc(100vh - 61px);
+}
+
+/* Single column below this, with the sidebar becoming a drawer. Chosen because 248 + a usable
+   content column stops fitting here, not because it is a common device width. */
+@media (max-width: 900px) {
+    .shellgrid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.sidebar {
+    position: sticky;
+    top: 61px;
+    align-self: start;
+    max-height: calc(100vh - 61px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 16px 12px;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+}
+
+@media (max-width: 900px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 40;
+        width: 264px;
+        max-height: none;
+        transform: translateX(-100%);
+        transition: transform var(--ease);
+        box-shadow: var(--shadow-lift);
+    }
+
+    .sidebar[data-open='true'] {
+        transform: translateX(0);
+    }
+}
+
+.sidebar__group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sidebar__heading {
+    padding: 0 10px 6px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+}
+
+.sidebar__link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 9px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    color: var(--text-dim);
+    transition:
+        background var(--ease),
+        color var(--ease);
+}
+
+.sidebar__link:hover {
+    background: var(--surface-raised);
+    color: var(--text);
+}
+
+/* The active item is the gradient plus a glow, because on a dark sidebar a background alone at
+   this size is easy to miss. */
+.sidebar__link--active {
+    background: var(--grad);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: var(--glow);
+}
+
+.sidebar__link--active:hover {
+    background: var(--grad-hover);
+    color: #fff;
+}
+
+/* Items whose screens are not built. Rendered rather than hidden so the shape of the product is
+   visible, and unclickable rather than linked so nothing promises a page that does not exist. */
+
+.sidebar__icon {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.sidebar__spacer {
+    flex: 1 1 auto;
+}
+
+/* Backdrop for the drawer. Only exists below the breakpoint. */
+.scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    background: rgb(2 6 15 / 0.6);
+    border: 0;
+    padding: 0;
+}
+
+@media (min-width: 901px) {
+    .scrim,
+    .sidebar__close,
+    .topbar__burger {
+        display: none;
+    }
+}
+
+.topbar__burger {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 9px;
+}
+
+/* ---------------------------------------------------------------- workspace */
+
+.workspace {
+    padding: 22px 20px 48px;
+    min-width: 0;
+}
+
+/* Main column plus an insights rail. The rail drops below the content when there is no room for
+   it to be a rail — a 280px column of cards squeezed to 180 is worse than the same cards stacked. */
+.worksplit {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 18px;
+    align-items: start;
+}
+
+@media (max-width: 1180px) {
+    .worksplit {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ============================================================================
+   Cards, buttons, inputs — the upgraded shared primitives
+   ============================================================================ */
+
+.card {
+    box-shadow: var(--shadow-card);
+    transition:
+        border-color var(--ease),
+        box-shadow var(--ease),
+        transform var(--ease);
+}
+
+/* Lift only where a card is actually interactive. A page where everything moves under the
+   cursor is noise; a card that lifts is a card promising something happens if you click it. */
+.card--hover:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-lift);
+}
+
+.card--glow {
+    border-color: rgb(59 130 246 / 0.35);
+    box-shadow: var(--glow);
+}
+
+button,
+.btn {
+    transition:
+        background var(--ease),
+        border-color var(--ease),
+        color var(--ease),
+        transform var(--ease),
+        box-shadow var(--ease);
+}
+
+button:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+/* The one gradient CTA. Used for the primary action on a screen and nowhere else, or it stops
+   meaning "this is the thing to press". */
+.primary {
+    background: var(--grad);
+    border: 0;
+    color: #fff;
+    font-weight: 600;
+}
+
+.primary:hover:not(:disabled) {
+    background: var(--grad-hover);
+    box-shadow: var(--glow);
+}
+
+/* A second-rank action: same shape, no gradient, so the hierarchy survives two buttons in a row. */
+.secondary {
+    background: var(--accent-dim);
+    border: 1px solid rgb(59 130 246 / 0.4);
+    color: var(--text);
+    font-weight: 600;
+}
+
+.secondary:hover:not(:disabled) {
+    background: #1e40af;
+    border-color: rgb(59 130 246 / 0.6);
+}
+
+button:disabled,
+.primary:disabled,
+.secondary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+input,
+select,
+textarea {
+    transition:
+        border-color var(--ease),
+        box-shadow var(--ease);
+}
+
+/* A visible focus ring, on purpose. Keyboard users are the ones who need it and the ones most
+   often left without it. */
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.18);
+}
+
+button:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* An input with an icon in front of it. The icon sits in the box rather than beside it, so the
+   field still reads as one control. */
+.inputwrap {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--bg);
+    overflow: hidden;
+    transition:
+        border-color var(--ease),
+        box-shadow var(--ease);
+}
+
+.inputwrap:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.18);
+}
+
+.inputwrap__icon {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    border-right: 1px solid var(--border);
+    color: var(--text-faint);
+    background: var(--surface-raised);
+}
+
+.inputwrap input {
+    flex: 1 1 auto;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    min-width: 0;
+}
+
+.inputwrap input:focus {
+    box-shadow: none;
+    border-color: transparent;
+}
+
+/* ---------------------------------------------------------------- avatars */
+
+.avatar {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #fff;
+    background: var(--grad);
+}
+
+.avatar--sm {
+    width: 30px;
+    height: 30px;
+    font-size: 0.68rem;
+}
+
+/* ---------------------------------------------------------------- rows */
+
+.row-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: none;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
+    transition:
+        background var(--ease),
+        border-color var(--ease);
+}
+
+.row-item:hover {
+    background: var(--surface-raised);
+    border-color: var(--border);
+}
+
+.row-item[aria-pressed='true'] {
+    background: var(--surface-raised);
+    border-color: rgb(59 130 246 / 0.4);
+}
+
+.row-item__body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.row-item__chev {
+    flex: 0 0 auto;
+    color: var(--text-faint);
+    transition:
+        transform var(--ease),
+        color var(--ease);
+}
+
+.row-item:hover .row-item__chev {
+    color: var(--text);
+    transform: translateX(2px);
+}
+
+/* ---------------------------------------------------------------- icon tiles */
+
+.tile {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+}
+
+.tile--blue {
+    background: rgb(59 130 246 / 0.12);
+    color: #60a5fa;
+    border-color: rgb(59 130 246 / 0.25);
+}
+.tile--violet {
+    background: rgb(139 92 246 / 0.12);
+    color: #a78bfa;
+    border-color: rgb(139 92 246 / 0.25);
+}
+.tile--green {
+    background: rgb(34 197 94 / 0.12);
+    color: #4ade80;
+    border-color: rgb(34 197 94 / 0.25);
+}
+.tile--fire {
+    background: rgb(251 146 60 / 0.12);
+    color: #fdba74;
+    border-color: rgb(251 146 60 / 0.25);
+}
+
+/* ---------------------------------------------------------------- step list */
+
+.steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.step__n {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--grad);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* ---------------------------------------------------------------- skeletons */
+
+.skeleton {
+    border-radius: 8px;
+    background: linear-gradient(
+        90deg,
+        var(--surface-raised) 25%,
+        var(--border) 37%,
+        var(--surface-raised) 63%
+    );
+    background-size: 400% 100%;
+    animation: shimmer 1.3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    from {
+        background-position: 100% 50%;
+    }
+    to {
+        background-position: 0 50%;
+    }
+}
+
+/* Anybody who has asked for less motion gets a static placeholder rather than none — the layout
+   still holds, it simply does not shimmer. */
+@media (prefers-reduced-motion: reduce) {
+    .skeleton {
+        animation: none;
+    }
+    .card--hover:hover {
+        transform: none;
+    }
+}
+
+/* ---------------------------------------------------------------- upgrade card */
+
+/* ---------------------------------------------------------------- page bits */
+
+/* The decorative mark beside a page heading. Dropped on narrow screens, where it would push the
+   heading into two awkward lines to earn nothing. */
+.hero-mark {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 76px;
+    height: 76px;
+    border-radius: 18px;
+    color: #a78bfa;
+    background: linear-gradient(150deg, rgb(59 130 246 / 0.14), rgb(139 92 246 / 0.2));
+    border: 1px solid rgb(139 92 246 / 0.25);
+}
+
+@media (max-width: 720px) {
+    .hero-mark {
+        display: none;
+    }
+}
+
+/* A rank in a leaderboard row: fixed width so names start on the same line whether the rank is
+   1 or 12. */
+.rank {
+    flex: 0 0 22px;
+    text-align: center;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-faint);
+}
+
+.row-item[aria-current='true'] {
+    background: var(--surface-raised);
+    border-color: rgb(59 130 246 / 0.35);
+}
+
+/* ============================================================================
+   Sign-in page
+
+   Two columns on a desktop — pitch beside form — collapsing to the form alone on a phone. The
+   pitch is dropped rather than stacked below on small screens: somebody who opened the app to
+   sign in does not need to scroll past three feature blurbs to reach the password field.
+   ============================================================================ */
+
+.authpage {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background:
+        radial-gradient(900px 500px at 12% 0%, rgb(59 130 246 / 0.1), transparent 60%),
+        radial-gradient(800px 500px at 92% 12%, rgb(139 92 246 / 0.12), transparent 60%), var(--bg);
+}
+
+.authpage__inner {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 440px;
+    gap: 56px;
+    align-items: center;
+    width: 100%;
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 48px 24px;
+}
+
+@media (max-width: 980px) {
+    .authpage__inner {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 28px;
+        padding: 32px 18px;
+        max-width: 460px;
+    }
+
+    .authpitch {
+        /* The features and the headline are a pitch for a product somebody has already chosen by
+           the time they are on this screen on a phone. */
+        display: none;
+    }
+}
+
+.authpitch {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.authpitch__title {
+    font-size: clamp(2.1rem, 4.2vw, 3.1rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    margin: 0 0 12px;
+}
+
+.authpitch__accent {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.authcard {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 28px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow-lift), var(--glow);
+}
+
+@media (max-width: 480px) {
+    .authcard {
+        padding: 20px;
+        border-radius: 14px;
+    }
+}
+
+/* "or continue with", with a rule either side. Two pseudo-element lines rather than a border and
+   a background-coloured span, which breaks the moment the card colour changes. */
+
+.authfoot {
+    padding: 18px 24px 28px;
+    text-align: center;
+}
+
+/* A button that has to read as a link, for the sign-in/sign-up toggle. A real anchor would need a
+   route; this changes a mode. */
+.linkish {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    cursor: pointer;
+}
+
+.linkish:hover {
+    text-decoration: underline;
+}
+
+/* The show/hide-password control inside a field. */
+.inputwrap__action {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    border: 0;
+    border-left: 1px solid var(--border);
+    border-radius: 0;
+    background: transparent;
+    color: var(--text-faint);
+}
+
+.inputwrap__action:hover {
+    color: var(--text);
+    background: var(--surface-raised);
+}
+
+/* ---------------------------------------------------------------- question strip
+   Numbers for every question in a test, so moving around costs nothing. The only marking here says
+   "you gave an answer" — never whether it was right, which is the whole point of a test. */
+.qstrip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.qstrip__item {
+    width: 34px;
+    padding: 6px 0;
+    text-align: center;
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.qstrip__item--answered {
+    border-color: rgb(59 130 246 / 0.45);
+    color: var(--text);
+}
+
+.qstrip__item[aria-current='true'] {
+    background: var(--grad);
+    border-color: transparent;
+    color: #fff;
+    font-weight: 700;
+}
+
+/* A Link that has to look like the primary button beside it. */
+.btn-link {
+    display: inline-block;
+    padding: 10px 16px;
+    border-radius: 9px;
+    text-align: center;
+    text-decoration: none;
+}
+
+/* ============================================================================
+   Motion
+
+   Everything here animates only `transform`, `opacity` and `background-position`. Those three are the
+   properties a browser can hand to the compositor, so they cost almost nothing on a slow phone —
+   which is the constraint this whole project is built against. Nothing animates width, height, blur
+   or box-shadow on a large surface, because those force layout or paint on every frame and are how an
+   interface starts to feel worse the more polish it is given.
+
+   Two timings, and no others: 180ms for anything a finger or cursor triggered, 420ms for something
+   arriving on screen. A screen where every element eases at its own speed reads as unfinished rather
+   than as considered.
+
+   Every animation in this section is switched off by the reduced-motion block at the end. That is not
+   politeness — vestibular disorders are real, and an entrance animation on every card is exactly the
+   kind of thing that triggers them.
+   ============================================================================ */
+
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes fade {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes pop {
+    0% {
+        opacity: 0;
+        transform: scale(0.94);
+    }
+    60% {
+        transform: scale(1.01);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* A slow sweep across the wordmark's gradient. 6s so it registers as ambient rather than as
+   something demanding attention. */
+@keyframes sweep {
+    from {
+        background-position: 0% 50%;
+    }
+    to {
+        background-position: 200% 50%;
+    }
+}
+
+/* ---------------------------------------------------------------- page entrance
+
+   The workspace is keyed on the route in Layout, so it remounts on navigation and replays this. A
+   route change that redraws instantly looks like a page reload; 420ms of rise makes it feel like one
+   app rather than seven. */
+.workspace {
+    animation: rise 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Cards arrive in sequence rather than all at once. Capped at six: past that the last card is waiting
+   long enough to look broken, so everything after it simply arrives with the sixth. */
+.workspace > .stack > *,
+.workspace > .worksplit > .stack > * {
+    animation: rise 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.workspace > .stack > *:nth-child(1),
+.workspace > .worksplit > .stack > *:nth-child(1) {
+    animation-delay: 0ms;
+}
+.workspace > .stack > *:nth-child(2),
+.workspace > .worksplit > .stack > *:nth-child(2) {
+    animation-delay: 70ms;
+}
+.workspace > .stack > *:nth-child(3),
+.workspace > .worksplit > .stack > *:nth-child(3) {
+    animation-delay: 140ms;
+}
+.workspace > .stack > *:nth-child(4),
+.workspace > .worksplit > .stack > *:nth-child(4) {
+    animation-delay: 210ms;
+}
+.workspace > .stack > *:nth-child(5),
+.workspace > .worksplit > .stack > *:nth-child(5) {
+    animation-delay: 280ms;
+}
+.workspace > .stack > *:nth-child(n + 6),
+.workspace > .worksplit > .stack > *:nth-child(n + 6) {
+    animation-delay: 340ms;
+}
+
+/* The insights rail follows the main column, so the eye lands on the content first. */
+.worksplit > aside {
+    animation: rise 520ms cubic-bezier(0.16, 1, 0.3, 1) 220ms both;
+}
+
+/* ---------------------------------------------------------------- the wordmark */
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* The gradient lives on the text itself so the sweep runs through the letters. `background-size:200%`
+   is what gives the animation somewhere to travel. */
+.brand span {
+    background: linear-gradient(
+        100deg,
+        #3b82f6 0%,
+        #a78bfa 25%,
+        #e0e7ff 45%,
+        #a78bfa 65%,
+        #3b82f6 100%
+    );
+    background-size: 220% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: sweep 3s linear infinite;
+}
+
+/* The mark leans in when the header is hovered — a small acknowledgement that it is a link home,
+   which is not otherwise obvious. */
+.brand svg {
+    transition: transform var(--ease);
+}
+
+.brand:hover svg {
+    transform: rotate(-6deg) scale(1.06);
+}
+
+/* ---------------------------------------------------------------- depth
+
+   Half the "it looks empty" problem is not motion, it is that a flat dark rectangle gives the eye
+   nothing to anchor on. Two fixed radial washes behind the content and a very faint dot grid put the
+   cards on a surface rather than in a void. Both are painted once and never animate. */
+body {
+    background-image:
+        radial-gradient(680px 420px at 12% -8%, rgb(59 130 246 / 0.07), transparent 70%),
+        radial-gradient(620px 420px at 92% 4%, rgb(139 92 246 / 0.08), transparent 70%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.workspace {
+    background-image: radial-gradient(rgb(148 163 184 / 0.05) 1px, transparent 1px);
+    background-size: 22px 22px;
+}
+
+/* A gradient hairline along the top of an accent card. Cheap depth, and it points at the card that
+   matters on each screen. */
+.card--accent,
+.card--glow {
+    position: relative;
+    overflow: hidden;
+}
+
+.card--accent::before,
+.card--glow::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(99 102 241 / 0.75), transparent);
+}
+
+/* ---------------------------------------------------------------- interactions */
+
+/* A light sweeps across a primary button on hover. One pseudo-element moving on transform — no
+   repaint of the button itself. */
+.primary {
+    position: relative;
+    overflow: hidden;
+}
+
+.primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.22), transparent 80%);
+    transform: translateX(-100%);
+    transition: transform 520ms ease;
+}
+
+.primary:hover:not(:disabled)::after {
+    transform: translateX(100%);
+}
+
+/* Rows slide a hair toward the reader on hover, which reads as "this is the one" without a colour
+   change fighting the active state. */
+.row-item,
+.option {
+    transition:
+        background var(--ease),
+        border-color var(--ease),
+        transform var(--ease);
+}
+
+.row-item:hover,
+.option:hover:not(:disabled) {
+    transform: translateX(2px);
+}
+
+.sidebar__link:hover {
+    transform: translateX(2px);
+}
+
+/* Icon tiles lift with their card rather than independently, so a card is one object. */
+.card--hover:hover .tile {
+    transform: translateY(-1px);
+}
+
+.tile {
+    transition: transform var(--ease);
+}
+
+/* ---------------------------------------------------------------- data arriving
+
+   Bars grow from empty. A progress bar that is simply painted at 60% states a fact; one that fills to
+   60% shows a quantity, and it is the only animation here that carries information rather than
+   polish. Scale rather than width, so it stays on the compositor. */
+.subjects__bar span,
+.badge__bar span {
+    transform-origin: left center;
+    animation: growx 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes growx {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+
+/* Big numbers pop in, because they are the thing a learner came to read. */
+.big {
+    animation: pop 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* The year grid resolves left to right instead of appearing whole. Delays come from a handful of
+   modulo buckets rather than 365 rules — the exact order does not matter, only that it sweeps. */
+.heatmap__cell {
+    animation: fade 500ms ease both;
+}
+
+.heatmap__cell:nth-child(7n + 1) {
+    animation-delay: 0ms;
+}
+.heatmap__cell:nth-child(7n + 2) {
+    animation-delay: 40ms;
+}
+.heatmap__cell:nth-child(7n + 3) {
+    animation-delay: 80ms;
+}
+.heatmap__cell:nth-child(7n + 4) {
+    animation-delay: 120ms;
+}
+.heatmap__cell:nth-child(7n + 5) {
+    animation-delay: 160ms;
+}
+.heatmap__cell:nth-child(7n + 6) {
+    animation-delay: 200ms;
+}
+.heatmap__cell:nth-child(7n) {
+    animation-delay: 240ms;
+}
+
+/* Banners arrive rather than blink into place. An error that appears instantly is easy to miss, and an
+   error nobody notices is the same as no error message. */
+.banner {
+    animation: rise 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ---------------------------------------------------------------- reduced motion
+
+   Everything above, off. Layout and colour are untouched — the interface still works and still shows
+   the same information, it simply stops moving. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .brand:hover svg,
+    .row-item:hover,
+    .option:hover,
+    .sidebar__link:hover,
+    .card--hover:hover {
+        transform: none;
+    }
+}
+
+/* ============================================================================
+   Motion, second pass
+
+   The first pass was too quiet to notice, which is its own kind of failure: an animation nobody sees
+   is bytes spent for nothing. What follows is louder, and still confined to transform, opacity and
+   background-position so the cost has not changed.
+
+   The additions are weighted toward things the learner *triggers*, because a hover or a press is
+   where motion is unambiguously useful — it confirms the interface heard you. Entrance animations can
+   only ever be decoration, so they get one clear pass and nothing more.
+   ============================================================================ */
+
+/* ---------------------------------------------------------------- the shell arrives */
+
+.topbar {
+    animation: rise 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* The sidebar items cascade down. Visible on first load and after a hard refresh, which is when
+   somebody is most likely to be judging whether the app feels finished. */
+.sidebar__link {
+    animation: slidein 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slidein {
+    from {
+        opacity: 0;
+        transform: translateX(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.sidebar__link:nth-of-type(1) {
+    animation-delay: 60ms;
+}
+.sidebar__link:nth-of-type(2) {
+    animation-delay: 105ms;
+}
+.sidebar__link:nth-of-type(3) {
+    animation-delay: 150ms;
+}
+.sidebar__link:nth-of-type(4) {
+    animation-delay: 195ms;
+}
+.sidebar__link:nth-of-type(5) {
+    animation-delay: 240ms;
+}
+.sidebar__link:nth-of-type(6) {
+    animation-delay: 285ms;
+}
+.sidebar__link:nth-of-type(7) {
+    animation-delay: 330ms;
+}
+.sidebar__link:nth-of-type(8) {
+    animation-delay: 375ms;
+}
+
+/* ---------------------------------------------------------------- the active page
+
+   A soft breathing glow on the current sidebar item. The one piece of looping motion in the app, and
+   it earns its place by answering "where am I" from the corner of the eye. Very low amplitude — a
+   pulsing navigation is a distraction, a barely-moving one is an anchor. */
+.sidebar__link--active {
+    animation: breathe 3.2s ease-in-out infinite;
+}
+
+@keyframes breathe {
+    0%,
+    100% {
+        box-shadow:
+            0 0 0 1px rgb(59 130 246 / 0.25),
+            0 4px 20px -4px rgb(99 102 241 / 0.35);
+    }
+    50% {
+        box-shadow:
+            0 0 0 1px rgb(59 130 246 / 0.45),
+            0 6px 26px -4px rgb(99 102 241 / 0.55);
+    }
+}
+
+/* The top-bar active link gets an underline that grows from the middle out. */
+.topnav__link {
+    position: relative;
+}
+
+.topnav__link::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    right: 50%;
+    bottom: 2px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--grad);
+    transition:
+        left var(--ease),
+        right var(--ease);
+}
+
+.topnav__link--active::after,
+.topnav__link:hover::after {
+    left: 9px;
+    right: 9px;
+}
+
+/* ---------------------------------------------------------------- pressing things
+
+   A press that moves is the cheapest possible confirmation that a tap landed, and on a slow phone —
+   where the response to a tap may be hundreds of milliseconds away — it is the difference between an
+   app that feels broken and one that feels busy. */
+button:not(:disabled),
+.btn-link {
+    transition:
+        transform 120ms cubic-bezier(0.16, 1, 0.3, 1),
+        background var(--ease),
+        border-color var(--ease),
+        color var(--ease),
+        box-shadow var(--ease);
+}
+
+button:not(:disabled):active {
+    transform: scale(0.97);
+}
+
+.primary:hover:not(:disabled),
+.secondary:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+/* Cards lift further and pick up a coloured edge, so hovering one is unmistakable. */
+.card--hover:hover {
+    transform: translateY(-3px);
+    border-color: rgb(99 102 241 / 0.4);
+}
+
+/* Icon tiles rotate a few degrees with their card. Small, and it makes a static card feel alive
+   without anything looping. */
+.card--hover:hover .tile,
+.row-item:hover .tile {
+    transform: translateY(-2px) rotate(-4deg) scale(1.05);
+}
+
+/* ---------------------------------------------------------------- avatars and marks */
+
+.avatar {
+    transition:
+        transform var(--ease),
+        box-shadow var(--ease);
+}
+
+.row-item:hover .avatar {
+    transform: scale(1.08);
+    box-shadow: var(--glow);
+}
+
+/* Rank numbers and step markers pop in one after another, which turns a leaderboard from a table into
+   a result being announced. */
+.step__n {
+    animation: pop 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.step:nth-child(1) .step__n {
+    animation-delay: 120ms;
+}
+.step:nth-child(2) .step__n {
+    animation-delay: 220ms;
+}
+.step:nth-child(3) .step__n {
+    animation-delay: 320ms;
+}
+
+/* ---------------------------------------------------------------- rows arriving
+
+   Lists slide in from the left rather than fading. A leaderboard, a list of groups, a plan for the
+   week — each reads as items being dealt out. */
+.card > .row-item,
+.stack > .row-item {
+    animation: slidein 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.row-item:nth-of-type(1) {
+    animation-delay: 40ms;
+}
+.row-item:nth-of-type(2) {
+    animation-delay: 90ms;
+}
+.row-item:nth-of-type(3) {
+    animation-delay: 140ms;
+}
+.row-item:nth-of-type(4) {
+    animation-delay: 190ms;
+}
+.row-item:nth-of-type(n + 5) {
+    animation-delay: 230ms;
+}
+
+/* Subject and badge cards deal out in a grid. */
+.subjects > *,
+.badges > * {
+    animation: pop 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.subjects > *:nth-child(1),
+.badges > *:nth-child(1) {
+    animation-delay: 40ms;
+}
+.subjects > *:nth-child(2),
+.badges > *:nth-child(2) {
+    animation-delay: 90ms;
+}
+.subjects > *:nth-child(3),
+.badges > *:nth-child(3) {
+    animation-delay: 140ms;
+}
+.subjects > *:nth-child(4),
+.badges > *:nth-child(4) {
+    animation-delay: 190ms;
+}
+.subjects > *:nth-child(5),
+.badges > *:nth-child(5) {
+    animation-delay: 240ms;
+}
+.subjects > *:nth-child(n + 6),
+.badges > *:nth-child(n + 6) {
+    animation-delay: 280ms;
+}
+
+/* Options in a question deal out too, so a new question reads as arriving rather than replacing. */
+.card > .stack > .option {
+    animation: slidein 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.option:nth-of-type(1) {
+    animation-delay: 30ms;
+}
+.option:nth-of-type(2) {
+    animation-delay: 75ms;
+}
+.option:nth-of-type(3) {
+    animation-delay: 120ms;
+}
+.option:nth-of-type(4) {
+    animation-delay: 165ms;
+}
+.option:nth-of-type(n + 5) {
+    animation-delay: 200ms;
+}
+
+/* ---------------------------------------------------------------- reduced motion, again
+
+   The new rules included. Repeated deliberately rather than merged: this block sits next to what it
+   turns off, so adding an animation without disabling it takes a conscious omission rather than an
+   oversight. */
+@media (prefers-reduced-motion: reduce) {
+    .sidebar__link--active,
+    .topbar,
+    .sidebar__link,
+    .step__n,
+    .subjects > *,
+    .badges > *,
+    .card > .row-item,
+    .stack > .row-item,
+    .card > .stack > .option {
+        animation: none !important;
+    }
+
+    button:not(:disabled):active,
+    .primary:hover:not(:disabled),
+    .secondary:hover:not(:disabled),
+    .card--hover:hover,
+    .card--hover:hover .tile,
+    .row-item:hover .tile,
+    .row-item:hover .avatar {
+        transform: none !important;
+    }
+}
+
+/* ============================================================================
+   Sign-in page motion
+
+   This was missed entirely in the first two passes, and it is the worst place to miss: /login sits
+   outside the Layout, so every `.workspace` rule above skips it — and it is the first screen anybody
+   sees, including a judge opening the deployed URL. A signed-out visitor was landing on the one screen
+   in the app with no motion at all, which is why "nothing is animating" was a fair description.
+   ============================================================================ */
+
+/* The pitch column assembles top to bottom: mark, headline, then each feature. */
+.authpitch > * {
+    animation: rise 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.authpitch > *:nth-child(1) {
+    animation-delay: 60ms;
+}
+.authpitch > *:nth-child(2) {
+    animation-delay: 160ms;
+}
+.authpitch > *:nth-child(3) {
+    animation-delay: 260ms;
+}
+
+.authpitch .row {
+    animation: slidein 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.authpitch .stack > .row:nth-child(1) {
+    animation-delay: 340ms;
+}
+.authpitch .stack > .row:nth-child(2) {
+    animation-delay: 430ms;
+}
+.authpitch .stack > .row:nth-child(3) {
+    animation-delay: 520ms;
+}
+
+/* The headline's gradient sweeps like the wordmark, so the two read as the same brand rather than as
+   two blue things. Slower here — it is large type and a fast sweep across it is distracting. */
+.authpitch__accent {
+    background: linear-gradient(100deg, #3b82f6, #8b5cf6, #3b82f6);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: sweep 4s linear infinite;
+}
+
+/* The card arrives last and from the other side, so the eye finishes on the thing to fill in. */
+.authcard {
+    animation: cardin 620ms cubic-bezier(0.16, 1, 0.3, 1) 180ms both;
+}
+
+@keyframes cardin {
+    from {
+        opacity: 0;
+        transform: translateY(22px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* Fields inside it follow, so the form fills itself in rather than appearing complete. */
+.authcard > * {
+    animation: rise 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.authcard > *:nth-child(1) {
+    animation-delay: 320ms;
+}
+.authcard > *:nth-child(2) {
+    animation-delay: 390ms;
+}
+.authcard > *:nth-child(3) {
+    animation-delay: 460ms;
+}
+.authcard > *:nth-child(n + 4) {
+    animation-delay: 520ms;
+}
+
+/* The two washes behind the page drift very slowly. This is the only ambient motion in the app and it
+   is deliberately almost imperceptible — 30 seconds for a barely-visible shift — because a login
+   screen is looked at for a few seconds and anything faster reads as a distraction rather than depth. */
+.authpage {
+    background-size:
+        140% 140%,
+        140% 140%,
+        auto;
+    animation: drift 30s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+    from {
+        background-position:
+            0% 0%,
+            100% 10%,
+            0 0;
+    }
+    to {
+        background-position:
+            8% 6%,
+            92% 4%,
+            0 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .authpitch > *,
+    .authpitch .row,
+    .authpitch__accent,
+    .authcard,
+    .authcard > *,
+    .authpage {
+        animation: none !important;
+    }
+
+    /* The gradient text needs its colour back once the sweep is off, or it stays transparent. */
+    .authpitch__accent {
+        -webkit-background-clip: unset;
+        background-clip: unset;
+        background: none;
+        color: var(--accent);
+    }
+}
+
+/* ============================================================================
+   The signature effect: a rotating gradient halo
+
+   Almost every dark SaaS interface built this year fades content upward and calls it done, which is
+   why they all feel the same. This is the one thing here that is not the default choice — a light that
+   travels around the edge of the card that matters most on each screen.
+
+   It works by animating a custom property. `@property` registers `--spin` as an angle, which is what
+   makes it interpolatable — animate an unregistered custom property and it jumps between whole values
+   instead of sweeping. The gradient is confined to a 1.5px ring by masking the padding box out of the
+   border box, so what shows is an edge rather than a filled shape, and nothing behind the card is
+   repainted.
+
+   Cost is one composited element per halo and a property that only the gradient reads. On a browser
+   without `@property` — older Firefox — the border renders static rather than broken, which is a
+   perfectly good card.
+   ============================================================================ */
+
+@property --spin {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+.card--halo {
+    position: relative;
+    isolation: isolate;
+}
+
+.card--halo::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: conic-gradient(
+        from var(--spin),
+        transparent 0deg 170deg,
+        rgb(59 130 246 / 0.9) 250deg,
+        rgb(224 231 255 / 1) 300deg,
+        rgb(167 139 250 / 1) 330deg,
+        transparent 360deg
+    );
+    /* Border box minus content box leaves the ring. */
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    animation: halo 3.2s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes halo {
+    to {
+        --spin: 360deg;
+    }
+}
+
+/* The card that matters most on a screen already carries the accent class, so it gets the halo without
+   every page having to opt in one by one. */
+.card--accent,
+.card--glow {
+    position: relative;
+    isolation: isolate;
+}
+
+.card--accent::after,
+.card--glow::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: conic-gradient(
+        from var(--spin),
+        transparent 0deg 180deg,
+        rgb(59 130 246 / 0.85) 255deg,
+        rgb(224 231 255 / 0.95) 300deg,
+        rgb(167 139 250 / 1) 335deg,
+        transparent 360deg
+    );
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    animation: halo 4s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* ============================================================================
+   Page marks
+
+   Every screen now opens with a gradient mark beside its heading. Without one a page is a heading, a
+   paragraph and a stack of dark rectangles — accurate, and indistinguishable from the screen before
+   it. The mark is what makes a page recognisable at a glance and is the cheapest possible way to stop
+   an interface reading as one long list.
+   ============================================================================ */
+
+.hero-mark {
+    position: relative;
+    animation: float 3.4s ease-in-out infinite;
+}
+
+/* A slow rise and fall. Three pixels — enough to notice out of the corner of the eye, small enough
+   that nothing appears to move while being read. */
+@keyframes float {
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-9px) rotate(-3deg);
+    }
+}
+
+/* A ring that breathes behind the mark, so the corner of the screen has something alive in it. */
+.hero-mark::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 22px;
+    border: 1.5px solid rgb(139 92 246 / 0.55);
+    animation: ripple 2.6s ease-out infinite;
+    pointer-events: none;
+}
+
+@keyframes ripple {
+    0% {
+        opacity: 0.9;
+        transform: scale(0.9);
+    }
+    70% {
+        opacity: 0;
+        transform: scale(1.25);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.25);
+    }
+}
+
+/* ---------------------------------------------------------------- headline reveal
+
+   The login headline arrives a line at a time rather than as a block. It is the first motion anybody
+   sees, so it is the one place worth spending a beat on. */
+.authpitch__title span,
+.authpitch__title {
+    display: block;
+}
+
+.authpitch__title {
+    animation: rise 700ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+}
+
+.authpitch__accent {
+    animation:
+        rise 700ms cubic-bezier(0.16, 1, 0.3, 1) 260ms both,
+        sweep 4s linear 960ms infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card--halo::before,
+    .card--accent::after,
+    .card--glow::after,
+    .hero-mark,
+    .hero-mark::after,
+    .authpitch__title,
+    .authpitch__accent {
+        animation: none !important;
+    }
+
+    /* The halo ring is decorative; with the rotation off it is a static gradient edge, which is fine.
+       The hero mark's float has to be reset or it holds mid-bob. */
+    .hero-mark {
+        transform: none;
+    }
+}
+
+/* ============================================================================
+   Always-on motion, turned up
+
+   The first three passes were all too quiet. Objectively they ran — two headless screenshots a second
+   apart differ, so the browser was animating — but every effect was tuned below the threshold at which
+   somebody glancing at a static page notices anything. An animation nobody sees is bytes spent for
+   nothing, so the always-on effects are now unmistakable while the entrance ones stay brief.
+
+   The rule kept from before: transform, opacity and background-position only.
+   ============================================================================ */
+
+/* A light travels across every card, once every eight seconds, staggered so the screen is never all
+   flashing at once. This is the effect that makes a page of dark rectangles look like a surface with
+   something happening on it, and it is the one thing here somebody will notice without being told. */
+.card {
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 45%;
+    background: linear-gradient(
+        100deg,
+        transparent,
+        rgb(147 197 253 / 0.07),
+        rgb(196 181 253 / 0.1),
+        transparent
+    );
+    transform: translateX(-160%) skewX(-12deg);
+    animation: cardscan 8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes cardscan {
+    0% {
+        transform: translateX(-160%) skewX(-12deg);
+    }
+    /* Crosses in the first quarter, then waits — a constant sweep would be exhausting. */
+    28% {
+        transform: translateX(360%) skewX(-12deg);
+    }
+    100% {
+        transform: translateX(360%) skewX(-12deg);
+    }
+}
+
+/* Staggered by position so cards do not scan in unison. */
+.stack > .card:nth-child(2n)::before {
+    animation-delay: 1.4s;
+}
+.stack > .card:nth-child(3n)::before {
+    animation-delay: 2.8s;
+}
+.subjects > .card:nth-child(2n)::before {
+    animation-delay: 1.1s;
+}
+.subjects > .card:nth-child(3n)::before {
+    animation-delay: 2.2s;
+}
+
+/* Accent cards already carry the rotating halo on ::after, so the scan would be one effect too many
+   on the single most important card of a screen. */
+.card--accent::before,
+.card--glow::before {
+    animation: none;
+}
+
+/* The active sidebar item glows harder and moves a little, so "where am I" is answerable from the
+   corner of the eye rather than only on inspection. */
+.sidebar__link--active {
+    animation: breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+    0%,
+    100% {
+        box-shadow:
+            0 0 0 1px rgb(59 130 246 / 0.3),
+            0 4px 18px -4px rgb(99 102 241 / 0.4);
+        transform: translateX(0);
+    }
+    50% {
+        box-shadow:
+            0 0 0 1px rgb(147 197 253 / 0.7),
+            0 8px 30px -4px rgb(139 92 246 / 0.75);
+        transform: translateX(3px);
+    }
+}
+
+/* The brand mark turns gently and for ever, not only on hover. It is the one piece of the interface
+   that is purely identity, so it is the right place for something ornamental. */
+.brand svg {
+    animation: tilt 6s ease-in-out infinite;
+}
+
+@keyframes tilt {
+    0%,
+    100% {
+        transform: rotate(0deg) scale(1);
+    }
+    50% {
+        transform: rotate(-8deg) scale(1.08);
+    }
+}
+
+/* Icon tiles breathe very slightly, which stops a column of them reading as a static list. */
+.tile {
+    animation: tilepulse 4.5s ease-in-out infinite;
+}
+
+@keyframes tilepulse {
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        transform: translateY(-2px) scale(1.04);
+    }
+}
+
+.tile:nth-of-type(2n) {
+    animation-delay: 0.9s;
+}
+.tile:nth-of-type(3n) {
+    animation-delay: 1.8s;
+}
+
+/* The spinner already spins; this makes a loading state feel like progress rather than a stuck wheel. */
+.state {
+    animation: fade 400ms ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card::before,
+    .sidebar__link--active,
+    .brand svg,
+    .tile,
+    .state {
+        animation: none !important;
+    }
+
+    .brand svg,
+    .tile {
+        transform: none !important;
+    }
+}

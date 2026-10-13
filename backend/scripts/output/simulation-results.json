@@ -1,0 +1,5745 @@
+{
+  "config": {
+    "topicCount": 8,
+    "questionsPerDifficulty": 5,
+    "difficultyLogit": {
+      "easy": -1.2,
+      "medium": 0,
+      "hard": 1.2
+    },
+    "sessions": 10,
+    "daysBetweenSessions": 2,
+    "questionsPerSession": 15,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "startDate": 1767258000000,
+    "wrongAnswerLearningBoost": 1.5,
+    "profiles": [
+      {
+        "name": "novice",
+        "learningRate": 0.1,
+        "decayPerDay": 0.02
+      },
+      {
+        "name": "uneven",
+        "learningRate": 0.1,
+        "decayPerDay": 0.02
+      },
+      {
+        "name": "forgetful",
+        "learningRate": 0.25,
+        "decayPerDay": 0.12
+      },
+      {
+        "name": "advanced",
+        "learningRate": 0.06,
+        "decayPerDay": 0.01
+      }
+    ]
+  },
+  "summaries": [
+    {
+      "profile": "novice",
+      "policy": "adaptive",
+      "trueSkillGain": 26.79,
+      "weakTopicGain": 31.66,
+      "initialCalibrationError": 13.64,
+      "finalCalibrationError": 12.45,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.39,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 24.96,
+          "estimatedMastery": 34.79,
+          "calibrationError": 15.33,
+          "weakTopicTrueMastery": 19.96,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 28.34,
+          "estimatedMastery": 37.21,
+          "calibrationError": 14.92,
+          "weakTopicTrueMastery": 24.03,
+          "accuracy": 0.57,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.72
+        },
+        {
+          "session": 3,
+          "trueMastery": 30.79,
+          "estimatedMastery": 39.04,
+          "calibrationError": 15.07,
+          "weakTopicTrueMastery": 26.82,
+          "accuracy": 0.59,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.41
+        },
+        {
+          "session": 4,
+          "trueMastery": 33.86,
+          "estimatedMastery": 38.75,
+          "calibrationError": 16.44,
+          "weakTopicTrueMastery": 30.28,
+          "accuracy": 0.35,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.32
+        },
+        {
+          "session": 5,
+          "trueMastery": 36.29,
+          "estimatedMastery": 41.21,
+          "calibrationError": 14.89,
+          "weakTopicTrueMastery": 34.35,
+          "accuracy": 0.63,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.55
+        },
+        {
+          "session": 6,
+          "trueMastery": 38.82,
+          "estimatedMastery": 43.54,
+          "calibrationError": 14.28,
+          "weakTopicTrueMastery": 37.6,
+          "accuracy": 0.57,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.35
+        },
+        {
+          "session": 7,
+          "trueMastery": 40.91,
+          "estimatedMastery": 44.08,
+          "calibrationError": 13.97,
+          "weakTopicTrueMastery": 42.4,
+          "accuracy": 0.49,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.31
+        },
+        {
+          "session": 8,
+          "trueMastery": 43.22,
+          "estimatedMastery": 46.37,
+          "calibrationError": 13.2,
+          "weakTopicTrueMastery": 47.75,
+          "accuracy": 0.61,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.41
+        },
+        {
+          "session": 9,
+          "trueMastery": 46.03,
+          "estimatedMastery": 46.8,
+          "calibrationError": 13.5,
+          "weakTopicTrueMastery": 50.62,
+          "accuracy": 0.45,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.36
+        },
+        {
+          "session": 10,
+          "trueMastery": 48.15,
+          "estimatedMastery": 48.54,
+          "calibrationError": 12.45,
+          "weakTopicTrueMastery": 49.49,
+          "accuracy": 0.61,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.49
+        }
+      ]
+    },
+    {
+      "profile": "novice",
+      "policy": "baseline",
+      "trueSkillGain": 25.51,
+      "weakTopicGain": 21.94,
+      "initialCalibrationError": 13.64,
+      "finalCalibrationError": 14.63,
+      "withinSessionRepeatRate": 0.06,
+      "crossSessionRepeatRate": 0.37,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 23.37,
+          "estimatedMastery": 30.3,
+          "calibrationError": 8.01,
+          "weakTopicTrueMastery": 19.66,
+          "accuracy": 0.2,
+          "withinSessionRepeatRate": 0.05,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 25.55,
+          "estimatedMastery": 29.59,
+          "calibrationError": 7.52,
+          "weakTopicTrueMastery": 21.34,
+          "accuracy": 0.31,
+          "withinSessionRepeatRate": 0.04,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 3,
+          "trueMastery": 27.98,
+          "estimatedMastery": 28.33,
+          "calibrationError": 8.1,
+          "weakTopicTrueMastery": 22.99,
+          "accuracy": 0.25,
+          "withinSessionRepeatRate": 0.05,
+          "crossSessionRepeatRate": 0.19
+        },
+        {
+          "session": 4,
+          "trueMastery": 30.99,
+          "estimatedMastery": 25.85,
+          "calibrationError": 8.4,
+          "weakTopicTrueMastery": 25.16,
+          "accuracy": 0.19,
+          "withinSessionRepeatRate": 0.05,
+          "crossSessionRepeatRate": 0.25
+        },
+        {
+          "session": 5,
+          "trueMastery": 33.57,
+          "estimatedMastery": 26.53,
+          "calibrationError": 8.81,
+          "weakTopicTrueMastery": 27.95,
+          "accuracy": 0.37,
+          "withinSessionRepeatRate": 0.03,
+          "crossSessionRepeatRate": 0.41
+        },
+        {
+          "session": 6,
+          "trueMastery": 36.36,
+          "estimatedMastery": 27.15,
+          "calibrationError": 10.7,
+          "weakTopicTrueMastery": 30.45,
+          "accuracy": 0.32,
+          "withinSessionRepeatRate": 0.11,
+          "crossSessionRepeatRate": 0.49
+        },
+        {
+          "session": 7,
+          "trueMastery": 39.09,
+          "estimatedMastery": 28.33,
+          "calibrationError": 12.44,
+          "weakTopicTrueMastery": 33.05,
+          "accuracy": 0.39,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.45
+        },
+        {
+          "session": 8,
+          "trueMastery": 41.58,
+          "estimatedMastery": 30.1,
+          "calibrationError": 12.5,
+          "weakTopicTrueMastery": 34.42,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.04,
+          "crossSessionRepeatRate": 0.55
+        },
+        {
+          "session": 9,
+          "trueMastery": 44.38,
+          "estimatedMastery": 31.62,
+          "calibrationError": 13.82,
+          "weakTopicTrueMastery": 37.67,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.04,
+          "crossSessionRepeatRate": 0.59
+        },
+        {
+          "session": 10,
+          "trueMastery": 46.88,
+          "estimatedMastery": 32.41,
+          "calibrationError": 14.63,
+          "weakTopicTrueMastery": 39.77,
+          "accuracy": 0.43,
+          "withinSessionRepeatRate": 0.06,
+          "crossSessionRepeatRate": 0.65
+        }
+      ]
+    },
+    {
+      "profile": "uneven",
+      "policy": "adaptive",
+      "trueSkillGain": 23.7,
+      "weakTopicGain": 46.08,
+      "initialCalibrationError": 27.67,
+      "finalCalibrationError": 15.5,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.35,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 51.7,
+          "estimatedMastery": 38.44,
+          "calibrationError": 25.09,
+          "weakTopicTrueMastery": 23.61,
+          "accuracy": 0.59,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 54.81,
+          "estimatedMastery": 40.56,
+          "calibrationError": 26.21,
+          "weakTopicTrueMastery": 28.6,
+          "accuracy": 0.55,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.45
+        },
+        {
+          "session": 3,
+          "trueMastery": 57.18,
+          "estimatedMastery": 43.01,
+          "calibrationError": 23.85,
+          "weakTopicTrueMastery": 34.01,
+          "accuracy": 0.56,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.15
+        },
+        {
+          "session": 4,
+          "trueMastery": 60.51,
+          "estimatedMastery": 43.8,
+          "calibrationError": 25.71,
+          "weakTopicTrueMastery": 39.18,
+          "accuracy": 0.45,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 5,
+          "trueMastery": 62.31,
+          "estimatedMastery": 47.83,
+          "calibrationError": 20.85,
+          "weakTopicTrueMastery": 43.53,
+          "accuracy": 0.68,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.24
+        },
+        {
+          "session": 6,
+          "trueMastery": 65.16,
+          "estimatedMastery": 48.73,
+          "calibrationError": 21.15,
+          "weakTopicTrueMastery": 50.24,
+          "accuracy": 0.45,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 7,
+          "trueMastery": 67.43,
+          "estimatedMastery": 50.25,
+          "calibrationError": 20.6,
+          "weakTopicTrueMastery": 54.66,
+          "accuracy": 0.56,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.55
+        },
+        {
+          "session": 8,
+          "trueMastery": 69.1,
+          "estimatedMastery": 53.31,
+          "calibrationError": 17.25,
+          "weakTopicTrueMastery": 58.68,
+          "accuracy": 0.69,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 9,
+          "trueMastery": 71.3,
+          "estimatedMastery": 54.44,
+          "calibrationError": 17.32,
+          "weakTopicTrueMastery": 64.27,
+          "accuracy": 0.59,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.4
+        },
+        {
+          "session": 10,
+          "trueMastery": 72.76,
+          "estimatedMastery": 57.57,
+          "calibrationError": 15.5,
+          "weakTopicTrueMastery": 66.46,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        }
+      ]
+    },
+    {
+      "profile": "uneven",
+      "policy": "baseline",
+      "trueSkillGain": 18.17,
+      "weakTopicGain": 24.9,
+      "initialCalibrationError": 27.67,
+      "finalCalibrationError": 15.88,
+      "withinSessionRepeatRate": 0.06,
+      "crossSessionRepeatRate": 0.37,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 50.89,
+          "estimatedMastery": 36.99,
+          "calibrationError": 19.94,
+          "weakTopicTrueMastery": 22.3,
+          "accuracy": 0.48,
+          "withinSessionRepeatRate": 0.05,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 52.96,
+          "estimatedMastery": 37.73,
+          "calibrationError": 20.77,
+          "weakTopicTrueMastery": 24.22,
+          "accuracy": 0.48,
+          "withinSessionRepeatRate": 0.04,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 3,
+          "trueMastery": 55.05,
+          "estimatedMastery": 39.57,
+          "calibrationError": 19.6,
+          "weakTopicTrueMastery": 27.03,
+          "accuracy": 0.52,
+          "withinSessionRepeatRate": 0.05,
+          "crossSessionRepeatRate": 0.19
+        },
+        {
+          "session": 4,
+          "trueMastery": 57.11,
+          "estimatedMastery": 39.42,
+          "calibrationError": 18.63,
+          "weakTopicTrueMastery": 29.54,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.05,
+          "crossSessionRepeatRate": 0.25
+        },
+        {
+          "session": 5,
+          "trueMastery": 58.97,
+          "estimatedMastery": 41.97,
+          "calibrationError": 17.29,
+          "weakTopicTrueMastery": 32.44,
+          "accuracy": 0.63,
+          "withinSessionRepeatRate": 0.03,
+          "crossSessionRepeatRate": 0.41
+        },
+        {
+          "session": 6,
+          "trueMastery": 60.71,
+          "estimatedMastery": 45.06,
+          "calibrationError": 16.08,
+          "weakTopicTrueMastery": 35,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0.11,
+          "crossSessionRepeatRate": 0.49
+        },
+        {
+          "session": 7,
+          "trueMastery": 62.56,
+          "estimatedMastery": 47.36,
+          "calibrationError": 15.86,
+          "weakTopicTrueMastery": 37.35,
+          "accuracy": 0.64,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.45
+        },
+        {
+          "session": 8,
+          "trueMastery": 63.88,
+          "estimatedMastery": 49.88,
+          "calibrationError": 14.83,
+          "weakTopicTrueMastery": 39.28,
+          "accuracy": 0.72,
+          "withinSessionRepeatRate": 0.04,
+          "crossSessionRepeatRate": 0.55
+        },
+        {
+          "session": 9,
+          "trueMastery": 65.36,
+          "estimatedMastery": 50.63,
+          "calibrationError": 15.26,
+          "weakTopicTrueMastery": 41.42,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0.04,
+          "crossSessionRepeatRate": 0.59
+        },
+        {
+          "session": 10,
+          "trueMastery": 67.22,
+          "estimatedMastery": 51.53,
+          "calibrationError": 15.88,
+          "weakTopicTrueMastery": 45.29,
+          "accuracy": 0.61,
+          "withinSessionRepeatRate": 0.06,
+          "crossSessionRepeatRate": 0.65
+        }
+      ]
+    },
+    {
+      "profile": "forgetful",
+      "policy": "adaptive",
+      "trueSkillGain": 29.91,
+      "weakTopicGain": 36.24,
+      "initialCalibrationError": 7.12,
+      "finalCalibrationError": 11.92,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.21,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 46.52,
+          "estimatedMastery": 40.01,
+          "calibrationError": 10.04,
+          "weakTopicTrueMastery": 41.51,
+          "accuracy": 0.69,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 52.43,
+          "estimatedMastery": 44.29,
+          "calibrationError": 12.37,
+          "weakTopicTrueMastery": 46.52,
+          "accuracy": 0.69,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.05
+        },
+        {
+          "session": 3,
+          "trueMastery": 57.02,
+          "estimatedMastery": 48.16,
+          "calibrationError": 13.39,
+          "weakTopicTrueMastery": 52.86,
+          "accuracy": 0.68,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.05
+        },
+        {
+          "session": 4,
+          "trueMastery": 59.3,
+          "estimatedMastery": 50.35,
+          "calibrationError": 14.25,
+          "weakTopicTrueMastery": 50.56,
+          "accuracy": 0.64,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.14
+        },
+        {
+          "session": 5,
+          "trueMastery": 62.8,
+          "estimatedMastery": 54.68,
+          "calibrationError": 12.5,
+          "weakTopicTrueMastery": 51.66,
+          "accuracy": 0.77,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.07
+        },
+        {
+          "session": 6,
+          "trueMastery": 65.62,
+          "estimatedMastery": 55.96,
+          "calibrationError": 13.42,
+          "weakTopicTrueMastery": 62.18,
+          "accuracy": 0.64,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.17
+        },
+        {
+          "session": 7,
+          "trueMastery": 66.89,
+          "estimatedMastery": 57.81,
+          "calibrationError": 12.26,
+          "weakTopicTrueMastery": 70.04,
+          "accuracy": 0.69,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.36
+        },
+        {
+          "session": 8,
+          "trueMastery": 68.05,
+          "estimatedMastery": 58.69,
+          "calibrationError": 10.74,
+          "weakTopicTrueMastery": 69.94,
+          "accuracy": 0.69,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.28
+        },
+        {
+          "session": 9,
+          "trueMastery": 68.65,
+          "estimatedMastery": 59.22,
+          "calibrationError": 12.18,
+          "weakTopicTrueMastery": 68.05,
+          "accuracy": 0.65,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.41
+        },
+        {
+          "session": 10,
+          "trueMastery": 68.2,
+          "estimatedMastery": 60.26,
+          "calibrationError": 11.92,
+          "weakTopicTrueMastery": 66.74,
+          "accuracy": 0.75,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        }
+      ]
+    },
+    {
+      "profile": "forgetful",
+      "policy": "baseline",
+      "trueSkillGain": 32.49,
+      "weakTopicGain": 36.35,
+      "initialCalibrationError": 7.12,
+      "finalCalibrationError": 19.71,
+      "withinSessionRepeatRate": 0.06,
+      "crossSessionRepeatRate": 0.37,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 47.01,
+          "estimatedMastery": 32.75,
+          "calibrationError": 15.99,
+          "weakTopicTrueMastery": 39.36,
+          "accuracy": 0.31,
+          "withinSessionRepeatRate": 0.05,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 53.56,
+          "estimatedMastery": 35.45,
+          "calibrationError": 18.95,
+          "weakTopicTrueMastery": 45.84,
+          "accuracy": 0.52,
+          "withinSessionRepeatRate": 0.04,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 3,
+          "trueMastery": 59.28,
+          "estimatedMastery": 35.92,
+          "calibrationError": 23.9,
+          "weakTopicTrueMastery": 53.5,
+          "accuracy": 0.43,
+          "withinSessionRepeatRate": 0.05,
+          "crossSessionRepeatRate": 0.19
+        },
+        {
+          "session": 4,
+          "trueMastery": 63.74,
+          "estimatedMastery": 36.25,
+          "calibrationError": 27.48,
+          "weakTopicTrueMastery": 58.99,
+          "accuracy": 0.49,
+          "withinSessionRepeatRate": 0.05,
+          "crossSessionRepeatRate": 0.25
+        },
+        {
+          "session": 5,
+          "trueMastery": 65.95,
+          "estimatedMastery": 40.89,
+          "calibrationError": 25.07,
+          "weakTopicTrueMastery": 60.86,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0.03,
+          "crossSessionRepeatRate": 0.41
+        },
+        {
+          "session": 6,
+          "trueMastery": 68.1,
+          "estimatedMastery": 43.46,
+          "calibrationError": 24.64,
+          "weakTopicTrueMastery": 63.75,
+          "accuracy": 0.64,
+          "withinSessionRepeatRate": 0.11,
+          "crossSessionRepeatRate": 0.49
+        },
+        {
+          "session": 7,
+          "trueMastery": 69.32,
+          "estimatedMastery": 46.17,
+          "calibrationError": 23.39,
+          "weakTopicTrueMastery": 65.08,
+          "accuracy": 0.71,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.45
+        },
+        {
+          "session": 8,
+          "trueMastery": 69.85,
+          "estimatedMastery": 49.42,
+          "calibrationError": 20.85,
+          "weakTopicTrueMastery": 64.01,
+          "accuracy": 0.72,
+          "withinSessionRepeatRate": 0.04,
+          "crossSessionRepeatRate": 0.55
+        },
+        {
+          "session": 9,
+          "trueMastery": 69.9,
+          "estimatedMastery": 50.94,
+          "calibrationError": 19.9,
+          "weakTopicTrueMastery": 63.25,
+          "accuracy": 0.7,
+          "withinSessionRepeatRate": 0.04,
+          "crossSessionRepeatRate": 0.59
+        },
+        {
+          "session": 10,
+          "trueMastery": 70.77,
+          "estimatedMastery": 51.42,
+          "calibrationError": 19.71,
+          "weakTopicTrueMastery": 66.85,
+          "accuracy": 0.63,
+          "withinSessionRepeatRate": 0.06,
+          "crossSessionRepeatRate": 0.65
+        }
+      ]
+    },
+    {
+      "profile": "advanced",
+      "policy": "adaptive",
+      "trueSkillGain": 6.93,
+      "weakTopicGain": 9.22,
+      "initialCalibrationError": 44.22,
+      "finalCalibrationError": 16.29,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.17,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 79.85,
+          "estimatedMastery": 43.42,
+          "calibrationError": 36.43,
+          "weakTopicTrueMastery": 75.65,
+          "accuracy": 0.81,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 80.5,
+          "estimatedMastery": 50.65,
+          "calibrationError": 29.85,
+          "weakTopicTrueMastery": 76.77,
+          "accuracy": 0.85,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.07
+        },
+        {
+          "session": 3,
+          "trueMastery": 81.2,
+          "estimatedMastery": 55.79,
+          "calibrationError": 25.41,
+          "weakTopicTrueMastery": 77.57,
+          "accuracy": 0.84,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.03
+        },
+        {
+          "session": 4,
+          "trueMastery": 81.92,
+          "estimatedMastery": 59.82,
+          "calibrationError": 22.1,
+          "weakTopicTrueMastery": 78.27,
+          "accuracy": 0.81,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 82.76,
+          "estimatedMastery": 63.11,
+          "calibrationError": 19.65,
+          "weakTopicTrueMastery": 79.61,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.08
+        },
+        {
+          "session": 6,
+          "trueMastery": 83.72,
+          "estimatedMastery": 65.07,
+          "calibrationError": 18.65,
+          "weakTopicTrueMastery": 81.18,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.17
+        },
+        {
+          "session": 7,
+          "trueMastery": 84.45,
+          "estimatedMastery": 67.06,
+          "calibrationError": 17.39,
+          "weakTopicTrueMastery": 81.46,
+          "accuracy": 0.83,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 8,
+          "trueMastery": 85.18,
+          "estimatedMastery": 68.35,
+          "calibrationError": 16.83,
+          "weakTopicTrueMastery": 82.23,
+          "accuracy": 0.85,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.24
+        },
+        {
+          "session": 9,
+          "trueMastery": 85.72,
+          "estimatedMastery": 69.4,
+          "calibrationError": 16.32,
+          "weakTopicTrueMastery": 83.2,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.36
+        },
+        {
+          "session": 10,
+          "trueMastery": 86.16,
+          "estimatedMastery": 69.87,
+          "calibrationError": 16.29,
+          "weakTopicTrueMastery": 83.76,
+          "accuracy": 0.85,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.44
+        }
+      ]
+    },
+    {
+      "profile": "advanced",
+      "policy": "baseline",
+      "trueSkillGain": 7.13,
+      "weakTopicGain": 9.14,
+      "initialCalibrationError": 44.22,
+      "finalCalibrationError": 15.49,
+      "withinSessionRepeatRate": 0.06,
+      "crossSessionRepeatRate": 0.37,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 80.34,
+          "estimatedMastery": 42.74,
+          "calibrationError": 37.6,
+          "weakTopicTrueMastery": 75.95,
+          "accuracy": 0.72,
+          "withinSessionRepeatRate": 0.05,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 81.37,
+          "estimatedMastery": 47.73,
+          "calibrationError": 33.64,
+          "weakTopicTrueMastery": 77.21,
+          "accuracy": 0.75,
+          "withinSessionRepeatRate": 0.04,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 3,
+          "trueMastery": 82.24,
+          "estimatedMastery": 52.8,
+          "calibrationError": 29.44,
+          "weakTopicTrueMastery": 78.36,
+          "accuracy": 0.81,
+          "withinSessionRepeatRate": 0.05,
+          "crossSessionRepeatRate": 0.19
+        },
+        {
+          "session": 4,
+          "trueMastery": 82.99,
+          "estimatedMastery": 54.65,
+          "calibrationError": 28.34,
+          "weakTopicTrueMastery": 79.41,
+          "accuracy": 0.75,
+          "withinSessionRepeatRate": 0.05,
+          "crossSessionRepeatRate": 0.25
+        },
+        {
+          "session": 5,
+          "trueMastery": 83.71,
+          "estimatedMastery": 58.44,
+          "calibrationError": 25.28,
+          "weakTopicTrueMastery": 80.3,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0.03,
+          "crossSessionRepeatRate": 0.41
+        },
+        {
+          "session": 6,
+          "trueMastery": 84.38,
+          "estimatedMastery": 61.81,
+          "calibrationError": 22.57,
+          "weakTopicTrueMastery": 81.12,
+          "accuracy": 0.88,
+          "withinSessionRepeatRate": 0.11,
+          "crossSessionRepeatRate": 0.49
+        },
+        {
+          "session": 7,
+          "trueMastery": 84.93,
+          "estimatedMastery": 64.15,
+          "calibrationError": 20.78,
+          "weakTopicTrueMastery": 81.75,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.45
+        },
+        {
+          "session": 8,
+          "trueMastery": 85.48,
+          "estimatedMastery": 67.69,
+          "calibrationError": 17.79,
+          "weakTopicTrueMastery": 82.42,
+          "accuracy": 0.92,
+          "withinSessionRepeatRate": 0.04,
+          "crossSessionRepeatRate": 0.55
+        },
+        {
+          "session": 9,
+          "trueMastery": 85.88,
+          "estimatedMastery": 69.49,
+          "calibrationError": 16.39,
+          "weakTopicTrueMastery": 82.95,
+          "accuracy": 0.89,
+          "withinSessionRepeatRate": 0.04,
+          "crossSessionRepeatRate": 0.59
+        },
+        {
+          "session": 10,
+          "trueMastery": 86.36,
+          "estimatedMastery": 70.87,
+          "calibrationError": 15.49,
+          "weakTopicTrueMastery": 83.68,
+          "accuracy": 0.89,
+          "withinSessionRepeatRate": 0.06,
+          "crossSessionRepeatRate": 0.65
+        }
+      ]
+    }
+  ],
+  "runs": [
+    {
+      "profile": "novice",
+      "policy": "adaptive",
+      "seed": 1,
+      "startTrueMastery": 22.42,
+      "endTrueMastery": 48.97,
+      "trueSkillGain": 26.55,
+      "weakTopicIds": [
+        "t7",
+        "t5",
+        "t3"
+      ],
+      "weakTopicGain": 30.25,
+      "initialCalibrationError": 12.58,
+      "finalCalibrationError": 11.57,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.35,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 25.7,
+          "estimatedMastery": 39.89,
+          "calibrationError": 14.19,
+          "weakTopicTrueMastery": 20.22,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 29.25,
+          "estimatedMastery": 40.51,
+          "calibrationError": 15.04,
+          "weakTopicTrueMastery": 29.96,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 3,
+          "trueMastery": 31.92,
+          "estimatedMastery": 41.57,
+          "calibrationError": 16.58,
+          "weakTopicTrueMastery": 37.34,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        },
+        {
+          "session": 4,
+          "trueMastery": 35.34,
+          "estimatedMastery": 40.19,
+          "calibrationError": 18.25,
+          "weakTopicTrueMastery": 36.73,
+          "accuracy": 0.27,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 5,
+          "trueMastery": 37.85,
+          "estimatedMastery": 45.95,
+          "calibrationError": 16.21,
+          "weakTopicTrueMastery": 37.42,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 6,
+          "trueMastery": 40.36,
+          "estimatedMastery": 47.53,
+          "calibrationError": 16.94,
+          "weakTopicTrueMastery": 38.43,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 7,
+          "trueMastery": 42.34,
+          "estimatedMastery": 48.61,
+          "calibrationError": 15.72,
+          "weakTopicTrueMastery": 39.12,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 8,
+          "trueMastery": 44.2,
+          "estimatedMastery": 50.34,
+          "calibrationError": 14.56,
+          "weakTopicTrueMastery": 42.58,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 9,
+          "trueMastery": 46.23,
+          "estimatedMastery": 51.5,
+          "calibrationError": 12.94,
+          "weakTopicTrueMastery": 49.34,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 10,
+          "trueMastery": 48.97,
+          "estimatedMastery": 52.09,
+          "calibrationError": 11.57,
+          "weakTopicTrueMastery": 48.13,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        }
+      ]
+    },
+    {
+      "profile": "novice",
+      "policy": "adaptive",
+      "seed": 2,
+      "startTrueMastery": 20.25,
+      "endTrueMastery": 46.37,
+      "trueSkillGain": 26.12,
+      "weakTopicIds": [
+        "t4",
+        "t8",
+        "t7"
+      ],
+      "weakTopicGain": 15.25,
+      "initialCalibrationError": 14.75,
+      "finalCalibrationError": 14.42,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.42,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 24.52,
+          "estimatedMastery": 32.83,
+          "calibrationError": 18.53,
+          "weakTopicTrueMastery": 16.56,
+          "accuracy": 0.2,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 27.44,
+          "estimatedMastery": 38.07,
+          "calibrationError": 14.29,
+          "weakTopicTrueMastery": 16.56,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 3,
+          "trueMastery": 30.8,
+          "estimatedMastery": 37,
+          "calibrationError": 18.71,
+          "weakTopicTrueMastery": 16.56,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 4,
+          "trueMastery": 32.91,
+          "estimatedMastery": 37.38,
+          "calibrationError": 20.45,
+          "weakTopicTrueMastery": 16.56,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        },
+        {
+          "session": 5,
+          "trueMastery": 35.2,
+          "estimatedMastery": 39.42,
+          "calibrationError": 16.55,
+          "weakTopicTrueMastery": 16.56,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 6,
+          "trueMastery": 37.96,
+          "estimatedMastery": 42.14,
+          "calibrationError": 16.6,
+          "weakTopicTrueMastery": 16.56,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 7,
+          "trueMastery": 39.29,
+          "estimatedMastery": 40.96,
+          "calibrationError": 13.98,
+          "weakTopicTrueMastery": 21.76,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 8,
+          "trueMastery": 42.27,
+          "estimatedMastery": 42.69,
+          "calibrationError": 15.24,
+          "weakTopicTrueMastery": 31.36,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 1
+        },
+        {
+          "session": 9,
+          "trueMastery": 44.72,
+          "estimatedMastery": 43.73,
+          "calibrationError": 13.58,
+          "weakTopicTrueMastery": 32.51,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 10,
+          "trueMastery": 46.37,
+          "estimatedMastery": 44.54,
+          "calibrationError": 14.42,
+          "weakTopicTrueMastery": 31.82,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        }
+      ]
+    },
+    {
+      "profile": "novice",
+      "policy": "adaptive",
+      "seed": 3,
+      "startTrueMastery": 20.2,
+      "endTrueMastery": 46.64,
+      "trueSkillGain": 26.44,
+      "weakTopicIds": [
+        "t4",
+        "t1",
+        "t5"
+      ],
+      "weakTopicGain": 52.52,
+      "initialCalibrationError": 14.8,
+      "finalCalibrationError": 13.34,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.43,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 23.32,
+          "estimatedMastery": 32.17,
+          "calibrationError": 16.26,
+          "weakTopicTrueMastery": 25.48,
+          "accuracy": 0.13,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 27.3,
+          "estimatedMastery": 33.84,
+          "calibrationError": 18.56,
+          "weakTopicTrueMastery": 36.08,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 1
+        },
+        {
+          "session": 3,
+          "trueMastery": 28.81,
+          "estimatedMastery": 40.76,
+          "calibrationError": 16.74,
+          "weakTopicTrueMastery": 37.27,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 4,
+          "trueMastery": 32.26,
+          "estimatedMastery": 40.25,
+          "calibrationError": 17.33,
+          "weakTopicTrueMastery": 36.58,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 34.44,
+          "estimatedMastery": 41.81,
+          "calibrationError": 13.08,
+          "weakTopicTrueMastery": 40.85,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 6,
+          "trueMastery": 37.21,
+          "estimatedMastery": 42.61,
+          "calibrationError": 14.96,
+          "weakTopicTrueMastery": 48.84,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 7,
+          "trueMastery": 39.23,
+          "estimatedMastery": 44.56,
+          "calibrationError": 14.94,
+          "weakTopicTrueMastery": 54.8,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        },
+        {
+          "session": 8,
+          "trueMastery": 41.7,
+          "estimatedMastery": 42.78,
+          "calibrationError": 14.97,
+          "weakTopicTrueMastery": 61.93,
+          "accuracy": 0.27,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 9,
+          "trueMastery": 44.87,
+          "estimatedMastery": 43.82,
+          "calibrationError": 17.15,
+          "weakTopicTrueMastery": 70.92,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 1
+        },
+        {
+          "session": 10,
+          "trueMastery": 46.64,
+          "estimatedMastery": 47.32,
+          "calibrationError": 13.34,
+          "weakTopicTrueMastery": 69.67,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        }
+      ]
+    },
+    {
+      "profile": "novice",
+      "policy": "adaptive",
+      "seed": 4,
+      "startTrueMastery": 22.03,
+      "endTrueMastery": 49.49,
+      "trueSkillGain": 27.45,
+      "weakTopicIds": [
+        "t2",
+        "t4",
+        "t8"
+      ],
+      "weakTopicGain": 31.72,
+      "initialCalibrationError": 12.97,
+      "finalCalibrationError": 10.4,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.39,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 26.23,
+          "estimatedMastery": 33.79,
+          "calibrationError": 15.31,
+          "weakTopicTrueMastery": 18.02,
+          "accuracy": 0.2,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 29.26,
+          "estimatedMastery": 35.53,
+          "calibrationError": 16.6,
+          "weakTopicTrueMastery": 18.02,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 1
+        },
+        {
+          "session": 3,
+          "trueMastery": 31.22,
+          "estimatedMastery": 35.64,
+          "calibrationError": 13.33,
+          "weakTopicTrueMastery": 23.38,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 4,
+          "trueMastery": 34.22,
+          "estimatedMastery": 37.76,
+          "calibrationError": 14.21,
+          "weakTopicTrueMastery": 31.98,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 5,
+          "trueMastery": 36.39,
+          "estimatedMastery": 38.54,
+          "calibrationError": 15.6,
+          "weakTopicTrueMastery": 38.37,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        },
+        {
+          "session": 6,
+          "trueMastery": 39.01,
+          "estimatedMastery": 43.07,
+          "calibrationError": 13.67,
+          "weakTopicTrueMastery": 39.3,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 7,
+          "trueMastery": 41.83,
+          "estimatedMastery": 40.02,
+          "calibrationError": 15.4,
+          "weakTopicTrueMastery": 47.72,
+          "accuracy": 0.13,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 8,
+          "trueMastery": 43.62,
+          "estimatedMastery": 46.65,
+          "calibrationError": 10.62,
+          "weakTopicTrueMastery": 52.41,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        },
+        {
+          "session": 9,
+          "trueMastery": 46.82,
+          "estimatedMastery": 46.1,
+          "calibrationError": 11.18,
+          "weakTopicTrueMastery": 51.06,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 10,
+          "trueMastery": 49.49,
+          "estimatedMastery": 47.56,
+          "calibrationError": 10.4,
+          "weakTopicTrueMastery": 49.73,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        }
+      ]
+    },
+    {
+      "profile": "novice",
+      "policy": "adaptive",
+      "seed": 5,
+      "startTrueMastery": 21.9,
+      "endTrueMastery": 49.3,
+      "trueSkillGain": 27.4,
+      "weakTopicIds": [
+        "t4",
+        "t8",
+        "t3"
+      ],
+      "weakTopicGain": 28.57,
+      "initialCalibrationError": 13.1,
+      "finalCalibrationError": 12.51,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.37,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 25.05,
+          "estimatedMastery": 35.28,
+          "calibrationError": 12.38,
+          "weakTopicTrueMastery": 19.53,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 28.43,
+          "estimatedMastery": 38.11,
+          "calibrationError": 10.13,
+          "weakTopicTrueMastery": 19.53,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 3,
+          "trueMastery": 31.2,
+          "estimatedMastery": 40.25,
+          "calibrationError": 9.99,
+          "weakTopicTrueMastery": 19.53,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 4,
+          "trueMastery": 34.56,
+          "estimatedMastery": 38.17,
+          "calibrationError": 11.95,
+          "weakTopicTrueMastery": 29.55,
+          "accuracy": 0.27,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 5,
+          "trueMastery": 37.56,
+          "estimatedMastery": 40.33,
+          "calibrationError": 13.03,
+          "weakTopicTrueMastery": 38.55,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 1
+        },
+        {
+          "session": 6,
+          "trueMastery": 39.56,
+          "estimatedMastery": 42.33,
+          "calibrationError": 9.23,
+          "weakTopicTrueMastery": 44.86,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 7,
+          "trueMastery": 41.85,
+          "estimatedMastery": 46.27,
+          "calibrationError": 9.82,
+          "weakTopicTrueMastery": 48.62,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 8,
+          "trueMastery": 44.33,
+          "estimatedMastery": 49.39,
+          "calibrationError": 10.59,
+          "weakTopicTrueMastery": 50.45,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 9,
+          "trueMastery": 47.52,
+          "estimatedMastery": 48.85,
+          "calibrationError": 12.66,
+          "weakTopicTrueMastery": 49.26,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 10,
+          "trueMastery": 49.3,
+          "estimatedMastery": 51.21,
+          "calibrationError": 12.51,
+          "weakTopicTrueMastery": 48.1,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 1
+        }
+      ]
+    },
+    {
+      "profile": "novice",
+      "policy": "baseline",
+      "seed": 1,
+      "startTrueMastery": 22.42,
+      "endTrueMastery": 48.52,
+      "trueSkillGain": 26.1,
+      "weakTopicIds": [
+        "t7",
+        "t5",
+        "t3"
+      ],
+      "weakTopicGain": 20.2,
+      "initialCalibrationError": 12.58,
+      "finalCalibrationError": 12.7,
+      "withinSessionRepeatRate": 0.05,
+      "crossSessionRepeatRate": 0.39,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 24.31,
+          "estimatedMastery": 37.56,
+          "calibrationError": 13.52,
+          "weakTopicTrueMastery": 19.81,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 26.67,
+          "estimatedMastery": 36.54,
+          "calibrationError": 11.03,
+          "weakTopicTrueMastery": 22.09,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 3,
+          "trueMastery": 29.48,
+          "estimatedMastery": 35.34,
+          "calibrationError": 10.7,
+          "weakTopicTrueMastery": 23.56,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 4,
+          "trueMastery": 32.63,
+          "estimatedMastery": 30.44,
+          "calibrationError": 7.89,
+          "weakTopicTrueMastery": 25.53,
+          "accuracy": 0.13,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 35.19,
+          "estimatedMastery": 31.55,
+          "calibrationError": 6.59,
+          "weakTopicTrueMastery": 28.55,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 6,
+          "trueMastery": 38.37,
+          "estimatedMastery": 32.11,
+          "calibrationError": 9.86,
+          "weakTopicTrueMastery": 30.44,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 7,
+          "trueMastery": 41.11,
+          "estimatedMastery": 33.47,
+          "calibrationError": 13.61,
+          "weakTopicTrueMastery": 34.24,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 8,
+          "trueMastery": 42.98,
+          "estimatedMastery": 34.65,
+          "calibrationError": 10.7,
+          "weakTopicTrueMastery": 34.83,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 9,
+          "trueMastery": 45.91,
+          "estimatedMastery": 36,
+          "calibrationError": 14.48,
+          "weakTopicTrueMastery": 37.3,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.73
+        },
+        {
+          "session": 10,
+          "trueMastery": 48.52,
+          "estimatedMastery": 35.84,
+          "calibrationError": 12.7,
+          "weakTopicTrueMastery": 38.08,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.73
+        }
+      ]
+    },
+    {
+      "profile": "novice",
+      "policy": "baseline",
+      "seed": 2,
+      "startTrueMastery": 20.25,
+      "endTrueMastery": 46.43,
+      "trueSkillGain": 26.18,
+      "weakTopicIds": [
+        "t4",
+        "t8",
+        "t7"
+      ],
+      "weakTopicGain": 24.23,
+      "initialCalibrationError": 14.75,
+      "finalCalibrationError": 15.94,
+      "withinSessionRepeatRate": 0.05,
+      "crossSessionRepeatRate": 0.35,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 22.33,
+          "estimatedMastery": 31.59,
+          "calibrationError": 9.26,
+          "weakTopicTrueMastery": 18.5,
+          "accuracy": 0.27,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 24.74,
+          "estimatedMastery": 30.42,
+          "calibrationError": 6.21,
+          "weakTopicTrueMastery": 20.29,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 3,
+          "trueMastery": 27.55,
+          "estimatedMastery": 26.88,
+          "calibrationError": 6.97,
+          "weakTopicTrueMastery": 22.49,
+          "accuracy": 0.13,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 4,
+          "trueMastery": 30.92,
+          "estimatedMastery": 22.49,
+          "calibrationError": 10.38,
+          "weakTopicTrueMastery": 26.22,
+          "accuracy": 0,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 5,
+          "trueMastery": 33.51,
+          "estimatedMastery": 23.72,
+          "calibrationError": 10.12,
+          "weakTopicTrueMastery": 28.07,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 6,
+          "trueMastery": 36.42,
+          "estimatedMastery": 23.52,
+          "calibrationError": 12.91,
+          "weakTopicTrueMastery": 29.3,
+          "accuracy": 0.27,
+          "withinSessionRepeatRate": 0.2,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 7,
+          "trueMastery": 38.91,
+          "estimatedMastery": 24.66,
+          "calibrationError": 14.25,
+          "weakTopicTrueMastery": 31.61,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 8,
+          "trueMastery": 41.56,
+          "estimatedMastery": 26.2,
+          "calibrationError": 15.36,
+          "weakTopicTrueMastery": 32.54,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 9,
+          "trueMastery": 44.39,
+          "estimatedMastery": 29.52,
+          "calibrationError": 14.87,
+          "weakTopicTrueMastery": 36.51,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 10,
+          "trueMastery": 46.43,
+          "estimatedMastery": 30.49,
+          "calibrationError": 15.94,
+          "weakTopicTrueMastery": 40.79,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        }
+      ]
+    },
+    {
+      "profile": "novice",
+      "policy": "baseline",
+      "seed": 3,
+      "startTrueMastery": 20.2,
+      "endTrueMastery": 44.34,
+      "trueSkillGain": 24.13,
+      "weakTopicIds": [
+        "t4",
+        "t1",
+        "t5"
+      ],
+      "weakTopicGain": 24.41,
+      "initialCalibrationError": 14.8,
+      "finalCalibrationError": 13.14,
+      "withinSessionRepeatRate": 0.04,
+      "crossSessionRepeatRate": 0.43,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 22.03,
+          "estimatedMastery": 27.29,
+          "calibrationError": 5.86,
+          "weakTopicTrueMastery": 18.62,
+          "accuracy": 0.07,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 23.86,
+          "estimatedMastery": 27.39,
+          "calibrationError": 6.48,
+          "weakTopicTrueMastery": 19.96,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.07
+        },
+        {
+          "session": 3,
+          "trueMastery": 26.28,
+          "estimatedMastery": 26.09,
+          "calibrationError": 9.85,
+          "weakTopicTrueMastery": 22.28,
+          "accuracy": 0.2,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 4,
+          "trueMastery": 28.66,
+          "estimatedMastery": 24.15,
+          "calibrationError": 8.46,
+          "weakTopicTrueMastery": 24.54,
+          "accuracy": 0.2,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 5,
+          "trueMastery": 31.01,
+          "estimatedMastery": 27.84,
+          "calibrationError": 8.7,
+          "weakTopicTrueMastery": 27.09,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 6,
+          "trueMastery": 34.06,
+          "estimatedMastery": 26.79,
+          "calibrationError": 10.4,
+          "weakTopicTrueMastery": 31.78,
+          "accuracy": 0.13,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 7,
+          "trueMastery": 37.05,
+          "estimatedMastery": 28.01,
+          "calibrationError": 10.16,
+          "weakTopicTrueMastery": 33.06,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 8,
+          "trueMastery": 39.68,
+          "estimatedMastery": 30.07,
+          "calibrationError": 11.13,
+          "weakTopicTrueMastery": 35.5,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.73
+        },
+        {
+          "session": 9,
+          "trueMastery": 42.34,
+          "estimatedMastery": 28.2,
+          "calibrationError": 14.14,
+          "weakTopicTrueMastery": 39.64,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 10,
+          "trueMastery": 44.34,
+          "estimatedMastery": 31.51,
+          "calibrationError": 13.14,
+          "weakTopicTrueMastery": 41.57,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.4
+        }
+      ]
+    },
+    {
+      "profile": "novice",
+      "policy": "baseline",
+      "seed": 4,
+      "startTrueMastery": 22.03,
+      "endTrueMastery": 48.12,
+      "trueSkillGain": 26.09,
+      "weakTopicIds": [
+        "t2",
+        "t4",
+        "t8"
+      ],
+      "weakTopicGain": 21.8,
+      "initialCalibrationError": 12.97,
+      "finalCalibrationError": 17.33,
+      "withinSessionRepeatRate": 0.05,
+      "crossSessionRepeatRate": 0.39,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 24.48,
+          "estimatedMastery": 28.96,
+          "calibrationError": 7.68,
+          "weakTopicTrueMastery": 20.29,
+          "accuracy": 0.13,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 26.89,
+          "estimatedMastery": 23.8,
+          "calibrationError": 7.28,
+          "weakTopicTrueMastery": 21.05,
+          "accuracy": 0.07,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.07
+        },
+        {
+          "session": 3,
+          "trueMastery": 29.07,
+          "estimatedMastery": 25.14,
+          "calibrationError": 7.64,
+          "weakTopicTrueMastery": 22.66,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 4,
+          "trueMastery": 32.19,
+          "estimatedMastery": 25.79,
+          "calibrationError": 7.34,
+          "weakTopicTrueMastery": 24.44,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 5,
+          "trueMastery": 35.02,
+          "estimatedMastery": 24.61,
+          "calibrationError": 10.4,
+          "weakTopicTrueMastery": 26.86,
+          "accuracy": 0.27,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 6,
+          "trueMastery": 37.31,
+          "estimatedMastery": 26.39,
+          "calibrationError": 10.93,
+          "weakTopicTrueMastery": 29.64,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 7,
+          "trueMastery": 40.21,
+          "estimatedMastery": 25.01,
+          "calibrationError": 15.21,
+          "weakTopicTrueMastery": 33.97,
+          "accuracy": 0.2,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.4
+        },
+        {
+          "session": 8,
+          "trueMastery": 42.62,
+          "estimatedMastery": 27.78,
+          "calibrationError": 15.61,
+          "weakTopicTrueMastery": 34.71,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 9,
+          "trueMastery": 45.32,
+          "estimatedMastery": 30.79,
+          "calibrationError": 15.28,
+          "weakTopicTrueMastery": 37.64,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 10,
+          "trueMastery": 48.12,
+          "estimatedMastery": 30.79,
+          "calibrationError": 17.33,
+          "weakTopicTrueMastery": 39.82,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.87
+        }
+      ]
+    },
+    {
+      "profile": "novice",
+      "policy": "baseline",
+      "seed": 5,
+      "startTrueMastery": 21.9,
+      "endTrueMastery": 46.97,
+      "trueSkillGain": 25.06,
+      "weakTopicIds": [
+        "t4",
+        "t8",
+        "t3"
+      ],
+      "weakTopicGain": 19.06,
+      "initialCalibrationError": 13.1,
+      "finalCalibrationError": 14.06,
+      "withinSessionRepeatRate": 0.09,
+      "crossSessionRepeatRate": 0.3,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 23.71,
+          "estimatedMastery": 26.12,
+          "calibrationError": 3.72,
+          "weakTopicTrueMastery": 21.09,
+          "accuracy": 0,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 25.58,
+          "estimatedMastery": 29.82,
+          "calibrationError": 6.61,
+          "weakTopicTrueMastery": 23.3,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 3,
+          "trueMastery": 27.54,
+          "estimatedMastery": 28.22,
+          "calibrationError": 5.35,
+          "weakTopicTrueMastery": 23.96,
+          "accuracy": 0.27,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 4,
+          "trueMastery": 30.55,
+          "estimatedMastery": 26.38,
+          "calibrationError": 7.94,
+          "weakTopicTrueMastery": 25.07,
+          "accuracy": 0.2,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 33.14,
+          "estimatedMastery": 24.93,
+          "calibrationError": 8.22,
+          "weakTopicTrueMastery": 29.2,
+          "accuracy": 0.27,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 6,
+          "trueMastery": 35.65,
+          "estimatedMastery": 26.93,
+          "calibrationError": 9.42,
+          "weakTopicTrueMastery": 31.11,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 7,
+          "trueMastery": 38.17,
+          "estimatedMastery": 30.52,
+          "calibrationError": 8.98,
+          "weakTopicTrueMastery": 32.37,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 8,
+          "trueMastery": 41.08,
+          "estimatedMastery": 31.81,
+          "calibrationError": 9.72,
+          "weakTopicTrueMastery": 34.52,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 9,
+          "trueMastery": 43.92,
+          "estimatedMastery": 33.59,
+          "calibrationError": 10.33,
+          "weakTopicTrueMastery": 37.25,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 10,
+          "trueMastery": 46.97,
+          "estimatedMastery": 33.44,
+          "calibrationError": 14.06,
+          "weakTopicTrueMastery": 38.59,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.67
+        }
+      ]
+    },
+    {
+      "profile": "uneven",
+      "policy": "adaptive",
+      "seed": 1,
+      "startTrueMastery": 48.09,
+      "endTrueMastery": 71.37,
+      "trueSkillGain": 23.28,
+      "weakTopicIds": [
+        "t8",
+        "t2",
+        "t6"
+      ],
+      "weakTopicGain": 48.02,
+      "initialCalibrationError": 26.81,
+      "finalCalibrationError": 11.19,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.34,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 50.38,
+          "estimatedMastery": 42.73,
+          "calibrationError": 22.5,
+          "weakTopicTrueMastery": 21.99,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 53.54,
+          "estimatedMastery": 45.38,
+          "calibrationError": 22.91,
+          "weakTopicTrueMastery": 21.93,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.4
+        },
+        {
+          "session": 3,
+          "trueMastery": 56.86,
+          "estimatedMastery": 47.08,
+          "calibrationError": 21.54,
+          "weakTopicTrueMastery": 30.76,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 4,
+          "trueMastery": 59.67,
+          "estimatedMastery": 49.08,
+          "calibrationError": 22.24,
+          "weakTopicTrueMastery": 38.77,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        },
+        {
+          "session": 5,
+          "trueMastery": 61.55,
+          "estimatedMastery": 51.71,
+          "calibrationError": 18.01,
+          "weakTopicTrueMastery": 43.79,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 6,
+          "trueMastery": 64.51,
+          "estimatedMastery": 50.57,
+          "calibrationError": 21.15,
+          "weakTopicTrueMastery": 52.2,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 7,
+          "trueMastery": 66.75,
+          "estimatedMastery": 52.67,
+          "calibrationError": 21.38,
+          "weakTopicTrueMastery": 58.68,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        },
+        {
+          "session": 8,
+          "trueMastery": 67.99,
+          "estimatedMastery": 54.84,
+          "calibrationError": 15.37,
+          "weakTopicTrueMastery": 61,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 9,
+          "trueMastery": 70.62,
+          "estimatedMastery": 55.5,
+          "calibrationError": 15.85,
+          "weakTopicTrueMastery": 68.55,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 10,
+          "trueMastery": 71.37,
+          "estimatedMastery": 61.07,
+          "calibrationError": 11.19,
+          "weakTopicTrueMastery": 68.51,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        }
+      ]
+    },
+    {
+      "profile": "uneven",
+      "policy": "adaptive",
+      "seed": 2,
+      "startTrueMastery": 47.17,
+      "endTrueMastery": 71.75,
+      "trueSkillGain": 24.58,
+      "weakTopicIds": [
+        "t8",
+        "t4",
+        "t2"
+      ],
+      "weakTopicGain": 45.22,
+      "initialCalibrationError": 28.82,
+      "finalCalibrationError": 17.62,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.37,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 49.37,
+          "estimatedMastery": 37.98,
+          "calibrationError": 23.85,
+          "weakTopicTrueMastery": 21.59,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 51.61,
+          "estimatedMastery": 43.71,
+          "calibrationError": 22.3,
+          "weakTopicTrueMastery": 27.21,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 3,
+          "trueMastery": 54.94,
+          "estimatedMastery": 40.19,
+          "calibrationError": 25.17,
+          "weakTopicTrueMastery": 36.16,
+          "accuracy": 0.07,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 4,
+          "trueMastery": 58.49,
+          "estimatedMastery": 40.35,
+          "calibrationError": 28.71,
+          "weakTopicTrueMastery": 45.73,
+          "accuracy": 0.27,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        },
+        {
+          "session": 5,
+          "trueMastery": 59.23,
+          "estimatedMastery": 48.16,
+          "calibrationError": 21.54,
+          "weakTopicTrueMastery": 46.25,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 6,
+          "trueMastery": 62.52,
+          "estimatedMastery": 47.49,
+          "calibrationError": 19.95,
+          "weakTopicTrueMastery": 48.81,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 7,
+          "trueMastery": 65.57,
+          "estimatedMastery": 47.79,
+          "calibrationError": 22.92,
+          "weakTopicTrueMastery": 47.68,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        },
+        {
+          "session": 8,
+          "trueMastery": 66.49,
+          "estimatedMastery": 53.69,
+          "calibrationError": 17.89,
+          "weakTopicTrueMastery": 47.53,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 9,
+          "trueMastery": 68.78,
+          "estimatedMastery": 52.62,
+          "calibrationError": 17.26,
+          "weakTopicTrueMastery": 54.36,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 10,
+          "trueMastery": 71.75,
+          "estimatedMastery": 54.14,
+          "calibrationError": 17.62,
+          "weakTopicTrueMastery": 63.03,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        }
+      ]
+    },
+    {
+      "profile": "uneven",
+      "policy": "adaptive",
+      "seed": 3,
+      "startTrueMastery": 49.41,
+      "endTrueMastery": 74.11,
+      "trueSkillGain": 24.7,
+      "weakTopicIds": [
+        "t6",
+        "t8",
+        "t2"
+      ],
+      "weakTopicGain": 54.6,
+      "initialCalibrationError": 27.65,
+      "finalCalibrationError": 20.67,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.42,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 53.14,
+          "estimatedMastery": 35.3,
+          "calibrationError": 28.05,
+          "weakTopicTrueMastery": 30.28,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 56.37,
+          "estimatedMastery": 36.63,
+          "calibrationError": 29.95,
+          "weakTopicTrueMastery": 38.91,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        },
+        {
+          "session": 3,
+          "trueMastery": 57.68,
+          "estimatedMastery": 43.2,
+          "calibrationError": 24.31,
+          "weakTopicTrueMastery": 40.69,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 4,
+          "trueMastery": 61.22,
+          "estimatedMastery": 42.81,
+          "calibrationError": 25.98,
+          "weakTopicTrueMastery": 40.11,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 63.03,
+          "estimatedMastery": 47.89,
+          "calibrationError": 19.95,
+          "weakTopicTrueMastery": 43.55,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 6,
+          "trueMastery": 65.85,
+          "estimatedMastery": 47.35,
+          "calibrationError": 21.7,
+          "weakTopicTrueMastery": 51.63,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 7,
+          "trueMastery": 68.23,
+          "estimatedMastery": 48.3,
+          "calibrationError": 23.13,
+          "weakTopicTrueMastery": 58.5,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        },
+        {
+          "session": 8,
+          "trueMastery": 68.85,
+          "estimatedMastery": 51.1,
+          "calibrationError": 17.75,
+          "weakTopicTrueMastery": 60.45,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 9,
+          "trueMastery": 72.16,
+          "estimatedMastery": 51.14,
+          "calibrationError": 21.02,
+          "weakTopicTrueMastery": 69.77,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 10,
+          "trueMastery": 74.11,
+          "estimatedMastery": 53.44,
+          "calibrationError": 20.67,
+          "weakTopicTrueMastery": 75.46,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        }
+      ]
+    },
+    {
+      "profile": "uneven",
+      "policy": "adaptive",
+      "seed": 4,
+      "startTrueMastery": 50.14,
+      "endTrueMastery": 72.92,
+      "trueSkillGain": 22.79,
+      "weakTopicIds": [
+        "t8",
+        "t6",
+        "t2"
+      ],
+      "weakTopicGain": 41.71,
+      "initialCalibrationError": 26.2,
+      "finalCalibrationError": 13.87,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.26,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 51.69,
+          "estimatedMastery": 37.51,
+          "calibrationError": 24.78,
+          "weakTopicTrueMastery": 23.84,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 55.69,
+          "estimatedMastery": 37.29,
+          "calibrationError": 27.84,
+          "weakTopicTrueMastery": 34.59,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 3,
+          "trueMastery": 57.21,
+          "estimatedMastery": 42.47,
+          "calibrationError": 23.73,
+          "weakTopicTrueMastery": 35.5,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 4,
+          "trueMastery": 60.64,
+          "estimatedMastery": 44.69,
+          "calibrationError": 23.78,
+          "weakTopicTrueMastery": 35.01,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 63.68,
+          "estimatedMastery": 45.44,
+          "calibrationError": 22.71,
+          "weakTopicTrueMastery": 43.33,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 6,
+          "trueMastery": 65.53,
+          "estimatedMastery": 51.86,
+          "calibrationError": 18.05,
+          "weakTopicTrueMastery": 48.4,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 7,
+          "trueMastery": 67.57,
+          "estimatedMastery": 50.6,
+          "calibrationError": 16.97,
+          "weakTopicTrueMastery": 53.66,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 8,
+          "trueMastery": 70.41,
+          "estimatedMastery": 53.83,
+          "calibrationError": 16.58,
+          "weakTopicTrueMastery": 61.81,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        },
+        {
+          "session": 9,
+          "trueMastery": 71.68,
+          "estimatedMastery": 57.06,
+          "calibrationError": 15.08,
+          "weakTopicTrueMastery": 65.76,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 10,
+          "trueMastery": 72.92,
+          "estimatedMastery": 59.7,
+          "calibrationError": 13.87,
+          "weakTopicTrueMastery": 64.11,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        }
+      ]
+    },
+    {
+      "profile": "uneven",
+      "policy": "adaptive",
+      "seed": 5,
+      "startTrueMastery": 50.45,
+      "endTrueMastery": 73.63,
+      "trueSkillGain": 23.17,
+      "weakTopicIds": [
+        "t8",
+        "t4",
+        "t6"
+      ],
+      "weakTopicGain": 40.86,
+      "initialCalibrationError": 28.88,
+      "finalCalibrationError": 14.15,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.34,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 53.93,
+          "estimatedMastery": 38.66,
+          "calibrationError": 26.26,
+          "weakTopicTrueMastery": 20.35,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 56.86,
+          "estimatedMastery": 39.78,
+          "calibrationError": 28.07,
+          "weakTopicTrueMastery": 20.35,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        },
+        {
+          "session": 3,
+          "trueMastery": 59.22,
+          "estimatedMastery": 42.11,
+          "calibrationError": 24.51,
+          "weakTopicTrueMastery": 26.93,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 4,
+          "trueMastery": 62.52,
+          "estimatedMastery": 42.05,
+          "calibrationError": 27.86,
+          "weakTopicTrueMastery": 36.3,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        },
+        {
+          "session": 5,
+          "trueMastery": 64.08,
+          "estimatedMastery": 45.97,
+          "calibrationError": 22.02,
+          "weakTopicTrueMastery": 40.73,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 6,
+          "trueMastery": 67.41,
+          "estimatedMastery": 46.39,
+          "calibrationError": 24.92,
+          "weakTopicTrueMastery": 50.18,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 7,
+          "trueMastery": 69.03,
+          "estimatedMastery": 51.91,
+          "calibrationError": 18.58,
+          "weakTopicTrueMastery": 54.79,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 8,
+          "trueMastery": 71.75,
+          "estimatedMastery": 53.1,
+          "calibrationError": 18.66,
+          "weakTopicTrueMastery": 62.62,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 9,
+          "trueMastery": 73.26,
+          "estimatedMastery": 55.86,
+          "calibrationError": 17.41,
+          "weakTopicTrueMastery": 62.92,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 10,
+          "trueMastery": 73.63,
+          "estimatedMastery": 59.48,
+          "calibrationError": 14.15,
+          "weakTopicTrueMastery": 61.21,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        }
+      ]
+    },
+    {
+      "profile": "uneven",
+      "policy": "baseline",
+      "seed": 1,
+      "startTrueMastery": 48.09,
+      "endTrueMastery": 67.83,
+      "trueSkillGain": 19.74,
+      "weakTopicIds": [
+        "t8",
+        "t2",
+        "t6"
+      ],
+      "weakTopicGain": 28.92,
+      "initialCalibrationError": 26.81,
+      "finalCalibrationError": 14.27,
+      "withinSessionRepeatRate": 0.05,
+      "crossSessionRepeatRate": 0.39,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 49.65,
+          "estimatedMastery": 42.88,
+          "calibrationError": 18.38,
+          "weakTopicTrueMastery": 22.02,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 51.61,
+          "estimatedMastery": 45.41,
+          "calibrationError": 18.03,
+          "weakTopicTrueMastery": 24.1,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 3,
+          "trueMastery": 54.53,
+          "estimatedMastery": 44.2,
+          "calibrationError": 17.31,
+          "weakTopicTrueMastery": 28.65,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 4,
+          "trueMastery": 56.61,
+          "estimatedMastery": 43.11,
+          "calibrationError": 15.92,
+          "weakTopicTrueMastery": 31.57,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 58.22,
+          "estimatedMastery": 45.42,
+          "calibrationError": 13.27,
+          "weakTopicTrueMastery": 34.27,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 6,
+          "trueMastery": 60.34,
+          "estimatedMastery": 49.16,
+          "calibrationError": 11.46,
+          "weakTopicTrueMastery": 38.18,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 7,
+          "trueMastery": 62.07,
+          "estimatedMastery": 49.53,
+          "calibrationError": 14.97,
+          "weakTopicTrueMastery": 38.52,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 8,
+          "trueMastery": 63.92,
+          "estimatedMastery": 51.72,
+          "calibrationError": 12.73,
+          "weakTopicTrueMastery": 42.13,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 9,
+          "trueMastery": 65.55,
+          "estimatedMastery": 53.5,
+          "calibrationError": 14.53,
+          "weakTopicTrueMastery": 44.24,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.73
+        },
+        {
+          "session": 10,
+          "trueMastery": 67.83,
+          "estimatedMastery": 54.54,
+          "calibrationError": 14.27,
+          "weakTopicTrueMastery": 49.42,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.73
+        }
+      ]
+    },
+    {
+      "profile": "uneven",
+      "policy": "baseline",
+      "seed": 2,
+      "startTrueMastery": 47.17,
+      "endTrueMastery": 65.32,
+      "trueSkillGain": 18.14,
+      "weakTopicIds": [
+        "t8",
+        "t4",
+        "t2"
+      ],
+      "weakTopicGain": 23.06,
+      "initialCalibrationError": 28.82,
+      "finalCalibrationError": 17.8,
+      "withinSessionRepeatRate": 0.05,
+      "crossSessionRepeatRate": 0.35,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 48.55,
+          "estimatedMastery": 37.83,
+          "calibrationError": 22.22,
+          "weakTopicTrueMastery": 18.79,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 50.32,
+          "estimatedMastery": 38.45,
+          "calibrationError": 19.68,
+          "weakTopicTrueMastery": 20.3,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 3,
+          "trueMastery": 52.42,
+          "estimatedMastery": 40.62,
+          "calibrationError": 16.72,
+          "weakTopicTrueMastery": 22.68,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 4,
+          "trueMastery": 55.4,
+          "estimatedMastery": 35.76,
+          "calibrationError": 20.39,
+          "weakTopicTrueMastery": 26.38,
+          "accuracy": 0.2,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 5,
+          "trueMastery": 57.67,
+          "estimatedMastery": 38.75,
+          "calibrationError": 18.92,
+          "weakTopicTrueMastery": 27.89,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 6,
+          "trueMastery": 59.63,
+          "estimatedMastery": 41.79,
+          "calibrationError": 19.26,
+          "weakTopicTrueMastery": 30.16,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.2,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 7,
+          "trueMastery": 61.43,
+          "estimatedMastery": 43.89,
+          "calibrationError": 17.7,
+          "weakTopicTrueMastery": 33.03,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 8,
+          "trueMastery": 62.7,
+          "estimatedMastery": 45.75,
+          "calibrationError": 16.95,
+          "weakTopicTrueMastery": 34.76,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 9,
+          "trueMastery": 63.55,
+          "estimatedMastery": 46.52,
+          "calibrationError": 17.03,
+          "weakTopicTrueMastery": 36.2,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 10,
+          "trueMastery": 65.32,
+          "estimatedMastery": 47.51,
+          "calibrationError": 17.8,
+          "weakTopicTrueMastery": 40.87,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        }
+      ]
+    },
+    {
+      "profile": "uneven",
+      "policy": "baseline",
+      "seed": 3,
+      "startTrueMastery": 49.41,
+      "endTrueMastery": 67.21,
+      "trueSkillGain": 17.8,
+      "weakTopicIds": [
+        "t6",
+        "t8",
+        "t2"
+      ],
+      "weakTopicGain": 26.27,
+      "initialCalibrationError": 27.65,
+      "finalCalibrationError": 17.83,
+      "withinSessionRepeatRate": 0.04,
+      "crossSessionRepeatRate": 0.43,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 51.37,
+          "estimatedMastery": 31.96,
+          "calibrationError": 22.26,
+          "weakTopicTrueMastery": 23.15,
+          "accuracy": 0.27,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 53.72,
+          "estimatedMastery": 29.84,
+          "calibrationError": 25.17,
+          "weakTopicTrueMastery": 25.99,
+          "accuracy": 0.27,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.07
+        },
+        {
+          "session": 3,
+          "trueMastery": 55.73,
+          "estimatedMastery": 32.59,
+          "calibrationError": 25.65,
+          "weakTopicTrueMastery": 29.19,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 4,
+          "trueMastery": 57.59,
+          "estimatedMastery": 34.26,
+          "calibrationError": 23.33,
+          "weakTopicTrueMastery": 30.77,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 5,
+          "trueMastery": 59.32,
+          "estimatedMastery": 40.24,
+          "calibrationError": 19.86,
+          "weakTopicTrueMastery": 33.89,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 6,
+          "trueMastery": 60.68,
+          "estimatedMastery": 41.18,
+          "calibrationError": 19.5,
+          "weakTopicTrueMastery": 36.14,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 7,
+          "trueMastery": 62.46,
+          "estimatedMastery": 44.39,
+          "calibrationError": 18.07,
+          "weakTopicTrueMastery": 39.63,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 8,
+          "trueMastery": 63.45,
+          "estimatedMastery": 47.46,
+          "calibrationError": 17.08,
+          "weakTopicTrueMastery": 41.35,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.73
+        },
+        {
+          "session": 9,
+          "trueMastery": 65.1,
+          "estimatedMastery": 45.39,
+          "calibrationError": 19.72,
+          "weakTopicTrueMastery": 43.17,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 10,
+          "trueMastery": 67.21,
+          "estimatedMastery": 49.38,
+          "calibrationError": 17.83,
+          "weakTopicTrueMastery": 47.13,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.4
+        }
+      ]
+    },
+    {
+      "profile": "uneven",
+      "policy": "baseline",
+      "seed": 4,
+      "startTrueMastery": 50.14,
+      "endTrueMastery": 68.82,
+      "trueSkillGain": 18.69,
+      "weakTopicIds": [
+        "t8",
+        "t6",
+        "t2"
+      ],
+      "weakTopicGain": 26.45,
+      "initialCalibrationError": 26.2,
+      "finalCalibrationError": 15.94,
+      "withinSessionRepeatRate": 0.05,
+      "crossSessionRepeatRate": 0.39,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 52.78,
+          "estimatedMastery": 36.65,
+          "calibrationError": 17.49,
+          "weakTopicTrueMastery": 25.74,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 55.31,
+          "estimatedMastery": 35.37,
+          "calibrationError": 21.19,
+          "weakTopicTrueMastery": 27.57,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.07
+        },
+        {
+          "session": 3,
+          "trueMastery": 57.16,
+          "estimatedMastery": 39.79,
+          "calibrationError": 18.43,
+          "weakTopicTrueMastery": 30.18,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 4,
+          "trueMastery": 58.79,
+          "estimatedMastery": 42.96,
+          "calibrationError": 15.83,
+          "weakTopicTrueMastery": 32.09,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 5,
+          "trueMastery": 60.74,
+          "estimatedMastery": 42.88,
+          "calibrationError": 17.86,
+          "weakTopicTrueMastery": 35.33,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 6,
+          "trueMastery": 62.74,
+          "estimatedMastery": 46.84,
+          "calibrationError": 15.9,
+          "weakTopicTrueMastery": 38.88,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 7,
+          "trueMastery": 64.58,
+          "estimatedMastery": 48.84,
+          "calibrationError": 15.74,
+          "weakTopicTrueMastery": 41.44,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.4
+        },
+        {
+          "session": 8,
+          "trueMastery": 65.85,
+          "estimatedMastery": 50.7,
+          "calibrationError": 15.15,
+          "weakTopicTrueMastery": 42.83,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 9,
+          "trueMastery": 67.08,
+          "estimatedMastery": 53.71,
+          "calibrationError": 13.54,
+          "weakTopicTrueMastery": 44.49,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 10,
+          "trueMastery": 68.82,
+          "estimatedMastery": 52.88,
+          "calibrationError": 15.94,
+          "weakTopicTrueMastery": 48.85,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.87
+        }
+      ]
+    },
+    {
+      "profile": "uneven",
+      "policy": "baseline",
+      "seed": 5,
+      "startTrueMastery": 50.45,
+      "endTrueMastery": 66.93,
+      "trueSkillGain": 16.47,
+      "weakTopicIds": [
+        "t8",
+        "t4",
+        "t6"
+      ],
+      "weakTopicGain": 19.82,
+      "initialCalibrationError": 28.88,
+      "finalCalibrationError": 13.58,
+      "withinSessionRepeatRate": 0.09,
+      "crossSessionRepeatRate": 0.3,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 52.12,
+          "estimatedMastery": 35.65,
+          "calibrationError": 19.33,
+          "weakTopicTrueMastery": 21.78,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 53.83,
+          "estimatedMastery": 39.57,
+          "calibrationError": 19.77,
+          "weakTopicTrueMastery": 23.15,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 3,
+          "trueMastery": 55.43,
+          "estimatedMastery": 40.66,
+          "calibrationError": 19.9,
+          "weakTopicTrueMastery": 24.44,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 4,
+          "trueMastery": 57.14,
+          "estimatedMastery": 41.02,
+          "calibrationError": 17.69,
+          "weakTopicTrueMastery": 26.9,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 58.89,
+          "estimatedMastery": 42.54,
+          "calibrationError": 16.52,
+          "weakTopicTrueMastery": 30.81,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 6,
+          "trueMastery": 60.15,
+          "estimatedMastery": 46.33,
+          "calibrationError": 14.3,
+          "weakTopicTrueMastery": 31.65,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 7,
+          "trueMastery": 62.27,
+          "estimatedMastery": 50.15,
+          "calibrationError": 12.82,
+          "weakTopicTrueMastery": 34.13,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 8,
+          "trueMastery": 63.5,
+          "estimatedMastery": 53.75,
+          "calibrationError": 12.22,
+          "weakTopicTrueMastery": 35.35,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 9,
+          "trueMastery": 65.53,
+          "estimatedMastery": 54.05,
+          "calibrationError": 11.48,
+          "weakTopicTrueMastery": 39.01,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 10,
+          "trueMastery": 66.93,
+          "estimatedMastery": 53.35,
+          "calibrationError": 13.58,
+          "weakTopicTrueMastery": 40.17,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.67
+        }
+      ]
+    },
+    {
+      "profile": "forgetful",
+      "policy": "adaptive",
+      "seed": 1,
+      "startTrueMastery": 35.95,
+      "endTrueMastery": 65.42,
+      "trueSkillGain": 29.47,
+      "weakTopicIds": [
+        "t6",
+        "t1",
+        "t3"
+      ],
+      "weakTopicGain": 37.62,
+      "initialCalibrationError": 5.6,
+      "finalCalibrationError": 10.22,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.23,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 44.68,
+          "estimatedMastery": 44.99,
+          "calibrationError": 6.72,
+          "weakTopicTrueMastery": 47.13,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 51.36,
+          "estimatedMastery": 51.44,
+          "calibrationError": 10.91,
+          "weakTopicTrueMastery": 47.91,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 3,
+          "trueMastery": 55.41,
+          "estimatedMastery": 55.61,
+          "calibrationError": 13.51,
+          "weakTopicTrueMastery": 43.92,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 4,
+          "trueMastery": 56.7,
+          "estimatedMastery": 55.83,
+          "calibrationError": 16.79,
+          "weakTopicTrueMastery": 40.79,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 5,
+          "trueMastery": 62.04,
+          "estimatedMastery": 57.18,
+          "calibrationError": 14.59,
+          "weakTopicTrueMastery": 47.96,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 6,
+          "trueMastery": 65.81,
+          "estimatedMastery": 56.97,
+          "calibrationError": 14.62,
+          "weakTopicTrueMastery": 61.2,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 7,
+          "trueMastery": 63.29,
+          "estimatedMastery": 59.43,
+          "calibrationError": 11.7,
+          "weakTopicTrueMastery": 60.74,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 8,
+          "trueMastery": 63.74,
+          "estimatedMastery": 59.18,
+          "calibrationError": 9.26,
+          "weakTopicTrueMastery": 65.9,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 9,
+          "trueMastery": 65.73,
+          "estimatedMastery": 58.65,
+          "calibrationError": 12.73,
+          "weakTopicTrueMastery": 66.98,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 10,
+          "trueMastery": 65.42,
+          "estimatedMastery": 59.8,
+          "calibrationError": 10.22,
+          "weakTopicTrueMastery": 67.39,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        }
+      ]
+    },
+    {
+      "profile": "forgetful",
+      "policy": "adaptive",
+      "seed": 2,
+      "startTrueMastery": 39.67,
+      "endTrueMastery": 69.76,
+      "trueSkillGain": 30.09,
+      "weakTopicIds": [
+        "t6",
+        "t8",
+        "t4"
+      ],
+      "weakTopicGain": 40.24,
+      "initialCalibrationError": 8.25,
+      "finalCalibrationError": 8.79,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.19,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 48.33,
+          "estimatedMastery": 39.05,
+          "calibrationError": 12.86,
+          "weakTopicTrueMastery": 30.56,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 52.25,
+          "estimatedMastery": 45.11,
+          "calibrationError": 10.72,
+          "weakTopicTrueMastery": 34.13,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 3,
+          "trueMastery": 56.13,
+          "estimatedMastery": 45.51,
+          "calibrationError": 14.21,
+          "weakTopicTrueMastery": 49.36,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 4,
+          "trueMastery": 58.31,
+          "estimatedMastery": 47.22,
+          "calibrationError": 15.45,
+          "weakTopicTrueMastery": 47.66,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 60.21,
+          "estimatedMastery": 50.28,
+          "calibrationError": 11.38,
+          "weakTopicTrueMastery": 53.93,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 6,
+          "trueMastery": 63.5,
+          "estimatedMastery": 55.11,
+          "calibrationError": 10.36,
+          "weakTopicTrueMastery": 68.03,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 7,
+          "trueMastery": 66.59,
+          "estimatedMastery": 60.81,
+          "calibrationError": 9.13,
+          "weakTopicTrueMastery": 78.12,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 8,
+          "trueMastery": 70.11,
+          "estimatedMastery": 61.35,
+          "calibrationError": 9.04,
+          "weakTopicTrueMastery": 69.24,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 9,
+          "trueMastery": 70.22,
+          "estimatedMastery": 61.92,
+          "calibrationError": 9.98,
+          "weakTopicTrueMastery": 65.66,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 10,
+          "trueMastery": 69.76,
+          "estimatedMastery": 62.35,
+          "calibrationError": 8.79,
+          "weakTopicTrueMastery": 70.8,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        }
+      ]
+    },
+    {
+      "profile": "forgetful",
+      "policy": "adaptive",
+      "seed": 3,
+      "startTrueMastery": 36.24,
+      "endTrueMastery": 66.49,
+      "trueSkillGain": 30.25,
+      "weakTopicIds": [
+        "t2",
+        "t4",
+        "t7"
+      ],
+      "weakTopicGain": 37.46,
+      "initialCalibrationError": 8.45,
+      "finalCalibrationError": 14.79,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.26,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 44.59,
+          "estimatedMastery": 38.94,
+          "calibrationError": 8.94,
+          "weakTopicTrueMastery": 39.15,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 51.49,
+          "estimatedMastery": 41.75,
+          "calibrationError": 12.6,
+          "weakTopicTrueMastery": 44.43,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 3,
+          "trueMastery": 57.18,
+          "estimatedMastery": 45.16,
+          "calibrationError": 13.45,
+          "weakTopicTrueMastery": 53.97,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 4,
+          "trueMastery": 58.63,
+          "estimatedMastery": 48.82,
+          "calibrationError": 11.24,
+          "weakTopicTrueMastery": 47.86,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 62.3,
+          "estimatedMastery": 56.89,
+          "calibrationError": 9.04,
+          "weakTopicTrueMastery": 48.94,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 6,
+          "trueMastery": 64.26,
+          "estimatedMastery": 56.68,
+          "calibrationError": 13.04,
+          "weakTopicTrueMastery": 49.52,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 7,
+          "trueMastery": 64.21,
+          "estimatedMastery": 57.33,
+          "calibrationError": 11.61,
+          "weakTopicTrueMastery": 58.91,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 8,
+          "trueMastery": 67.73,
+          "estimatedMastery": 56.6,
+          "calibrationError": 13.04,
+          "weakTopicTrueMastery": 69.39,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 9,
+          "trueMastery": 68.19,
+          "estimatedMastery": 57.24,
+          "calibrationError": 14.84,
+          "weakTopicTrueMastery": 71.67,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 10,
+          "trueMastery": 66.49,
+          "estimatedMastery": 58.42,
+          "calibrationError": 14.79,
+          "weakTopicTrueMastery": 63.41,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        }
+      ]
+    },
+    {
+      "profile": "forgetful",
+      "policy": "adaptive",
+      "seed": 4,
+      "startTrueMastery": 37.77,
+      "endTrueMastery": 67.52,
+      "trueSkillGain": 29.76,
+      "weakTopicIds": [
+        "t8",
+        "t2",
+        "t4"
+      ],
+      "weakTopicGain": 29.08,
+      "initialCalibrationError": 4.72,
+      "finalCalibrationError": 11.4,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.19,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 44,
+          "estimatedMastery": 37.92,
+          "calibrationError": 8.03,
+          "weakTopicTrueMastery": 32.64,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 51.97,
+          "estimatedMastery": 40.49,
+          "calibrationError": 13.43,
+          "weakTopicTrueMastery": 44.54,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 3,
+          "trueMastery": 55.02,
+          "estimatedMastery": 47.8,
+          "calibrationError": 11.12,
+          "weakTopicTrueMastery": 46.19,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 4,
+          "trueMastery": 59.33,
+          "estimatedMastery": 49.97,
+          "calibrationError": 14.05,
+          "weakTopicTrueMastery": 43.31,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 5,
+          "trueMastery": 62.3,
+          "estimatedMastery": 53.81,
+          "calibrationError": 14.62,
+          "weakTopicTrueMastery": 41,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 6,
+          "trueMastery": 65.51,
+          "estimatedMastery": 55.77,
+          "calibrationError": 14.99,
+          "weakTopicTrueMastery": 60.3,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 7,
+          "trueMastery": 69.37,
+          "estimatedMastery": 54.42,
+          "calibrationError": 14.95,
+          "weakTopicTrueMastery": 75.74,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 8,
+          "trueMastery": 67.92,
+          "estimatedMastery": 56.09,
+          "calibrationError": 11.83,
+          "weakTopicTrueMastery": 76.64,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 9,
+          "trueMastery": 66.62,
+          "estimatedMastery": 57.56,
+          "calibrationError": 9.87,
+          "weakTopicTrueMastery": 68.86,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 10,
+          "trueMastery": 67.52,
+          "estimatedMastery": 58.06,
+          "calibrationError": 11.4,
+          "weakTopicTrueMastery": 61.72,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        }
+      ]
+    },
+    {
+      "profile": "forgetful",
+      "policy": "adaptive",
+      "seed": 5,
+      "startTrueMastery": 41.78,
+      "endTrueMastery": 71.79,
+      "trueSkillGain": 30,
+      "weakTopicIds": [
+        "t5",
+        "t2",
+        "t1"
+      ],
+      "weakTopicGain": 36.81,
+      "initialCalibrationError": 8.59,
+      "finalCalibrationError": 14.41,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.2,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 50.98,
+          "estimatedMastery": 39.13,
+          "calibrationError": 13.66,
+          "weakTopicTrueMastery": 58.09,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 55.06,
+          "estimatedMastery": 42.68,
+          "calibrationError": 14.19,
+          "weakTopicTrueMastery": 61.58,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 3,
+          "trueMastery": 61.35,
+          "estimatedMastery": 46.7,
+          "calibrationError": 14.65,
+          "weakTopicTrueMastery": 70.88,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 4,
+          "trueMastery": 63.55,
+          "estimatedMastery": 49.93,
+          "calibrationError": 13.71,
+          "weakTopicTrueMastery": 73.2,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 67.13,
+          "estimatedMastery": 55.24,
+          "calibrationError": 12.85,
+          "weakTopicTrueMastery": 66.45,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 6,
+          "trueMastery": 69.01,
+          "estimatedMastery": 55.28,
+          "calibrationError": 14.09,
+          "weakTopicTrueMastery": 71.87,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 7,
+          "trueMastery": 70.99,
+          "estimatedMastery": 57.08,
+          "calibrationError": 13.91,
+          "weakTopicTrueMastery": 76.68,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 8,
+          "trueMastery": 70.74,
+          "estimatedMastery": 60.22,
+          "calibrationError": 10.52,
+          "weakTopicTrueMastery": 68.51,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 9,
+          "trueMastery": 72.49,
+          "estimatedMastery": 60.71,
+          "calibrationError": 13.47,
+          "weakTopicTrueMastery": 67.08,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 10,
+          "trueMastery": 71.79,
+          "estimatedMastery": 62.69,
+          "calibrationError": 14.41,
+          "weakTopicTrueMastery": 70.37,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.8
+        }
+      ]
+    },
+    {
+      "profile": "forgetful",
+      "policy": "baseline",
+      "seed": 1,
+      "startTrueMastery": 35.95,
+      "endTrueMastery": 70.94,
+      "trueSkillGain": 34.99,
+      "weakTopicIds": [
+        "t6",
+        "t1",
+        "t3"
+      ],
+      "weakTopicGain": 36.46,
+      "initialCalibrationError": 5.6,
+      "finalCalibrationError": 21.81,
+      "withinSessionRepeatRate": 0.05,
+      "crossSessionRepeatRate": 0.39,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 44.24,
+          "estimatedMastery": 37.56,
+          "calibrationError": 8.98,
+          "weakTopicTrueMastery": 39.54,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 51.15,
+          "estimatedMastery": 39.14,
+          "calibrationError": 13.79,
+          "weakTopicTrueMastery": 51.64,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 3,
+          "trueMastery": 56.99,
+          "estimatedMastery": 39.18,
+          "calibrationError": 20.54,
+          "weakTopicTrueMastery": 61.34,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 4,
+          "trueMastery": 62.47,
+          "estimatedMastery": 37.52,
+          "calibrationError": 24.96,
+          "weakTopicTrueMastery": 64.35,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 64.81,
+          "estimatedMastery": 42.01,
+          "calibrationError": 22.81,
+          "weakTopicTrueMastery": 67.01,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 6,
+          "trueMastery": 66.73,
+          "estimatedMastery": 45.32,
+          "calibrationError": 21.41,
+          "weakTopicTrueMastery": 67.16,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 7,
+          "trueMastery": 68.11,
+          "estimatedMastery": 45.14,
+          "calibrationError": 24.15,
+          "weakTopicTrueMastery": 65.93,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 8,
+          "trueMastery": 68.92,
+          "estimatedMastery": 48.58,
+          "calibrationError": 22.47,
+          "weakTopicTrueMastery": 62.68,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 9,
+          "trueMastery": 68.78,
+          "estimatedMastery": 52.4,
+          "calibrationError": 21.06,
+          "weakTopicTrueMastery": 62.13,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.73
+        },
+        {
+          "session": 10,
+          "trueMastery": 70.94,
+          "estimatedMastery": 50.86,
+          "calibrationError": 21.81,
+          "weakTopicTrueMastery": 66.23,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.73
+        }
+      ]
+    },
+    {
+      "profile": "forgetful",
+      "policy": "baseline",
+      "seed": 2,
+      "startTrueMastery": 39.67,
+      "endTrueMastery": 71.67,
+      "trueSkillGain": 32,
+      "weakTopicIds": [
+        "t6",
+        "t8",
+        "t4"
+      ],
+      "weakTopicGain": 36.43,
+      "initialCalibrationError": 8.25,
+      "finalCalibrationError": 21.07,
+      "withinSessionRepeatRate": 0.05,
+      "crossSessionRepeatRate": 0.35,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 47.95,
+          "estimatedMastery": 34.29,
+          "calibrationError": 18.52,
+          "weakTopicTrueMastery": 37.75,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 54.33,
+          "estimatedMastery": 37.26,
+          "calibrationError": 17.44,
+          "weakTopicTrueMastery": 42.45,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 3,
+          "trueMastery": 60.5,
+          "estimatedMastery": 37.82,
+          "calibrationError": 22.68,
+          "weakTopicTrueMastery": 52.9,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 4,
+          "trueMastery": 65.02,
+          "estimatedMastery": 35.95,
+          "calibrationError": 29.07,
+          "weakTopicTrueMastery": 61.53,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 5,
+          "trueMastery": 67.84,
+          "estimatedMastery": 40.39,
+          "calibrationError": 27.45,
+          "weakTopicTrueMastery": 65.17,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 6,
+          "trueMastery": 70.63,
+          "estimatedMastery": 43.69,
+          "calibrationError": 26.94,
+          "weakTopicTrueMastery": 66.79,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.2,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 7,
+          "trueMastery": 71.06,
+          "estimatedMastery": 48.14,
+          "calibrationError": 22.92,
+          "weakTopicTrueMastery": 67.45,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 8,
+          "trueMastery": 72.15,
+          "estimatedMastery": 48.32,
+          "calibrationError": 23.83,
+          "weakTopicTrueMastery": 64.75,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 9,
+          "trueMastery": 71.32,
+          "estimatedMastery": 49.66,
+          "calibrationError": 21.66,
+          "weakTopicTrueMastery": 61.46,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 10,
+          "trueMastery": 71.67,
+          "estimatedMastery": 50.68,
+          "calibrationError": 21.07,
+          "weakTopicTrueMastery": 66.99,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        }
+      ]
+    },
+    {
+      "profile": "forgetful",
+      "policy": "baseline",
+      "seed": 3,
+      "startTrueMastery": 36.24,
+      "endTrueMastery": 68.9,
+      "trueSkillGain": 32.67,
+      "weakTopicIds": [
+        "t2",
+        "t4",
+        "t7"
+      ],
+      "weakTopicGain": 37.11,
+      "initialCalibrationError": 8.45,
+      "finalCalibrationError": 18.95,
+      "withinSessionRepeatRate": 0.04,
+      "crossSessionRepeatRate": 0.43,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 44.51,
+          "estimatedMastery": 29,
+          "calibrationError": 15.52,
+          "weakTopicTrueMastery": 30.09,
+          "accuracy": 0.13,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 50.38,
+          "estimatedMastery": 30.03,
+          "calibrationError": 20.35,
+          "weakTopicTrueMastery": 37.66,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.07
+        },
+        {
+          "session": 3,
+          "trueMastery": 55.66,
+          "estimatedMastery": 32.42,
+          "calibrationError": 23.24,
+          "weakTopicTrueMastery": 44.45,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 4,
+          "trueMastery": 61.01,
+          "estimatedMastery": 31.32,
+          "calibrationError": 29.69,
+          "weakTopicTrueMastery": 51.79,
+          "accuracy": 0.33,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 5,
+          "trueMastery": 63.31,
+          "estimatedMastery": 37.45,
+          "calibrationError": 25.87,
+          "weakTopicTrueMastery": 53.81,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 6,
+          "trueMastery": 65.14,
+          "estimatedMastery": 40.06,
+          "calibrationError": 25.08,
+          "weakTopicTrueMastery": 58.83,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 7,
+          "trueMastery": 66.31,
+          "estimatedMastery": 45.11,
+          "calibrationError": 21.2,
+          "weakTopicTrueMastery": 59.51,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 8,
+          "trueMastery": 66.57,
+          "estimatedMastery": 50.91,
+          "calibrationError": 15.66,
+          "weakTopicTrueMastery": 57.77,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.73
+        },
+        {
+          "session": 9,
+          "trueMastery": 68.34,
+          "estimatedMastery": 47.8,
+          "calibrationError": 20.55,
+          "weakTopicTrueMastery": 57.97,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 10,
+          "trueMastery": 68.9,
+          "estimatedMastery": 49.96,
+          "calibrationError": 18.95,
+          "weakTopicTrueMastery": 63.07,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.4
+        }
+      ]
+    },
+    {
+      "profile": "forgetful",
+      "policy": "baseline",
+      "seed": 4,
+      "startTrueMastery": 37.77,
+      "endTrueMastery": 71.08,
+      "trueSkillGain": 33.31,
+      "weakTopicIds": [
+        "t8",
+        "t2",
+        "t4"
+      ],
+      "weakTopicGain": 32.2,
+      "initialCalibrationError": 4.72,
+      "finalCalibrationError": 20.85,
+      "withinSessionRepeatRate": 0.05,
+      "crossSessionRepeatRate": 0.39,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 47.04,
+          "estimatedMastery": 31.97,
+          "calibrationError": 15.08,
+          "weakTopicTrueMastery": 42.84,
+          "accuracy": 0.27,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 54.38,
+          "estimatedMastery": 32.09,
+          "calibrationError": 22.29,
+          "weakTopicTrueMastery": 44.45,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.07
+        },
+        {
+          "session": 3,
+          "trueMastery": 60.09,
+          "estimatedMastery": 33.13,
+          "calibrationError": 26.96,
+          "weakTopicTrueMastery": 52.53,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 4,
+          "trueMastery": 62.71,
+          "estimatedMastery": 37.57,
+          "calibrationError": 25.14,
+          "weakTopicTrueMastery": 54.19,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 5,
+          "trueMastery": 65.07,
+          "estimatedMastery": 41.27,
+          "calibrationError": 23.8,
+          "weakTopicTrueMastery": 57.53,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 6,
+          "trueMastery": 66.83,
+          "estimatedMastery": 43.31,
+          "calibrationError": 23.52,
+          "weakTopicTrueMastery": 61.21,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 7,
+          "trueMastery": 69.5,
+          "estimatedMastery": 42.68,
+          "calibrationError": 26.83,
+          "weakTopicTrueMastery": 66.63,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.4
+        },
+        {
+          "session": 8,
+          "trueMastery": 69.72,
+          "estimatedMastery": 47.6,
+          "calibrationError": 22.12,
+          "weakTopicTrueMastery": 64.96,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 9,
+          "trueMastery": 69.75,
+          "estimatedMastery": 50.78,
+          "calibrationError": 18.97,
+          "weakTopicTrueMastery": 65.33,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 10,
+          "trueMastery": 71.08,
+          "estimatedMastery": 50.23,
+          "calibrationError": 20.85,
+          "weakTopicTrueMastery": 64.84,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.87
+        }
+      ]
+    },
+    {
+      "profile": "forgetful",
+      "policy": "baseline",
+      "seed": 5,
+      "startTrueMastery": 41.78,
+      "endTrueMastery": 71.25,
+      "trueSkillGain": 29.47,
+      "weakTopicIds": [
+        "t5",
+        "t2",
+        "t1"
+      ],
+      "weakTopicGain": 39.56,
+      "initialCalibrationError": 8.59,
+      "finalCalibrationError": 15.86,
+      "withinSessionRepeatRate": 0.09,
+      "crossSessionRepeatRate": 0.3,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 51.29,
+          "estimatedMastery": 30.94,
+          "calibrationError": 21.84,
+          "weakTopicTrueMastery": 46.56,
+          "accuracy": 0.2,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 57.57,
+          "estimatedMastery": 38.72,
+          "calibrationError": 20.87,
+          "weakTopicTrueMastery": 53,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 3,
+          "trueMastery": 63.15,
+          "estimatedMastery": 37.07,
+          "calibrationError": 26.08,
+          "weakTopicTrueMastery": 56.29,
+          "accuracy": 0.4,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 4,
+          "trueMastery": 67.47,
+          "estimatedMastery": 38.91,
+          "calibrationError": 28.56,
+          "weakTopicTrueMastery": 63.11,
+          "accuracy": 0.53,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 68.73,
+          "estimatedMastery": 43.31,
+          "calibrationError": 25.42,
+          "weakTopicTrueMastery": 60.76,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 6,
+          "trueMastery": 71.19,
+          "estimatedMastery": 44.92,
+          "calibrationError": 26.27,
+          "weakTopicTrueMastery": 64.76,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 7,
+          "trueMastery": 71.61,
+          "estimatedMastery": 49.77,
+          "calibrationError": 21.84,
+          "weakTopicTrueMastery": 65.87,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 8,
+          "trueMastery": 71.9,
+          "estimatedMastery": 51.71,
+          "calibrationError": 20.19,
+          "weakTopicTrueMastery": 69.88,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 9,
+          "trueMastery": 71.32,
+          "estimatedMastery": 54.05,
+          "calibrationError": 17.27,
+          "weakTopicTrueMastery": 69.37,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 10,
+          "trueMastery": 71.25,
+          "estimatedMastery": 55.39,
+          "calibrationError": 15.86,
+          "weakTopicTrueMastery": 73.12,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.67
+        }
+      ]
+    },
+    {
+      "profile": "advanced",
+      "policy": "adaptive",
+      "seed": 1,
+      "startTrueMastery": 83.84,
+      "endTrueMastery": 88.55,
+      "trueSkillGain": 4.71,
+      "weakTopicIds": [
+        "t1",
+        "t7",
+        "t4"
+      ],
+      "weakTopicGain": 5.18,
+      "initialCalibrationError": 48.84,
+      "finalCalibrationError": 11.75,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.17,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 84.06,
+          "estimatedMastery": 47.73,
+          "calibrationError": 36.33,
+          "weakTopicTrueMastery": 81.3,
+          "accuracy": 1,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 84.49,
+          "estimatedMastery": 56.6,
+          "calibrationError": 27.89,
+          "weakTopicTrueMastery": 82.2,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 3,
+          "trueMastery": 85.04,
+          "estimatedMastery": 60,
+          "calibrationError": 25.04,
+          "weakTopicTrueMastery": 82.75,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 4,
+          "trueMastery": 85.7,
+          "estimatedMastery": 60.68,
+          "calibrationError": 25.02,
+          "weakTopicTrueMastery": 82.72,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 5,
+          "trueMastery": 86.26,
+          "estimatedMastery": 64.42,
+          "calibrationError": 21.84,
+          "weakTopicTrueMastery": 83.24,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 6,
+          "trueMastery": 87.06,
+          "estimatedMastery": 66.36,
+          "calibrationError": 20.71,
+          "weakTopicTrueMastery": 84.24,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 7,
+          "trueMastery": 87.47,
+          "estimatedMastery": 68.65,
+          "calibrationError": 18.82,
+          "weakTopicTrueMastery": 84.19,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 8,
+          "trueMastery": 88.26,
+          "estimatedMastery": 70.92,
+          "calibrationError": 17.34,
+          "weakTopicTrueMastery": 86.14,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 9,
+          "trueMastery": 88.46,
+          "estimatedMastery": 73.85,
+          "calibrationError": 14.61,
+          "weakTopicTrueMastery": 86.19,
+          "accuracy": 1,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.4
+        },
+        {
+          "session": 10,
+          "trueMastery": 88.55,
+          "estimatedMastery": 76.8,
+          "calibrationError": 11.75,
+          "weakTopicTrueMastery": 86.22,
+          "accuracy": 1,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        }
+      ]
+    },
+    {
+      "profile": "advanced",
+      "policy": "adaptive",
+      "seed": 2,
+      "startTrueMastery": 78.01,
+      "endTrueMastery": 85.44,
+      "trueSkillGain": 7.42,
+      "weakTopicIds": [
+        "t4",
+        "t5",
+        "t8"
+      ],
+      "weakTopicGain": 8.79,
+      "initialCalibrationError": 43.01,
+      "finalCalibrationError": 18.2,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.16,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 78.64,
+          "estimatedMastery": 39.05,
+          "calibrationError": 39.6,
+          "weakTopicTrueMastery": 74.58,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 79.23,
+          "estimatedMastery": 49.41,
+          "calibrationError": 29.82,
+          "weakTopicTrueMastery": 75.16,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 3,
+          "trueMastery": 79.9,
+          "estimatedMastery": 54.36,
+          "calibrationError": 25.54,
+          "weakTopicTrueMastery": 76.2,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 4,
+          "trueMastery": 80.66,
+          "estimatedMastery": 54.84,
+          "calibrationError": 25.82,
+          "weakTopicTrueMastery": 76.99,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 5,
+          "trueMastery": 81.29,
+          "estimatedMastery": 58.73,
+          "calibrationError": 22.56,
+          "weakTopicTrueMastery": 77.74,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 6,
+          "trueMastery": 82.36,
+          "estimatedMastery": 63.87,
+          "calibrationError": 18.49,
+          "weakTopicTrueMastery": 79.74,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 7,
+          "trueMastery": 82.81,
+          "estimatedMastery": 68.43,
+          "calibrationError": 14.38,
+          "weakTopicTrueMastery": 80.05,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 8,
+          "trueMastery": 83.37,
+          "estimatedMastery": 70.77,
+          "calibrationError": 12.61,
+          "weakTopicTrueMastery": 79.95,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 9,
+          "trueMastery": 84.65,
+          "estimatedMastery": 69.12,
+          "calibrationError": 15.53,
+          "weakTopicTrueMastery": 83.52,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 10,
+          "trueMastery": 85.44,
+          "estimatedMastery": 67.24,
+          "calibrationError": 18.2,
+          "weakTopicTrueMastery": 83.36,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.27
+        }
+      ]
+    },
+    {
+      "profile": "advanced",
+      "policy": "adaptive",
+      "seed": 3,
+      "startTrueMastery": 76.99,
+      "endTrueMastery": 85.43,
+      "trueSkillGain": 8.44,
+      "weakTopicIds": [
+        "t6",
+        "t2",
+        "t5"
+      ],
+      "weakTopicGain": 12.94,
+      "initialCalibrationError": 41.99,
+      "finalCalibrationError": 23.71,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.17,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 77.44,
+          "estimatedMastery": 46.34,
+          "calibrationError": 31.1,
+          "weakTopicTrueMastery": 70.43,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 78.74,
+          "estimatedMastery": 49.02,
+          "calibrationError": 29.72,
+          "weakTopicTrueMastery": 73.92,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 3,
+          "trueMastery": 79.66,
+          "estimatedMastery": 55.66,
+          "calibrationError": 24,
+          "weakTopicTrueMastery": 75.5,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 4,
+          "trueMastery": 80.54,
+          "estimatedMastery": 61.19,
+          "calibrationError": 19.35,
+          "weakTopicTrueMastery": 76.7,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 5,
+          "trueMastery": 81.36,
+          "estimatedMastery": 64.4,
+          "calibrationError": 16.97,
+          "weakTopicTrueMastery": 77.73,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 6,
+          "trueMastery": 82.68,
+          "estimatedMastery": 63.5,
+          "calibrationError": 19.18,
+          "weakTopicTrueMastery": 79.98,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 7,
+          "trueMastery": 83.31,
+          "estimatedMastery": 66.11,
+          "calibrationError": 17.19,
+          "weakTopicTrueMastery": 80.92,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.4
+        },
+        {
+          "session": 8,
+          "trueMastery": 84.06,
+          "estimatedMastery": 64.41,
+          "calibrationError": 19.66,
+          "weakTopicTrueMastery": 80.72,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 9,
+          "trueMastery": 84.84,
+          "estimatedMastery": 63.03,
+          "calibrationError": 21.8,
+          "weakTopicTrueMastery": 81.28,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 10,
+          "trueMastery": 85.43,
+          "estimatedMastery": 61.72,
+          "calibrationError": 23.71,
+          "weakTopicTrueMastery": 82.62,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.4
+        }
+      ]
+    },
+    {
+      "profile": "advanced",
+      "policy": "adaptive",
+      "seed": 4,
+      "startTrueMastery": 77.06,
+      "endTrueMastery": 85.07,
+      "trueSkillGain": 8.01,
+      "weakTopicIds": [
+        "t1",
+        "t6",
+        "t7"
+      ],
+      "weakTopicGain": 11.24,
+      "initialCalibrationError": 42.06,
+      "finalCalibrationError": 17.01,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.15,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 78.61,
+          "estimatedMastery": 36.27,
+          "calibrationError": 42.35,
+          "weakTopicTrueMastery": 75.03,
+          "accuracy": 0.47,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 79.09,
+          "estimatedMastery": 41.79,
+          "calibrationError": 37.29,
+          "weakTopicTrueMastery": 75.21,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 3,
+          "trueMastery": 79.72,
+          "estimatedMastery": 48.31,
+          "calibrationError": 31.42,
+          "weakTopicTrueMastery": 75.13,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 4,
+          "trueMastery": 80.18,
+          "estimatedMastery": 57.96,
+          "calibrationError": 22.22,
+          "weakTopicTrueMastery": 75.66,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 5,
+          "trueMastery": 81.15,
+          "estimatedMastery": 61.39,
+          "calibrationError": 19.77,
+          "weakTopicTrueMastery": 77.5,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 6,
+          "trueMastery": 81.76,
+          "estimatedMastery": 65.29,
+          "calibrationError": 16.47,
+          "weakTopicTrueMastery": 78.27,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 7,
+          "trueMastery": 83.06,
+          "estimatedMastery": 64.13,
+          "calibrationError": 18.93,
+          "weakTopicTrueMastery": 78.15,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 8,
+          "trueMastery": 83.98,
+          "estimatedMastery": 66.09,
+          "calibrationError": 17.9,
+          "weakTopicTrueMastery": 79.78,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 9,
+          "trueMastery": 84.4,
+          "estimatedMastery": 68.02,
+          "calibrationError": 16.38,
+          "weakTopicTrueMastery": 80.62,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 10,
+          "trueMastery": 85.07,
+          "estimatedMastery": 68.06,
+          "calibrationError": 17.01,
+          "weakTopicTrueMastery": 82.12,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.27
+        }
+      ]
+    },
+    {
+      "profile": "advanced",
+      "policy": "adaptive",
+      "seed": 5,
+      "startTrueMastery": 80.22,
+      "endTrueMastery": 86.31,
+      "trueSkillGain": 6.08,
+      "weakTopicIds": [
+        "t6",
+        "t4",
+        "t2"
+      ],
+      "weakTopicGain": 7.95,
+      "initialCalibrationError": 45.22,
+      "finalCalibrationError": 10.77,
+      "withinSessionRepeatRate": 0,
+      "crossSessionRepeatRate": 0.18,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 80.5,
+          "estimatedMastery": 47.73,
+          "calibrationError": 32.77,
+          "weakTopicTrueMastery": 76.9,
+          "accuracy": 1,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 80.95,
+          "estimatedMastery": 56.45,
+          "calibrationError": 24.51,
+          "weakTopicTrueMastery": 77.35,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 3,
+          "trueMastery": 81.68,
+          "estimatedMastery": 60.62,
+          "calibrationError": 21.06,
+          "weakTopicTrueMastery": 78.26,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 4,
+          "trueMastery": 82.53,
+          "estimatedMastery": 64.44,
+          "calibrationError": 18.08,
+          "weakTopicTrueMastery": 79.28,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 5,
+          "trueMastery": 83.74,
+          "estimatedMastery": 66.62,
+          "calibrationError": 17.12,
+          "weakTopicTrueMastery": 81.85,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 6,
+          "trueMastery": 84.76,
+          "estimatedMastery": 66.35,
+          "calibrationError": 18.4,
+          "weakTopicTrueMastery": 83.67,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 7,
+          "trueMastery": 85.61,
+          "estimatedMastery": 67.99,
+          "calibrationError": 17.63,
+          "weakTopicTrueMastery": 83.97,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 8,
+          "trueMastery": 86.21,
+          "estimatedMastery": 69.57,
+          "calibrationError": 16.64,
+          "weakTopicTrueMastery": 84.54,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 9,
+          "trueMastery": 86.23,
+          "estimatedMastery": 72.97,
+          "calibrationError": 13.26,
+          "weakTopicTrueMastery": 84.4,
+          "accuracy": 1,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 10,
+          "trueMastery": 86.31,
+          "estimatedMastery": 75.54,
+          "calibrationError": 10.77,
+          "weakTopicTrueMastery": 84.48,
+          "accuracy": 1,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        }
+      ]
+    },
+    {
+      "profile": "advanced",
+      "policy": "baseline",
+      "seed": 1,
+      "startTrueMastery": 83.84,
+      "endTrueMastery": 88.8,
+      "trueSkillGain": 4.96,
+      "weakTopicIds": [
+        "t1",
+        "t7",
+        "t4"
+      ],
+      "weakTopicGain": 6.07,
+      "initialCalibrationError": 48.84,
+      "finalCalibrationError": 12.93,
+      "withinSessionRepeatRate": 0.05,
+      "crossSessionRepeatRate": 0.39,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 84.52,
+          "estimatedMastery": 48.09,
+          "calibrationError": 36.42,
+          "weakTopicTrueMastery": 81.44,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 85.26,
+          "estimatedMastery": 54.93,
+          "calibrationError": 30.34,
+          "weakTopicTrueMastery": 82.56,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 3,
+          "trueMastery": 85.91,
+          "estimatedMastery": 56.96,
+          "calibrationError": 28.95,
+          "weakTopicTrueMastery": 83.74,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 4,
+          "trueMastery": 86.42,
+          "estimatedMastery": 60.77,
+          "calibrationError": 25.66,
+          "weakTopicTrueMastery": 84.12,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 86.95,
+          "estimatedMastery": 62.93,
+          "calibrationError": 24.03,
+          "weakTopicTrueMastery": 84.63,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 6,
+          "trueMastery": 87.31,
+          "estimatedMastery": 68.08,
+          "calibrationError": 19.22,
+          "weakTopicTrueMastery": 84.99,
+          "accuracy": 1,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 7,
+          "trueMastery": 87.74,
+          "estimatedMastery": 66.69,
+          "calibrationError": 21.05,
+          "weakTopicTrueMastery": 85.69,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 8,
+          "trueMastery": 88.15,
+          "estimatedMastery": 70.62,
+          "calibrationError": 17.54,
+          "weakTopicTrueMastery": 86.24,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 9,
+          "trueMastery": 88.46,
+          "estimatedMastery": 73.1,
+          "calibrationError": 15.36,
+          "weakTopicTrueMastery": 86.56,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.73
+        },
+        {
+          "session": 10,
+          "trueMastery": 88.8,
+          "estimatedMastery": 75.87,
+          "calibrationError": 12.93,
+          "weakTopicTrueMastery": 87.11,
+          "accuracy": 1,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.73
+        }
+      ]
+    },
+    {
+      "profile": "advanced",
+      "policy": "baseline",
+      "seed": 2,
+      "startTrueMastery": 78.01,
+      "endTrueMastery": 85.49,
+      "trueSkillGain": 7.48,
+      "weakTopicIds": [
+        "t4",
+        "t5",
+        "t8"
+      ],
+      "weakTopicGain": 8.71,
+      "initialCalibrationError": 43.01,
+      "finalCalibrationError": 16.67,
+      "withinSessionRepeatRate": 0.05,
+      "crossSessionRepeatRate": 0.35,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 79.21,
+          "estimatedMastery": 39.29,
+          "calibrationError": 39.92,
+          "weakTopicTrueMastery": 76.21,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 80.09,
+          "estimatedMastery": 45.22,
+          "calibrationError": 34.87,
+          "weakTopicTrueMastery": 77.13,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 3,
+          "trueMastery": 80.92,
+          "estimatedMastery": 50.93,
+          "calibrationError": 29.99,
+          "weakTopicTrueMastery": 78.69,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 4,
+          "trueMastery": 81.63,
+          "estimatedMastery": 49.92,
+          "calibrationError": 31.71,
+          "weakTopicTrueMastery": 79.3,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 5,
+          "trueMastery": 82.43,
+          "estimatedMastery": 53.09,
+          "calibrationError": 29.34,
+          "weakTopicTrueMastery": 79.58,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.33
+        },
+        {
+          "session": 6,
+          "trueMastery": 83.16,
+          "estimatedMastery": 57.58,
+          "calibrationError": 25.58,
+          "weakTopicTrueMastery": 79.94,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0.2,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 7,
+          "trueMastery": 83.82,
+          "estimatedMastery": 62.87,
+          "calibrationError": 20.95,
+          "weakTopicTrueMastery": 81.04,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 8,
+          "trueMastery": 84.42,
+          "estimatedMastery": 67.51,
+          "calibrationError": 16.91,
+          "weakTopicTrueMastery": 81.84,
+          "accuracy": 1,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 9,
+          "trueMastery": 84.83,
+          "estimatedMastery": 67.66,
+          "calibrationError": 17.17,
+          "weakTopicTrueMastery": 82.09,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 10,
+          "trueMastery": 85.49,
+          "estimatedMastery": 68.83,
+          "calibrationError": 16.67,
+          "weakTopicTrueMastery": 83.29,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.6
+        }
+      ]
+    },
+    {
+      "profile": "advanced",
+      "policy": "baseline",
+      "seed": 3,
+      "startTrueMastery": 76.99,
+      "endTrueMastery": 85.55,
+      "trueSkillGain": 8.55,
+      "weakTopicIds": [
+        "t6",
+        "t2",
+        "t5"
+      ],
+      "weakTopicGain": 12.06,
+      "initialCalibrationError": 41.99,
+      "finalCalibrationError": 21.84,
+      "withinSessionRepeatRate": 0.04,
+      "crossSessionRepeatRate": 0.43,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 78.31,
+          "estimatedMastery": 41.46,
+          "calibrationError": 36.85,
+          "weakTopicTrueMastery": 71.5,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 79.5,
+          "estimatedMastery": 44.48,
+          "calibrationError": 35.01,
+          "weakTopicTrueMastery": 72.71,
+          "accuracy": 0.67,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.07
+        },
+        {
+          "session": 3,
+          "trueMastery": 80.47,
+          "estimatedMastery": 50.2,
+          "calibrationError": 30.27,
+          "weakTopicTrueMastery": 74.04,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 4,
+          "trueMastery": 81.68,
+          "estimatedMastery": 50.04,
+          "calibrationError": 31.64,
+          "weakTopicTrueMastery": 76.03,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 5,
+          "trueMastery": 82.45,
+          "estimatedMastery": 54.81,
+          "calibrationError": 27.64,
+          "weakTopicTrueMastery": 77.12,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 6,
+          "trueMastery": 83.26,
+          "estimatedMastery": 58.37,
+          "calibrationError": 24.89,
+          "weakTopicTrueMastery": 78.84,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 7,
+          "trueMastery": 83.74,
+          "estimatedMastery": 61.44,
+          "calibrationError": 22.3,
+          "weakTopicTrueMastery": 79.42,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 8,
+          "trueMastery": 84.42,
+          "estimatedMastery": 63.71,
+          "calibrationError": 20.71,
+          "weakTopicTrueMastery": 80.34,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.73
+        },
+        {
+          "session": 9,
+          "trueMastery": 85.02,
+          "estimatedMastery": 62.76,
+          "calibrationError": 22.26,
+          "weakTopicTrueMastery": 81.11,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 10,
+          "trueMastery": 85.55,
+          "estimatedMastery": 63.7,
+          "calibrationError": 21.84,
+          "weakTopicTrueMastery": 81.74,
+          "accuracy": 0.73,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.4
+        }
+      ]
+    },
+    {
+      "profile": "advanced",
+      "policy": "baseline",
+      "seed": 4,
+      "startTrueMastery": 77.06,
+      "endTrueMastery": 85.38,
+      "trueSkillGain": 8.32,
+      "weakTopicIds": [
+        "t1",
+        "t6",
+        "t7"
+      ],
+      "weakTopicGain": 11.05,
+      "initialCalibrationError": 42.06,
+      "finalCalibrationError": 15.9,
+      "withinSessionRepeatRate": 0.05,
+      "crossSessionRepeatRate": 0.39,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 78.27,
+          "estimatedMastery": 40.01,
+          "calibrationError": 38.26,
+          "weakTopicTrueMastery": 72.21,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 79.72,
+          "estimatedMastery": 43.31,
+          "calibrationError": 36.4,
+          "weakTopicTrueMastery": 74.52,
+          "accuracy": 0.6,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.07
+        },
+        {
+          "session": 3,
+          "trueMastery": 80.7,
+          "estimatedMastery": 49.89,
+          "calibrationError": 30.81,
+          "weakTopicTrueMastery": 75.85,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 4,
+          "trueMastery": 81.35,
+          "estimatedMastery": 53.68,
+          "calibrationError": 27.67,
+          "weakTopicTrueMastery": 77.04,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 5,
+          "trueMastery": 82.17,
+          "estimatedMastery": 57.86,
+          "calibrationError": 24.31,
+          "weakTopicTrueMastery": 78.28,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.67
+        },
+        {
+          "session": 6,
+          "trueMastery": 83.04,
+          "estimatedMastery": 59.51,
+          "calibrationError": 23.53,
+          "weakTopicTrueMastery": 79.23,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 7,
+          "trueMastery": 83.71,
+          "estimatedMastery": 61.23,
+          "calibrationError": 22.49,
+          "weakTopicTrueMastery": 79.76,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.4
+        },
+        {
+          "session": 8,
+          "trueMastery": 84.42,
+          "estimatedMastery": 65,
+          "calibrationError": 19.42,
+          "weakTopicTrueMastery": 80.6,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 9,
+          "trueMastery": 84.8,
+          "estimatedMastery": 68.54,
+          "calibrationError": 16.26,
+          "weakTopicTrueMastery": 81.18,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.47
+        },
+        {
+          "session": 10,
+          "trueMastery": 85.38,
+          "estimatedMastery": 69.49,
+          "calibrationError": 15.9,
+          "weakTopicTrueMastery": 81.93,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.87
+        }
+      ]
+    },
+    {
+      "profile": "advanced",
+      "policy": "baseline",
+      "seed": 5,
+      "startTrueMastery": 80.22,
+      "endTrueMastery": 86.56,
+      "trueSkillGain": 6.34,
+      "weakTopicIds": [
+        "t6",
+        "t4",
+        "t2"
+      ],
+      "weakTopicGain": 7.8,
+      "initialCalibrationError": 45.22,
+      "finalCalibrationError": 10.12,
+      "withinSessionRepeatRate": 0.09,
+      "crossSessionRepeatRate": 0.3,
+      "series": [
+        {
+          "session": 1,
+          "trueMastery": 81.4,
+          "estimatedMastery": 44.84,
+          "calibrationError": 36.56,
+          "weakTopicTrueMastery": 78.39,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0
+        },
+        {
+          "session": 2,
+          "trueMastery": 82.29,
+          "estimatedMastery": 50.69,
+          "calibrationError": 31.6,
+          "weakTopicTrueMastery": 79.15,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 3,
+          "trueMastery": 83.2,
+          "estimatedMastery": 56.02,
+          "calibrationError": 27.18,
+          "weakTopicTrueMastery": 79.48,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 4,
+          "trueMastery": 83.88,
+          "estimatedMastery": 58.84,
+          "calibrationError": 25.04,
+          "weakTopicTrueMastery": 80.58,
+          "accuracy": 0.8,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.13
+        },
+        {
+          "session": 5,
+          "trueMastery": 84.57,
+          "estimatedMastery": 63.51,
+          "calibrationError": 21.06,
+          "weakTopicTrueMastery": 81.88,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 6,
+          "trueMastery": 85.13,
+          "estimatedMastery": 65.51,
+          "calibrationError": 19.62,
+          "weakTopicTrueMastery": 82.58,
+          "accuracy": 0.87,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.6
+        },
+        {
+          "session": 7,
+          "trueMastery": 85.63,
+          "estimatedMastery": 68.51,
+          "calibrationError": 17.12,
+          "weakTopicTrueMastery": 82.85,
+          "accuracy": 0.93,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.2
+        },
+        {
+          "session": 8,
+          "trueMastery": 85.99,
+          "estimatedMastery": 71.61,
+          "calibrationError": 14.38,
+          "weakTopicTrueMastery": 83.08,
+          "accuracy": 1,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.27
+        },
+        {
+          "session": 9,
+          "trueMastery": 86.3,
+          "estimatedMastery": 75.38,
+          "calibrationError": 10.92,
+          "weakTopicTrueMastery": 83.8,
+          "accuracy": 1,
+          "withinSessionRepeatRate": 0.13,
+          "crossSessionRepeatRate": 0.53
+        },
+        {
+          "session": 10,
+          "trueMastery": 86.56,
+          "estimatedMastery": 76.45,
+          "calibrationError": 10.12,
+          "weakTopicTrueMastery": 84.33,
+          "accuracy": 1,
+          "withinSessionRepeatRate": 0.07,
+          "crossSessionRepeatRate": 0.67
+        }
+      ]
+    }
+  ]
+}

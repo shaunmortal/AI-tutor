@@ -1,0 +1,91 @@
+import { Suspense, lazy } from 'react';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { Loading } from '@/components/Loading/States';
+import { useAuth } from '@/features/auth/AuthProvider';
+import { Layout } from '@/components/layout/Layout';
+
+/**
+ * Routing, with each page in its own chunk.
+ *
+ * `lazy` is the point: a learner opening the login screen downloads the login screen, not the
+ * dashboard and the practice engine as well. On a slow connection that is the difference
+ * between a usable first load and a blank wait.
+ */
+
+const Login = lazy(() => import('@/pages/Login/Login'));
+const Dashboard = lazy(() => import('@/pages/Dashboard/Dashboard'));
+const Practice = lazy(() => import('@/pages/Practice/Practice'));
+const LearningGoals = lazy(() => import('@/pages/LearningGoals/LearningGoals'));
+const AITutor = lazy(() => import('@/pages/AITutor/AITutor'));
+const StudyPlan = lazy(() => import('@/pages/StudyPlan/StudyPlan'));
+const StudyGroups = lazy(() => import('@/pages/StudyGroups/StudyGroups'));
+const Settings = lazy(() => import('@/pages/Settings/Settings'));
+const MockTest = lazy(() => import('@/pages/MockTest/MockTest'));
+const Assessment = lazy(() => import('@/pages/Assessment/Assessment'));
+const ExamReadiness = lazy(() => import('@/pages/ExamReadiness/ExamReadiness'));
+const Sources = lazy(() => import('@/pages/Sources/Sources'));
+
+/**
+ * Everything behind this needs a session.
+ *
+ * `loading` has to be handled separately from "no session": while the stored session is being
+ * read, session is null but the learner is not signed out. Redirecting on that would bounce an
+ * authenticated learner to the login screen on every reload.
+ */
+function RequireAuth() {
+    const { session, loading } = useAuth();
+
+    if (loading) return <Loading label="Checking your session…" />;
+    if (!session) return <Navigate to="/login" replace />;
+
+    return (
+        <Layout>
+            <Outlet />
+        </Layout>
+    );
+}
+
+/** The login screen is pointless once signed in. */
+function RedirectIfSignedIn({ children }: { children: React.ReactNode }) {
+    const { session, loading } = useAuth();
+
+    if (loading) return <Loading />;
+    if (session) return <Navigate to="/dashboard" replace />;
+
+    return <>{children}</>;
+}
+
+export function AppRoutes() {
+    return (
+        <Suspense fallback={<Loading />}>
+            <Routes>
+                <Route
+                    path="/login"
+                    element={
+                        <RedirectIfSignedIn>
+                            <Login />
+                        </RedirectIfSignedIn>
+                    }
+                />
+
+                <Route element={<RequireAuth />}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/practice" element={<Practice />} />
+                    <Route path="/goals" element={<LearningGoals />} />
+                    <Route path="/plan" element={<StudyPlan />} />
+                    <Route path="/groups" element={<StudyGroups />} />
+                    <Route path="/tutor" element={<AITutor />} />
+                    <Route path="/sources" element={<Sources />} />
+                    <Route path="/mock-tests" element={<MockTest />} />
+                    <Route path="/assessment" element={<Assessment />} />
+                    <Route path="/readiness" element={<ExamReadiness />} />
+                    <Route path="/settings" element={<Settings />} />
+                </Route>
+
+                {/* Anything unknown goes to the dashboard, which itself redirects to login
+                    when there is no session. One rule, no 404 screen to build. */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+        </Suspense>
+    );
+}

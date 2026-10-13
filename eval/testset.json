@@ -1,0 +1,636 @@
+[
+  {
+    "id": "q01",
+    "type": "in_material",
+    "question": "Formally speaking, what is a computational problem, and how do we usually specify one without listing every answer?",
+    "reference": "A problem is a binary relation from problem inputs to correct outputs. Since listing the correct output for every input would take too long, we usually give a verifiable predicate (a property) that correct outputs must satisfy.",
+    "expected": [
+      {
+        "source": "Lecture 1 notes",
+        "page": 1
+      },
+      {
+        "source": "Lecture 1 video",
+        "startSec": 253,
+        "endSec": 316
+      },
+      {
+        "source": "Lecture 1 video",
+        "startSec": 313,
+        "endSec": 377
+      }
+    ]
+  },
+  {
+    "id": "q02",
+    "type": "in_material",
+    "question": "When do we say an algorithm actually solves a problem?",
+    "reference": "An algorithm is a deterministic procedure (a function) mapping each input to a single output, and it solves the problem if it returns a correct output for every problem input.",
+    "expected": [
+      {
+        "source": "Lecture 1 notes",
+        "page": 1
+      },
+      {
+        "source": "Lecture 1 video",
+        "startSec": 556,
+        "endSec": 622
+      },
+      {
+        "source": "Lecture 1 video",
+        "startSec": 618,
+        "endSec": 683
+      }
+    ]
+  },
+  {
+    "id": "q03",
+    "type": "in_material",
+    "question": "Our code is only a few lines long but has to work on inputs of any size. Why does that force us to use induction to prove it correct?",
+    "reference": "Programs have fixed size, so to handle arbitrarily large inputs the algorithm must loop or recurse in some way; case analysis only works for small inputs, so proving correctness for arbitrarily large inputs requires induction.",
+    "expected": [
+      {
+        "source": "Lecture 1 notes",
+        "page": 2
+      },
+      {
+        "source": "Lecture 1 video",
+        "startSec": 983,
+        "endSec": 1041
+      }
+    ]
+  },
+  {
+    "id": "q04",
+    "type": "in_material",
+    "question": "Why don't we just time how long a program takes on a computer to judge how efficient an algorithm is?",
+    "reference": "Wall-clock time depends on the machine (a fast computer runs the same code much faster than a slow one), but we want a machine-independent measure. So instead we count the number of fixed-time fundamental operations the algorithm performs, as a function of input size.",
+    "expected": [
+      {
+        "source": "Lecture 1 notes",
+        "page": 2
+      },
+      {
+        "source": "Lecture 1 video",
+        "startSec": 1596,
+        "endSec": 1659
+      },
+      {
+        "source": "Lecture 1 video",
+        "startSec": 1656,
+        "endSec": 1722
+      }
+    ]
+  },
+  {
+    "id": "q05",
+    "type": "in_material",
+    "question": "If someone hands me an n by n grid of numbers, is the size of my input just n?",
+    "reference": "No. The input size is how much information is needed to convey the input; an n by n array has size n squared. Similarly, a graph's size is usually the number of vertices plus the number of edges.",
+    "expected": [
+      {
+        "source": "Lecture 1 video",
+        "startSec": 1779,
+        "endSec": 1843
+      }
+    ]
+  },
+  {
+    "id": "q06",
+    "type": "in_material",
+    "question": "In the Word-RAM model, why does the machine word have to be at least about log n bits?",
+    "reference": "The machine must be able to address every location in memory in constant time, so a memory address (e.g., the index of the ith of n items) must fit in one word. That requires w to be at least the number of bits of the largest address, i.e., about log2 n.",
+    "expected": [
+      {
+        "source": "Lecture 1 notes",
+        "page": 3
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 870,
+        "endSec": 934
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 932,
+        "endSec": 995
+      }
+    ]
+  },
+  {
+    "id": "q07",
+    "type": "in_material",
+    "question": "What is the running time of the straightforward birthday-matching code that stores students in a static array and scans the record for each new student?",
+    "reference": "The outer loop runs over n students and the inner loop checks the k students already in the record, each step O(1), so the running time is O(n) + sum over k of (O(1) + k\u00b7O(1)) = O(n^2), which is quadratic (polynomial) in n.",
+    "expected": [
+      {
+        "source": "Lecture 1 notes",
+        "page": 4
+      }
+    ]
+  },
+  {
+    "id": "q08",
+    "type": "in_material",
+    "question": "What's the difference between an interface and a data structure?",
+    "reference": "An interface (also called an API or ADT) is a specification of what operations are supported, i.e., the problem. A data structure is a representation that says how those operations are supported, i.e., the solution; different data structures can implement the same interface with different performance.",
+    "expected": [
+      {
+        "source": "Lecture 2 notes",
+        "page": 1
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 14,
+        "endSec": 76
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 74,
+        "endSec": 130
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 73,
+        "endSec": 137
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 134,
+        "endSec": 198
+      }
+    ]
+  },
+  {
+    "id": "q09",
+    "type": "in_material",
+    "question": "How are stacks and queues related to the sequence interface?",
+    "reference": "They are special cases of the sequence interface: a stack supports only insert_last(x) and delete_last(), while a queue supports insert_last(x) and delete_first().",
+    "expected": [
+      {
+        "source": "Lecture 2 notes",
+        "page": 1
+      }
+    ]
+  },
+  {
+    "id": "q10",
+    "type": "in_material",
+    "question": "Even adding one item to the end of a static array is slow. Why can't we just extend it by one slot?",
+    "reference": "A static array has a fixed size, and the allocation model only lets us request a new array; the memory right after the array may already be in use. So we must allocate a new array and copy all n items over, which takes linear time.",
+    "expected": [
+      {
+        "source": "Lecture 2 notes",
+        "page": 2
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 1659,
+        "endSec": 1726
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 1726,
+        "endSec": 1791
+      }
+    ]
+  },
+  {
+    "id": "q11",
+    "type": "in_material",
+    "question": "How long does it take to read the i-th element of a linked list, and why?",
+    "reference": "get_at(i) and set_at(i, x) take O(i) time, which is Theta(n) in the worst case, because you must start at the head and follow next pointers i times to reach the item.",
+    "expected": [
+      {
+        "source": "Lecture 2 notes",
+        "page": 3
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 1852,
+        "endSec": 1916
+      }
+    ]
+  },
+  {
+    "id": "q12",
+    "type": "in_material",
+    "question": "Without switching to a doubly linked list, how can I read the final element of a singly linked list in constant time?",
+    "reference": "Store an extra pointer to the last node (a tail pointer) and keep it up to date on every update; this is called data structure augmentation. Then get_last, and also insert_last, take constant time.",
+    "expected": [
+      {
+        "source": "Lecture 2 video",
+        "startSec": 1976,
+        "endSec": 2039
+      }
+    ]
+  },
+  {
+    "id": "q13",
+    "type": "in_material",
+    "question": "When a dynamic array runs out of room, why is it a bad idea to grow it by a fixed amount like 5 extra slots?",
+    "reference": "Growing by a constant means you have to resize again just a few insertions later; you would spend linear time every 5 steps instead of every step, which is still linear time per operation, only changing the constant factor. Growing by a constant factor (e.g., doubling) avoids this.",
+    "expected": [
+      {
+        "source": "Lecture 2 video",
+        "startSec": 2399,
+        "endSec": 2467
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 2461,
+        "endSec": 2524
+      }
+    ]
+  },
+  {
+    "id": "q14",
+    "type": "in_material",
+    "question": "If I start from an empty dynamic array that doubles when full and append n items, what is the total cost of all the resizing?",
+    "reference": "Resizes happen at sizes 1, 2, 4, 8, ..., so the total resize cost is 1 + 2 + 4 + ... up to about n, a geometric series dominated by its last term, which is Theta(n). So n insertions take linear total time, i.e., constant amortized time each.",
+    "expected": [
+      {
+        "source": "Lecture 2 notes",
+        "page": 3
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 2581,
+        "endSec": 2645
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 2643,
+        "endSec": 2706
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 2703,
+        "endSec": 2768
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 2763,
+        "endSec": 2832
+      }
+    ]
+  },
+  {
+    "id": "q15",
+    "type": "in_material",
+    "question": "What does it mean when we say an operation takes T(n) amortized time?",
+    "reference": "An operation has amortized cost T(n) if any k such operations cost at most k\u00b7T(n) in total. It roughly means T(n) on average over a sequence of operations, even though a single operation (like a resize) may be expensive.",
+    "expected": [
+      {
+        "source": "Lecture 2 notes",
+        "page": 4
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 2763,
+        "endSec": 2832
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 2826,
+        "endSec": 2890
+      }
+    ]
+  },
+  {
+    "id": "q16",
+    "type": "in_material",
+    "question": "How should a dynamic array shrink after many deletions so it doesn't waste space but also doesn't thrash between resizes?",
+    "reference": "Resizing back to full (r = 1) as soon as it is very empty is bad because alternating insertions and deletions could cause repeated resizes. Instead, when the fill ratio r drops below r_d, resize to ratio r_i with r_d < r_i (e.g., r_d = 1/4, r_i = 1/2), so Theta(n) cheap operations must happen before the next expensive resize and space stays Theta(n).",
+    "expected": [
+      {
+        "source": "Lecture 2 notes",
+        "page": 4
+      }
+    ]
+  },
+  {
+    "id": "q17",
+    "type": "in_material",
+    "question": "How expensive is appending to or popping from a Python list?",
+    "reference": "A Python list is a dynamic array, so append and pop at the end take O(1) amortized time; other operations, such as inserting or deleting elsewhere, can take O(n).",
+    "expected": [
+      {
+        "source": "Lecture 2 notes",
+        "page": 3
+      },
+      {
+        "source": "Lecture 2 notes",
+        "page": 4
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 2036,
+        "endSec": 2100
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 2949,
+        "endSec": 3014
+      }
+    ]
+  },
+  {
+    "id": "q18",
+    "type": "in_material",
+    "question": "What's the difference between a sorting algorithm being destructive and being in place?",
+    "reference": "A destructive sort overwrites the input array A with the sorted result instead of building a new array B. An in-place sort additionally uses only O(1) extra space, so every in-place sort is destructive.",
+    "expected": [
+      {
+        "source": "Lecture 3 notes",
+        "page": 2
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 1167,
+        "endSec": 1231
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 1229,
+        "endSec": 1292
+      }
+    ]
+  },
+  {
+    "id": "q19",
+    "type": "in_material",
+    "question": "Why is the brute-force approach of trying every ordering of the array such a terrible sorting algorithm, and why is its cost stated with Omega?",
+    "reference": "Permutation sort enumerates all n! permutations and checks each in Theta(n) time to see if it is sorted, so it takes at least n!\u00b7n time, which is exponential. It is given as Omega (a lower bound) because the cost of generating the permutations was not specified; we only know there are at least n! of them.",
+    "expected": [
+      {
+        "source": "Lecture 3 notes",
+        "page": 2
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 1350,
+        "endSec": 1413
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 1410,
+        "endSec": 1477
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 1474,
+        "endSec": 1541
+      }
+    ]
+  },
+  {
+    "id": "q20",
+    "type": "in_material",
+    "question": "How do selection sort and insertion sort differ in the way they build up the sorted array?",
+    "reference": "Selection sort finds a largest number in the prefix, swaps it to the end, and then recursively sorts the rest to the left. Insertion sort does it in the reverse order: it first recursively sorts the prefix A[:i], then inserts the last element into place by repeated swaps.",
+    "expected": [
+      {
+        "source": "Lecture 3 notes",
+        "page": 3
+      },
+      {
+        "source": "Lecture 3 notes",
+        "page": 4
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 2449,
+        "endSec": 2513
+      }
+    ]
+  },
+  {
+    "id": "q21",
+    "type": "in_material",
+    "question": "Walk me through why selection sort is quadratic.",
+    "reference": "Selection sort calls prefix_max, which takes Theta(n) time, then recursively sorts one fewer element, giving T(n) = T(n-1) + Theta(n). Guessing T(n) = cn^2 and substituting shows the recurrence is consistent, so T(n) = Theta(n^2) (equivalently, the sum 1 + 2 + ... + n is about n^2).",
+    "expected": [
+      {
+        "source": "Lecture 3 notes",
+        "page": 3
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 2268,
+        "endSec": 2332
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 2328,
+        "endSec": 2393
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 2389,
+        "endSec": 2453
+      }
+    ]
+  },
+  {
+    "id": "q22",
+    "type": "in_material",
+    "question": "How do you combine two already-sorted halves into one sorted array in linear time?",
+    "reference": "Use the two-finger algorithm: keep a finger at the end of each sorted list and fill the merged array from the back, each time placing the larger of the two last items and moving that finger left. Each step does constant work and removes one item, so S(n) = S(n-1) + Theta(1) = Theta(n).",
+    "expected": [
+      {
+        "source": "Lecture 3 notes",
+        "page": 5
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 2570,
+        "endSec": 2633
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 2632,
+        "endSec": 2696
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 2937,
+        "endSec": 2999
+      }
+    ]
+  },
+  {
+    "id": "q23",
+    "type": "in_material",
+    "question": "What recurrence describes merge sort's running time, and what does it solve to?",
+    "reference": "Merge sort makes two recursive calls on halves and merges in Theta(n) time, so T(1) = Theta(1) and T(n) = 2T(n/2) + Theta(n). Substituting T(n) = cn log n shows it is consistent, so T(n) = Theta(n log n).",
+    "expected": [
+      {
+        "source": "Lecture 3 notes",
+        "page": 5
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 2997,
+        "endSec": 3063
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 3058,
+        "endSec": 3123
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 3118,
+        "endSec": 3178
+      }
+    ]
+  },
+  {
+    "id": "q24",
+    "type": "in_material",
+    "question": "If I only ever need to check once whether one particular person is in an unsorted list, is it worth sorting the list first?",
+    "reference": "No. Sorting and then binary searching costs about n log n, while just scanning the unordered array from beginning to end takes only linear time. Sorting first pays off only when you will search many times, since each later binary search takes log n.",
+    "expected": [
+      {
+        "source": "Lecture 3 video",
+        "startSec": 623,
+        "endSec": 687
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 684,
+        "endSec": 746
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 1047,
+        "endSec": 1110
+      }
+    ]
+  },
+  {
+    "id": "q25",
+    "type": "figure",
+    "question": "Looking at the growth-rate table in the Lecture 1 notes, roughly how long would a quadratic-time algorithm take on an input of size 1000, and how does exponential compare?",
+    "reference": "The table assumes one operation per cycle on a 1 GHz single-core machine. For n = 1000, Theta(n^2) is 1,000,000 operations, about 1 ms, while exponential 2^1000 is about 10^301 operations, about 10^281 millennia.",
+    "expected": [
+      {
+        "source": "Lecture 1 notes",
+        "page": 2
+      }
+    ]
+  },
+  {
+    "id": "q26",
+    "type": "figure",
+    "question": "In the Lecture 2 table comparing array, linked list and dynamic array, which operations does the dynamic array support in constant time?",
+    "reference": "The dynamic array row lists get_at(i) and set_at(i, x) as 1 (constant) and insert_last/delete_last as 1(a), constant amortized. Build, insert/delete_first and insert/delete_at(i) are listed as n.",
+    "expected": [
+      {
+        "source": "Lecture 2 notes",
+        "page": 4
+      },
+      {
+        "source": "Lecture 2 video",
+        "startSec": 2949,
+        "endSec": 3014
+      }
+    ]
+  },
+  {
+    "id": "q27",
+    "type": "figure",
+    "question": "In the Lecture 3 set-operations table, how do an unsorted array and a sorted array compare for find(k) and find_min()?",
+    "reference": "For an unsorted array, find(k) and find_min()/find_max() each take n (linear) time. For a sorted array, find(k) takes log n via binary search and find_min()/find_max() take 1, since they are at the first and last index.",
+    "expected": [
+      {
+        "source": "Lecture 3 notes",
+        "page": 1
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 684,
+        "endSec": 746
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 744,
+        "endSec": 806
+      },
+      {
+        "source": "Lecture 3 video",
+        "startSec": 927,
+        "endSec": 990
+      }
+    ]
+  },
+  {
+    "id": "q28",
+    "type": "figure",
+    "question": "According to the course roadmap in the Lecture 1 notes, which sorting algorithms will we study and in which lectures?",
+    "reference": "The roadmap lists Insertion Sort, Selection Sort and Merge Sort (L03), Counting Sort and Radix Sort (L05), AVL Sort (L07), and Heap Sort (L08).",
+    "expected": [
+      {
+        "source": "Lecture 1 notes",
+        "page": 4
+      }
+    ]
+  },
+  {
+    "id": "q29",
+    "type": "off_material",
+    "question": "How does choosing a random pivot make quicksort run in expected O(n log n) time?",
+    "reference": "",
+    "expected": []
+  },
+  {
+    "id": "q30",
+    "type": "off_material",
+    "question": "How do left and right rotations restore balance in a red-black tree after an insertion?",
+    "reference": "",
+    "expected": []
+  },
+  {
+    "id": "q31",
+    "type": "off_material",
+    "question": "How does the Knuth-Morris-Pratt algorithm avoid re-scanning characters when matching a pattern in a string?",
+    "reference": "",
+    "expected": []
+  },
+  {
+    "id": "q32",
+    "type": "off_material",
+    "question": "How does the Ford-Fulkerson method compute a maximum flow in a network?",
+    "reference": "",
+    "expected": []
+  },
+  {
+    "id": "q33",
+    "type": "off_material",
+    "question": "How does Kruskal's algorithm use a union-find structure to build a minimum spanning tree?",
+    "reference": "",
+    "expected": []
+  },
+  {
+    "id": "q34",
+    "type": "off_material",
+    "question": "How does a skip list use random levels to speed up search?",
+    "reference": "",
+    "expected": []
+  },
+  {
+    "id": "q35",
+    "type": "off_material",
+    "question": "What is the capital of France?",
+    "reference": "",
+    "expected": []
+  },
+  {
+    "id": "q36",
+    "type": "off_material",
+    "question": "How do I bake a loaf of sourdough bread?",
+    "reference": "",
+    "expected": []
+  }
+]
