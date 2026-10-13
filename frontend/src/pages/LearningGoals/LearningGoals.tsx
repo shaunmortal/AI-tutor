@@ -156,7 +156,13 @@ export default function LearningGoals() {
                 );
 
                 setResolved({
-                    curriculum: { id: fromMaterial, slug: '', name, description: null, isAiGenerated: true },
+                    curriculum: {
+                        id: fromMaterial,
+                        slug: '',
+                        name,
+                        description: null,
+                        isAiGenerated: true,
+                    },
                     subjects,
                 });
                 setChosen(subjects.map((subject) => subject.id));

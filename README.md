@@ -1,959 +1,307 @@
+<div align="center">
+
+<img src="frontend/public/favicon.svg" width="72" alt="Adigam AI logo" />
+
 # Adigam AI
 
-### ADAPT · LEARN · MASTER
+### Your course material, turned into a tutor that cites its sources and a study plan that adapts to you.
 
-**An adaptive learning assistant that turns a learner's own answers into a study plan it can explain.**
+**Multimodal AI Hackathon 2026 · Track D — Personalized Tutoring & Adaptive Learning**
 
-> **Multimodal AI Hackathon 2026 — Track D: Personalized Tutoring & Adaptive Learning.**
-> Builds on Adigam, my earlier adaptive-learning engine: learner model,
-> spaced repetition, study planner and mock tests. **New for this hackathon:** multimodal
-> ingestion (PDFs, slides, lecture videos), a source-cited tutor that refuses off-material
-> questions, source-tagged question generation, RAGAS evaluation and simulated-student
-> benchmarks.
+[![Go](https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white)](server)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](frontend)
+[![PostgreSQL](https://img.shields.io/badge/Postgres-RLS%20on%20every%20table-4169E1?logo=postgresql&logoColor=white)](database)
+[![Redis](https://img.shields.io/badge/Redis-Streams%20queue-DC382D?logo=redis&logoColor=white)](server/internal/jobs)
+[![Claude](https://img.shields.io/badge/Claude-Opus%205.5%20%C2%B7%20Sonnet%205.5-D97757)](server/internal/ai)
+[![Tests](https://img.shields.io/badge/Go%20tests-190%20passing-2ea44f)](#-testing--what-was-verified)
+[![Load](https://img.shields.io/badge/load%20test-1M%20learners%2C%200%20server%20errors-8A2BE2)](#-scale--load-tests)
+
+<br/>
+
+<img src="docs/screenshots/login-desktop-light.png" width="49%" alt="Sign-in, day mode" />
+<img src="docs/screenshots/login-desktop-dark.png" width="49%" alt="Sign-in, night mode" />
+
+</div>
+
+---
+
+## ✨ What it does
+
+Students study from lecture videos, slides and textbooks scattered across places, and general chatbots
+answer without tying anything to the course or to what the student already knows. Adigam fixes both:
 
 | | |
 |---|---|
-| **Track** | D — Personalized Tutoring & Adaptive Learning |
+| 📚 **One knowledge base from your material** | Upload PDFs and slide decks, paste a lecture video link. Text, slide images, figures and transcripts become excerpts that remember their **page, slide or timestamp**. |
+| 🗺️ **A course map** | Topics, key concepts and prerequisites are identified from the material, and every excerpt is tagged to a topic. |
+| 💬 **A tutor that cites, or says it can't** | Answers quote numbered excerpts; one tap opens the exact page, slide or second of video. Anything the material doesn't cover is declined or clearly labelled as outside knowledge. Explains in Hindi/Hinglish too. |
+| 🎯 **Adaptive assessment** | Diagnostic, practice and mock exams. Every generated question is checked by a **second, independent solve** before a learner sees it, and repeats are avoided. |
+| 📈 **A learner model you can read** | Per-topic mastery from the evidence (recent vs historical accuracy, difficulty, consistency, decay), SM-2 spaced repetition, and an exam-readiness score that shows its working. |
+| 🗓️ **A plan that adapts** | Day-by-day sessions weighted to weak topics, forgetting curves and the exam date — rebuilt automatically when you fall behind. |
+| 🎙️ **Voice** | Ask by voice, hear answers read aloud. |
 
 ---
 
-## Table of contents
+## 🖼️ Screens
 
-1. [Project title](#1-project-title)
-2. [Team](#2-team)
-3. [Selected theme](#3-selected-theme)
-4. [Problem statement](#4-problem-statement)
-5. [Solution overview](#5-solution-overview)
-6. [Key features](#6-key-features)
-7. [Architecture](#7-architecture)
-8. [Technology stack](#8-technology-stack)
-9. [Project structure](#9-project-structure)
-10. [Installation guide](#10-installation-guide)
-11. [Environment variables](#11-environment-variables)
-12. [API documentation](#12-api-documentation)
-13. [Database details](#13-database-details)
-14. [Security](#14-security)
-15. [Testing](#15-testing)
-16. [Screenshots](#16-screenshots)
-17. [Deployment](#17-deployment)
-18. [Implementation status](#18-implementation-status)
-19. [Future scope](#19-future-scope)
-20. [Demo video](#20-demo-video)
-21. [Presentation](#21-presentation)
-22. [License](#22-license)
+Day mode (soft 3D) and night mode (neon glass) — the same design on a phone and a laptop.
 
----
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/dashboard-desktop-light.png" alt="Dashboard, day" /></td>
+<td width="50%"><img src="docs/screenshots/dashboard-desktop-dark.png" alt="Dashboard, night" /></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/plan-desktop-light.png" alt="Study plan" /></td>
+<td><img src="docs/screenshots/readiness-desktop-dark.png" alt="Exam readiness" /></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/sources-desktop-light.png" alt="Course material upload" /></td>
+<td><img src="docs/screenshots/tutor-desktop-dark.png" alt="Tutor" /></td>
+</tr>
+</table>
 
-# 1. Project title
+<div align="center">
+<img src="docs/screenshots/login-mobile-light.png" width="23%" alt="Phone sign-in, day" />
+<img src="docs/screenshots/login-mobile-dark.png" width="23%" alt="Phone sign-in, night" />
+<img src="docs/screenshots/dashboard-mobile-light.png" width="23%" alt="Phone dashboard, day" />
+<img src="docs/screenshots/dashboard-mobile-dark.png" width="23%" alt="Phone dashboard, night" />
+</div>
 
-## Adigam AI — AI-Powered Adaptive Learning Assistant & Personalized Study Planner
-
-A learner tells Adigam what they are preparing for. It works out the syllabus, measures where they
-actually stand, builds a day-by-day plan weighted toward their weak areas, and adjusts that plan when
-they fall behind or when the studying is not working.
-
-Every number it shows comes with the evidence behind it, and every instruction comes with the reason it
-was chosen.
+**Motion, kept smooth:** morphing 3D blobs and floating spheres that lean with the pointer or the phone's
+tilt, a light line that runs round the focused field, press-and-ripple feedback on every control, staggered
+page entrances. Everything animates `transform`/`opacity` only (compositor, full frame rate), and all of it
+switches off under the OS "reduce motion" setting.
 
 ---
 
-# 2. Team
+## 🧭 Track D requirements → where they live
 
-| Member | Role |
-|---|---|
-| Ayush Kumar ([@shaunmortal](https://github.com/shaunmortal)) | Design, frontend, backend, evaluation |
-
----
-
-# 3. Selected theme
-
-## Education & EdTech
-
-Adaptive learning, personalised study planning, and assessment-driven prioritisation for students
-preparing for a dated exam.
-
----
-
-# 4. Problem statement
-
-Most learning platforms hand every student the same sequence of content, and they keep handing it over
-regardless of what the student has demonstrated. They rarely account for:
-
-- **What a learner already knows.** Time spent on a solved topic is time taken from an unsolved one.
-- **What they are actually weak at**, as opposed to what they say they are weak at.
-- **How much time is left.** A plan that ignores the exam date is a wish list.
-- **Forgetting.** A topic learned in week one is gone by week eight unless something brings it back.
-- **Why.** A recommendation a student cannot interrogate is one they stop following.
-
-The result is a student who works hard, cannot tell whether it is working, and finds out at the exam.
+| # | Requirement | Status | How |
+|---|---|---|---|
+| 1a | Ingest videos, textbooks, slides without preprocessing | ✅ | PDF (pure-Go extraction), PPTX (text + slide images), YouTube transcripts or uploaded `.vtt/.srt` — `server/internal/sources` |
+| 1b | Units linked to origin | ✅ | Every excerpt stores page / slide / start–end second; a DB check makes one mandatory |
+| 1c | Topics, subtopics, concepts; every unit tagged | ✅ | Course map from the material (topics, key concepts, prerequisites) — `web/content/coursemap.go` |
+| 1d | Information from figures and diagrams | ✅ | Claude vision describes PDF figures and slide images; stored as `figure` excerpts |
+| 2a | Cited answers opening the exact location | ✅ | Citation chips open PDF at `#page=N`, YouTube at `&t=Ns`, slides show their slide number |
+| 2b | Decline / flag off-material queries | ✅ | `ai.CheckGrounding`: uncited answers become "not covered"; outside knowledge is labelled |
+| 3a | Quizzes and mock exams, tagged | ✅ MCQ, multi-select, numerical | Each question carries topic, difficulty and source excerpt. *Short-answer: planned* |
+| 3b | Verify correctness, avoid repeats | ✅ | Independent re-solve must agree before `is_verified`; selector prefers unseen, then oldest-seen |
+| 3c | Cited feedback + post-assessment report | ✅ partial | Per-answer explanation with source; weakest-topic report. *Misconception clustering: planned* |
+| 4a | Mastery updated after every quiz | ✅ | Evidence-based mastery + SM-2 after every graded answer. *Tutor chat → mastery: planned* |
+| 4b | New students | ✅ | Diagnostic knowledge check feeds the first plan |
+| 5a/b | RAGAS-style evaluation on a team-built test set | 🧪 harness ready | 36-question set on MIT 6.006 (in-material, figures, off-material); `eval/ragas_eval.py` + `evalGrounding.ts`. *Results to be published with the demo run* |
+| 5c | Simulated students across sessions | ✅ | 4 learner profiles × 10 sessions × 5 seeds — [results below](#-simulated-students-5c) |
+| 6a | Course flow map | ✅ list view | Topics with "needs first" prerequisites. *Graph view: planned* |
+| 6c | Study schedule from weak topics, forgetting curves, exam date | ✅ | `internal/planning` + `internal/learner/srs.go` |
+| 6d | English lectures, Hindi explanations | ✅ | Tutor replies in the learner's language over English material |
+| 6e | Audio tutoring | ✅ | Voice in (speech recognition), voice out (speech synthesis) |
 
 ---
 
-# 5. Solution overview
+## 🏗️ Architecture
 
-Adigam closes a loop rather than serving a syllabus:
-
-```text
-answer  →  grade  →  record  →  recompute mastery  →  rank topics  →  next action
-   ↑                                                                      │
-   └──────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    U([Learner<br/>phone / laptop]) --> FE[React 19 SPA<br/>day & night themes]
+    FE -- JWT --> LB{{Load balancer<br/>nginx / platform}}
+    LB --> A1[Go API]
+    LB --> A2[Go API]
+    LB --> A3[Go API …]
+    A1 & A2 & A3 --> R[(Redis<br/>auth cache · rate limits<br/>ingestion stream)]
+    A1 & A2 & A3 --> PG[(Postgres / Supabase<br/>RLS on every table)]
+    A1 & A2 & A3 --> ST[(Supabase Storage<br/>original files)]
+    A1 & A2 & A3 --> CL[[Claude API<br/>Opus 5.5 · Sonnet 5.5]]
+    R -. jobs:ingest .-> W[Ingestion workers<br/>extract · figures · chunk]
+    W --> PG & ST & CL
 ```
 
-Every answer is evidence. Mastery is recomputed from the whole attempt log rather than nudged, so the
-score always matches the history behind it. The plan, the revision schedule, the recommendation and the
-readiness picture are all derived from that one source.
+**Design rules the code follows**
 
-### What is deterministic, and why
-
-The scoring and planning engines are pure functions with unit tests. **The planner does not call a
-language model**, and that is a deliberate decision rather than a limitation: dividing a fixed number of
-minutes between topics by how much each needs and how much each is worth is arithmetic. A plan produced
-by a model could not be reproduced, could not be unit tested, and could not be explained to a learner
-asking why Tuesday looks like that — and it would cost money and twenty seconds every time the plan
-changed. Building a 179-day plan takes about four seconds, all of it database.
-
-| Deterministic | Generative AI |
-|---|---|
-| Mastery scoring | Turning free text into a syllabus |
-| Topic ranking and difficulty | Writing new practice questions |
-| Study plan generation | Independently checking those answers |
-| Adaptive re-planning | Answering a learner's doubt in context |
-| Spaced repetition intervals | |
-| Grading and mock-test marking | |
-| Exam readiness scoring | |
-| Streaks, badges, consistency | |
-
-AI is used where judgement is genuinely required. Everything a learner is measured by is arithmetic they
-could check by hand.
+- **Arithmetic where arithmetic works, a model where language is needed.** Mastery, readiness, scheduling,
+  difficulty and grading are deterministic Go — testable against hand-worked numbers. Claude reads
+  material, writes and checks questions, and explains.
+- **Security in the database, not just the API.** Reads run as the learner (`DB.AsUser` sets the JWT
+  claims and the `authenticated` role inside a transaction), so row-level security applies even if a
+  query forgets its `WHERE`. The answer key is a column learners are not granted.
+- **Stateless servers.** Auth cache, rate limits and the job queue live in Redis — add instances behind a
+  load balancer and capacity grows.
+- **Durable ingestion.** Uploads are queued on a Redis Stream and acknowledged only when processed; a
+  crash or deploy mid-ingestion is picked up by the next worker, never left "processing" for ever.
+- **Graceful under overload.** Beyond `MAX_IN_FLIGHT` requests the server answers `503 SERVER_BUSY` with
+  `Retry-After` instead of slowing everyone down; the client retries with jittered backoff.
 
 ---
 
-# 6. Key features
+## 🧰 Tech stack
 
-### Dynamic syllabus from free text
-A learner types `class 10`, `12th boards` or `GATE CSE`. The model returns a structured syllabus, which
-is then validated in four stages before anything is stored. Text that is not a study goal is refused
-with a reason — `dog` comes back rejected rather than producing an empty app.
-
-### Knowledge assessment
-One question per topic, spread across every subject in the goal. Broad rather than deep on purpose: the
-job is finding **where** a learner is weak, so covering twelve topics once beats covering three topics
-four times. Results are reported as bands, not percentages, because three questions cannot support
-"63%".
-
-### Personalised study plan
-Days remaining × minutes per day, divided by need. Need is how far a topic is from mastered × how much
-of the exam it is worth. Sessions are laid out day by day, interleaved so a learner meets their whole
-plan in the first week, and each one carries the sentence explaining why it is there.
-
-### Adaptive re-planning
-Runs when the plan is read, not from a button. Past sessions are settled from the answers actually
-recorded, and the plan is rebuilt when three sessions are missed in a week or two topics stop improving.
-Rate limited to once per twenty hours — a plan that changes every time you look at it is not adaptive.
-
-### Spaced repetition
-SM-2 intervals, the SuperMemo family Anki uses. A good review multiplies the gap; a bad one collapses it
-to a day. Two adaptations: the unit is a topic rather than a flashcard, and **the exam caps the
-interval** — scheduling a topic sixty days out when the exam is in thirty is not scheduling, it is
-dropping the topic.
-
-### Mock tests
-A paper built from the topics the plan has scheduled, marked in one pass at the end. Nothing is revealed
-mid-paper, and that is not client-side politeness — the server does not send the answers for an open
-test, so the screen could not show them.
-
-### Exam readiness
-One number, and then immediately the arithmetic behind it: weighted mastery across the syllabus, share
-of the paper attempted at all, recent mock form, and whether the days left are enough at the current
-daily budget. Each part is shown with the weight it carried and a sentence naming what would move it.
-Anything not yet measurable is **dropped and the rest reweighted, never scored as zero** — a learner
-who has not sat a mock is not less ready than one who sat one and failed it, and a scheme that says
-otherwise rewards avoiding the measurement.
-
-Measured weakness is kept apart from what was never started, because those are different kinds of
-claim: one is evidence, the other assumes a mastery of zero that was never checked.
-
-### AI tutor, by voice or text
-Grounded in the learner's mastery on the topic in view and the questions they recently got wrong. It is
-never given the answer key. Voice input and spoken answers use the browser's own speech APIs, so they
-add **nothing** to the bundle.
-
-### Gamification
-A year of activity as a grid, day streaks, consistency, and sixteen badges across five families. Badges
-are derived from the record on every read rather than stored, which means a badge cannot be wrong.
-
-### Study groups
-Classmates preparing for the same thing, compared on effort. Shared: name, questions answered, streak,
-topics mastered. **Not** shared: accuracy, weak topics, wrong answers, tutor conversations. Publishing
-somebody's weak spots to their classmates would make the honest answer to "should I practise my weakest
-topic" become "not while my friends can see".
-
-### Explainable mastery
-A 0–100 score from four weighted components — recent accuracy, historical accuracy, difficulty handled,
-consistency — shrunk toward a neutral prior when the evidence is thin, and decayed when a topic goes
-untouched. It is always shown next to the number of attempts behind it, because a score from three
-answers means little and the interface should say so.
+| Layer | Choice |
+|---|---|
+| Frontend | React 19, React Router 7, Vite 8, TypeScript, plain CSS design tokens (no UI framework) |
+| API | **Go 1.27**, `net/http` (stdlib router), pgx v5, go-redis v9, Anthropic Go SDK |
+| Data | Postgres on Supabase — 25 migrations, RLS on all tables, column-level grants |
+| Queue & cache | Redis Streams (durable ingestion), Redis rate limits and auth cache |
+| AI | Claude Opus 5.5 for data that gets stored (questions, answer checks, course maps); Sonnet 5.5 for explanations; structured outputs + server-side refusal fallbacks |
+| Auth | Supabase Auth — email/password, password reset, Google / Facebook / LinkedIn |
+| Evaluation | RAGAS (Python), simulated-student harness |
 
 ---
 
-# 7. Architecture
-
-![Adigam AI system architecture](assets/diagrams/architecture.gif)
-
-### Request flow
-
-```text
-Browser (React)
-    │  Supabase Auth — sign-in only, session in localStorage
-    │  Bearer token on every request
-    ▼
-Express API  ─── authMiddleware: token verified with Supabase, identity taken from it
-    │
-    ├── controllers   HTTP shape, zod validation, no SQL
-    ├── services      business rules, no SQL
-    │     └── engines pure functions: mastery, adaptive, planning, SRS, badges, groups
-    └── repositories  every query, no rules
-              │
-              ▼
-        Supabase PostgreSQL — RLS on all 20 tables, column-level grants
-```
-
-### Layer rules, enforced by review
-
-- **Controllers hold no SQL.** They validate, call a service, and shape a response.
-- **Repositories hold no business rules.** They read and write.
-- **Services hold no SQL.** They decide.
-- **Engines are pure.** No I/O, no clock, no randomness — every one is unit tested against hand-worked
-  examples.
-
-### The AI boundary
-
-Everything above the provider talks to an interface:
-
-```ts
-interface IAIProvider {
-  generateJson(request: AIJsonRequest): Promise<AIJsonResponse>;
-  generateText(request: AITextRequest): Promise<AITextResponse>;
-}
-```
-
-`claudeProvider.ts` is the **only** file in the repository that imports the Anthropic SDK. Callers state
-the quality they need — `'high'` for anything that becomes stored data, `'standard'` for text a person
-reads and judges — and the provider maps that to a model. Swapping models, or substituting a fake one in
-tests, is a change in one file.
-
-### Four gates on generated questions
-
-A wrong answer key is worse than no question: it marks a learner wrong for being right, and the mastery
-engine then records that as evidence.
-
-```text
-1. schema-constrained generation
-2. zod schema validation
-3. business rules (length, option count, no filler)
-4. independent answer check — a separate request that has never seen the proposed answer
-```
-
-A question becomes visible only when steps 1–4 all pass. Failures are kept but hidden, so what the model
-got wrong can be reviewed rather than lost.
-
----
-
-# 8. Technology stack
-
-### Frontend
-
-| | |
-|---|---|
-| React | 19 |
-| TypeScript | 6 |
-| Vite | 8 |
-| Routing | react-router-dom 7 |
-| Auth client | `@supabase/auth-js` |
-| Styling | plain CSS with custom properties |
-| Tests | Vitest |
-| Lint | oxlint |
-
-**No UI framework, no component library, no icon package, no charting library.** The shared bundle is
-about **101 kB gzip**, and that is treated as a budget because this has to run on phones with 2–4 GB of
-RAM. The activity heatmap is 365 `div`s in a CSS grid; the icons are inline SVG paths; the voice feature
-uses the browser's own speech APIs and added zero bytes to the shared chunk.
-
-`@supabase/auth-js` rather than the full `supabase-js` for the same reason: the app needs sign-in and a
-session, and the full client additionally bundles PostgREST, realtime websockets, storage and edge
-functions, which together roughly doubled the gzipped bundle for code that never runs.
-
-### Backend
-
-| | |
-|---|---|
-| Node | 22+ |
-| Express | 5 |
-| TypeScript | 5.9, run through `tsx` — no build step |
-| Validation | zod 4 |
-| AI | `@anthropic-ai/sdk` — Claude |
-| Database client | `@supabase/supabase-js` |
-| Tests | Vitest |
-
-### Data & AI
-
-| | |
-|---|---|
-| Database | Supabase PostgreSQL 17 (Mumbai) |
-| Auth | Supabase Auth, JWT verified server-side |
-| Models | `claude-opus-5` for stored data, `claude-sonnet-5` for the tutor |
-
----
-
-# 9. Project structure
+## 📁 Project structure
 
 ```text
 AI-tutor/
-├── backend/
-│   └── src/
-│       ├── config/            env parsing, database clients
-│       ├── controllers/       HTTP shape and validation
-│       ├── middleware/        auth, rate limiting, body validation
-│       ├── repositories/      every SQL query
-│       ├── routes/            route tables
-│       ├── services/
-│       │   ├── adaptive/      recommendation, difficulty, question selection
-│       │   ├── ai/            IAIProvider, prompts, response validation
-│       │   ├── assessment/    diagnostic and mock-test engines
-│       │   ├── groups/        ranking and invite codes
-│       │   ├── learner/       mastery, habits, spaced repetition, badges, activity
-│       │   ├── learning/      curriculum resolution, goals
-│       │   ├── planning/      plan generation and re-planning
-│       │   ├── practice/      grading
-│       │   └── questions/     AI question generation pipeline
-│       ├── utils/             errors, dates, HTTP helpers
-│       └── server.ts
-│   └── tests/unit/            328 tests
-│
-├── frontend/
-│   └── src/
-│       ├── components/        Activity, Icon, Loading, layout
-│       ├── features/auth/     AuthProvider
-│       ├── hooks/             useApi, useTheme, useVoice
-│       ├── lib/               api client, supabase auth client
-│       ├── pages/             11 screens, each its own lazy chunk
-│       └── router.tsx
-│   └── tests/                 7 tests
-│
-├── database/
-│   ├── migrations/            schema, in order
-│   ├── seed/                  seed topics and questions
-│   └── tests/                 58 checks, run in rolled-back transactions
-│
-├── docs/
-│   ├── architecture.md        technical walkthrough
-│   ├── security.md            what a browser can and cannot reach, with proofs
-│   ├── challenges.md          the five problem-statement challenges
-│   └── deployment.md          both hosts, and the free-tier limits
-│
-└── .github/workflows/         CI, and a keep-alive for the free tier
+├── server/                     Go API (the backend)
+│   ├── cmd/api/                entry point: config, routes, workers, graceful shutdown
+│   └── internal/
+│       ├── learner/            mastery, SM-2 spaced repetition, streaks, badges
+│       ├── planning/           study plan + re-planning
+│       ├── adaptive/           difficulty, next-best action, question selection
+│       ├── assessment/         grader, diagnostic, mock tests
+│       ├── readiness/ groups/  exam readiness, study groups
+│       ├── ai/                 Claude client, prompts, grounded tutor
+│       ├── sources/            PDF / PPTX / caption / YouTube extractors
+│       ├── store/              SQL for every table
+│       ├── jobs/               Redis Streams work queue
+│       ├── shed/ ratelimit/    overload protection, per-learner quotas
+│       └── web/                HTTP handlers: learning · practice · content
+├── frontend/                   React app (styles/theme.css = the design system)
+├── database/                   migrations, seed, SQL tests
+├── eval/                       RAGAS evaluation + test set
+├── backend/scripts/            simulated-student and grounding-eval harnesses
+└── deploy/nginx.conf           load balancer for several API instances
 ```
 
 ---
 
-# 10. Installation guide
+## 🚀 Run it locally
 
-### Prerequisites
-
-- Node.js 22 or newer
-- A Supabase project (free tier is enough)
-- An Anthropic API key — optional; everything except AI features works without one
-- `psql`, for applying migrations
-
-### 1. Clone
+**Needs:** Go 1.27+, Node 22+, Redis (`brew install redis` · Windows: WSL, Memurai or Upstash), a Supabase project.
 
 ```bash
-git clone https://github.com/shaunmortal/AI-tutor.git
-cd AI-tutor
+# 1. Database — apply migrations in order, then the starter question bank
+for f in database/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f "$f"; done
+psql "$DATABASE_URL" -f database/seed/demo_questions.sql
+
+# 2. API
+cd server && cp .env.example .env      # fill in the values below
+go run ./cmd/api                       # http://localhost:4000/api/v1/health/deep
+
+# 3. Web
+cd frontend && npm install && npm run dev   # http://localhost:5173
 ```
 
-### 2. Install
+<details>
+<summary><b>Environment variables</b></summary>
 
-```bash
-cd backend  && npm install
-cd ../frontend && npm install
-```
-
-### 3. Configure
-
-```bash
-cp backend/.env.example  backend/.env
-cp frontend/.env.example frontend/.env
-```
-
-Fill both in — see [Environment variables](#11-environment-variables). If a Postgres password contains
-`@` or `#`, percent-encode it (`%40`, `%23`) or the connection URL will not parse.
-
-### 4. Apply migrations, in order
-
-```bash
-cd backend
-DB=$(grep '^DATABASE_URL' .env | cut -d= -f2- | tr -d '"')
-
-for f in ../database/migrations/*.sql; do
-  psql "$DB" -v ON_ERROR_STOP=1 -f "$f"
-done
-```
-
-`000_roles.sql` must run first. It grants the service role what it needs — without it the backend cannot
-read its own question bank.
-
-### 5. Seed (optional)
-
-```bash
-psql "$DB" -f ../database/seed/demo_questions.sql
-```
-
-That one file carries both the default syllabus tree and the starter question bank. Every insert ends
-in `ON CONFLICT DO NOTHING` against fixed ids, so running it twice changes nothing.
-
-### 6. Run
-
-```bash
-cd backend  && npm run dev     # http://localhost:4000/api/v1
-cd frontend && npm run dev     # http://localhost:5173
-```
-
-Check it: `curl http://localhost:4000/api/v1/health/deep` should report the database as reachable.
-
----
-
-# 11. Environment variables
-
-### Backend — `backend/.env`
-
-| Variable | Required | Notes |
-|---|---|---|
-| `NODE_ENV` | no | `development` by default |
-| `PORT` | no | `4000` by default |
-| `CORS_ORIGINS` | yes | comma-separated. Include `http://localhost:4173` if you use `vite preview` — a request from an unlisted origin fails in the browser as a generic network error, not as a CORS one, which sends you looking in the wrong place |
-| `SUPABASE_URL` | yes | project URL |
-| `SUPABASE_PUBLISHABLE_KEY` | yes | safe to expose |
-| `SUPABASE_SECRET_KEY` | yes | **server only** — never in a browser |
-| `ANTHROPIC_API_KEY` | no | omit and AI features return a clear 503; everything else works |
-| `DATABASE_URL` | for `psql` only | session pooler string, used to apply migrations and run the SQL tests. The server never reads it — it is not in the env schema — so production does not need it |
-
-An empty value is treated as absent rather than as an empty string. That is deliberate: a stray
-`ANTHROPIC_API_KEY=` once made the server refuse to boot with no useful message.
-
-### Frontend — `frontend/.env`
-
-| Variable | Required | Notes |
-|---|---|---|
-| `VITE_API_URL` | yes | e.g. `http://localhost:4000/api/v1` |
-| `VITE_SUPABASE_URL` | yes | project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | yes | compiled into the bundle and meant to be public — it grants nothing without a signed-in learner's token |
-
-**The build fails if any of these are missing, on purpose.** Vite inlines a missing variable as
-`undefined`, which turns the guard in `lib/supabase.ts` into an unconditional throw and lets Rollup
-tree-shake the auth client away — producing a build that succeeds, weighs 25 kB less, and white-screens
-on load. Measured on this project: 98 kB with the variables, 73 kB without, both reported as clean
-builds. `vite.config.ts` now refuses and names what is missing.
-
----
-
-# 12. API documentation
-
-Base URL: `/api/v1`. Every route except the health checks requires `Authorization: Bearer <token>`.
-Identity is taken from the verified token — **no endpoint accepts a user id**.
-
-Every response has the same envelope:
-
-```json
-{ "success": true,  "data": { }, "error": null }
-{ "success": false, "data": null, "error": { "code": "INVALID_INPUT", "message": "..." } }
-```
-
-### Endpoints
-
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/health` | process up |
-| `GET` | `/health/deep` | process up **and** database reachable |
-| `GET` | `/learner/summary` | attempts, accuracy, habits, weakest topics |
-| `GET` | `/learner/activity` | a year of activity, streaks, badges, next milestones |
-| `GET` | `/learner/subjects` | the goal's subjects with per-subject progress |
-| `GET` | `/learner/profile` | name, email, timezone |
-| `PATCH` | `/learner/profile` | display name and timezone only |
-| `GET` | `/goals` | active goal, or `null` |
-| `POST` | `/goals` | set a goal; archives the previous one |
-| `GET` | `/goals/subjects?curriculumId=` | subjects in a syllabus |
-| `GET` | `/curricula/default` | the syllabus shipped with the app |
-| `POST` | `/curricula/resolve` | free text → syllabus, or a reasoned rejection |
-| `GET` | `/recommendations/next` | **what to do now, and why** |
-| `POST` | `/attempts` | grade an answer, update mastery, habits and revision |
-| `POST` | `/questions/generate` | grow the bank for a topic |
-| `GET` | `/assessments/diagnostic` | the knowledge check for this goal, or `null` |
-| `POST` | `/assessments/diagnostic` | build and start one |
-| `GET` | `/assessments/:id` | questions while open, result once submitted |
-| `POST` | `/assessments/:id/submit` | mark it, and move mastery |
-| `GET` | `/study-plan/current` | the plan; also settles past sessions and may re-plan |
-| `POST` | `/study-plan/generate` | build a new version |
-| `GET` | `/revision/due` | topics the schedule says are due |
-| `GET` | `/readiness` | **how ready you are, and the arithmetic behind it** |
-| `GET` | `/mock-tests` | recent papers, plus any left open |
-| `POST` | `/mock-tests` | build one from the plan |
-| `GET` | `/mock-tests/:id` | questions while open, result once submitted |
-| `POST` | `/mock-tests/:id/submit` | mark the whole paper in one pass |
-| `GET` | `/ai/conversations` | tutor history |
-| `GET` | `/ai/conversations/:id` | one thread |
-| `POST` | `/ai/tutor` | ask a doubt, grounded in learner state |
-| `GET` | `/groups` | groups this learner is in |
-| `POST` | `/groups` | create one, with an invite code |
-| `POST` | `/groups/join` | join by code |
-| `GET` | `/groups/:id` | members and the ranked comparison |
-| `POST` | `/groups/:id/leave` | leave |
-
-### Rate limits
-
-Per learner, per hour. The reason differs by endpoint.
-
-| Endpoint | Limit | Why |
-|---|---|---|
-| `POST /questions/generate` | 10 | each call is real money at the model |
-| `POST /curricula/resolve` | 20 | free-text AI entry point |
-| `POST /ai/tutor` | 40 | AI cost, but a learner asks a lot in a session |
-| `POST /study-plan/generate` | 20 | writes ~100 rows and supersedes the previous plan |
-| `POST /mock-tests` | 20 | writes a paper and retires the open one |
-| `POST /groups/join` | 30 | **not a cost limit** — six characters from a 31-symbol alphabet is ~900 million codes, and unlimited attempts turn that into a guessing game whose prize is standing inside a stranger's group |
-
-### Example — set a goal
-
-```http
-POST /api/v1/goals
-Authorization: Bearer <token>
-
-{
-  "title": "GATE CSE",
-  "curriculumId": "03bd263b-db30-4ca6-8863-ea129038a9db",
-  "examDate": "2027-02-09",
-  "dailyMinutes": 60,
-  "subjectIds": ["d40d72d1-...", "9901df76-..."]
-}
-```
-
-```json
-{
-  "success": true,
-  "data": { "goal": {
-    "id": "96259544-...", "title": "GATE CSE",
-    "examDate": "2027-02-09", "dailyMinutes": 60,
-    "daysRemaining": 179, "totalMinutesAvailable": 10740
-  }},
-  "error": null
-}
-```
-
-### Example — what should I do now
-
-```http
-GET /api/v1/recommendations/next
-```
-
-```json
-{
-  "success": true,
-  "data": {
-    "recommendation": {
-      "action": "practice",
-      "topic": { "id": "b0000000-...", "name": "Normalisation" },
-      "difficulty": "easy",
-      "questionCount": 2,
-      "estimatedMinutes": 3,
-      "reason": "Normalisation is at mastery 16 but your recent accuracy is only 10%, so 2 questions at easy level will rebuild the basics.",
-      "signals": {
-        "masteryScore": 16.38, "recentAccuracyPercent": 10,
-        "totalAttempts": 17, "daysSinceLastAttempt": 0
-      }
-    },
-    "questions": [ { "id": "...", "body": "...", "options": ["..."], "difficulty": "easy" } ]
-  },
-  "error": null
-}
-```
-
-Note what the questions do **not** contain: `correct_answer` and `explanation`. They arrive only in the
-response to a submitted attempt.
-
-### Example — submit an answer
-
-```http
-POST /api/v1/attempts
-
-{ "questionId": "ec1bbfb0-...", "selectedOptions": [0], "timeTakenSeconds": 25 }
-```
-
-```json
-{
-  "success": true,
-  "data": {
-    "attemptId": "07d20d07-...",
-    "isCorrect": false,
-    "correctAnswer": [1],
-    "explanation": "Array indexing starts at 0, so arr[4] is offset by 4 elements...",
-    "mastery": { "before": null, "after": 29.17, "change": null, "attemptsOnTopic": 1 }
-  },
-  "error": null
-}
-```
-
-Full write-up: [`docs/architecture.md`](docs/architecture.md).
-
----
-
-# 13. Database details
-
-**Supabase PostgreSQL 17 (Mumbai).** 20 tables, row-level security on all 20, 21 policies. Currently
-holding 7 curricula, 467 topics and 174 verified questions.
-
-### Tables
-
-| Group | Tables |
+| `server/.env` | |
 |---|---|
-| Identity | `profiles`, `learner_profiles` |
-| Content | `curricula`, `topics`, `questions` |
-| Goals | `learning_goals`, `learning_goal_topics` |
-| Evidence | `question_attempts`, `concept_mastery` |
-| Assessment | `assessments`, `assessment_questions` |
-| Planning | `study_plans`, `study_sessions`, `revision_schedule` |
-| Mock tests | `mock_tests`, `mock_test_questions` |
-| Tutor | `ai_conversations`, `ai_messages` |
-| Groups | `study_groups`, `group_members` |
+| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | required — token verification |
+| `SUPABASE_SECRET_KEY` | storage of uploaded files |
+| `DATABASE_URL` | Supabase session pooler (`:5432`), or transaction pooler (`:6543`) with `DB_POOL_MODE=transaction` |
+| `ANTHROPIC_API_KEY` | AI features (the app runs without it; AI routes answer 503) |
+| `REDIS_URL` | default `redis://localhost:6379/0` |
+| `MAX_IN_FLIGHT` | requests per instance before shedding (default 256) |
+| `CORS_ORIGINS`, `PORT` | defaults `http://localhost:5173`, `4000` |
 
-### Topic hierarchy
+| `frontend/.env` | |
+|---|---|
+| `VITE_API_URL` | `http://localhost:4000/api/v1` |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` | public by design — every table is behind RLS |
 
-Topics are self-referencing. A curriculum holds subjects; a subject holds the topics that are actually
-practised.
+In Supabase: turn **Confirm email** off for demos, and add `http://localhost:5173/**` to the redirect URLs
+(password reset and social sign-in).
+</details>
 
-```text
-curriculum  →  subject (parent_id null)  →  topic (leaf)
-GATE CSE    →  Databases                 →  Normalisation
-                                         →  Transactions
-```
-
-A goal selects **subjects**; the engines rank the leaves inside them.
-
-### From evidence to recommendation
-
-```text
-question_attempts   append-only, one row per answer, timestamped
-        ↓  masteryEngine
-concept_mastery     score + the evidence it came from, rebuildable
-        ↓  recommendationEngine
-next action         topic + difficulty + count + a sentence
-```
-
-`concept_mastery` and `learner_profiles` are **caches over the attempt log**. If a formula changes, the
-version is bumped and they are recomputed — the attempts are the truth.
-
-### Principles
-
-- **Identity is never a column the caller supplies.** Triggers overwrite `topic_id` and `attempt_number`
-  on attempts, `user_id` on plan sessions, and `topic_id` on mock-test questions, precisely because a
-  denormalised field the caller controls is one the caller can lie about.
-- **Constraints encode the rules twice.** Difficulty buckets must sum to total attempts; a current
-  streak may not exceed the longest; lapses may not exceed reviews; a submitted test must carry a
-  complete result. The application maintains these too — the copy in the database is the one that
-  cannot be forgotten during a refactor.
-- **Generated columns rather than computed writes.** `accuracy` is `generated always as`, so it can
-  never disagree with the two counts it comes from.
-- **One active row where one is meant to exist.** A partial unique index enforces one active plan per
-  learner, in the database, because every screen asks for "the" current plan.
-
----
-
-# 14. Security
-
-Full write-up with the commands to verify each claim: [`docs/security.md`](docs/security.md).
-
-Three risks, and they need different mechanisms:
-
-| Risk | Why it matters | Defence |
-|---|---|---|
-| Reading another learner's data | ordinary privacy | row-level security, all 20 tables |
-| Reading data about *yourself* that breaks the product | an answer key makes every score meaningless | **column-level** privileges |
-| Writing data about yourself | self-set mastery makes every plan and recommendation fiction | **no write privilege at all** |
-
-The third is the one most easily overlooked. A learner who could set their own mastery is not a privacy
-problem — they are a correctness problem, because the plan, the revision schedule and every readiness
-figure derive from it.
-
-### The answer key is unreachable from the browser
-
-`questions` grants `authenticated` SELECT on seven named columns. `correct_answer` and `explanation` are
-not among them. This is not a filtered API response — asked directly, with a valid signed-in token:
-
-```text
-GET /rest/v1/questions?select=correct_answer   →  42501 permission denied
-GET /rest/v1/questions?select=*                →  42501 permission denied
-GET /rest/v1/questions?select=body             →  200  [{"body":"In C, what is 17 % 5?"}]
-```
-
-The middle line is the important one. `select=*` **fails** rather than quietly returning the allowed
-columns, so there is no shape of that request which leaks the key.
-
-### Learners hold no write privilege
-
-Across all 20 tables, `authenticated` has **zero** table-level INSERT, UPDATE or DELETE grants. The only
-write privilege anywhere in the schema is column-level UPDATE on four columns of `profiles` —
-`display_name`, `avatar_url`, `timezone`, `settings`. Tested from the browser against the learner's own
-row:
-
-```text
-PATCH profiles        {"email": "hacked@evil.com"}   →  42501 permission denied
-PATCH concept_mastery {"mastery_score": 100}         →  42501 permission denied
-PATCH profiles        {"display_name": "Ayush"}      →  200  updated
-```
-
-### Also
-
-- **404, not 403**, for anything that is not yours — telling somebody a record exists but is not theirs
-  confirms the id. A malformed id returns the same 404, so the two cannot be told apart by probing.
-- **zod at both trust boundaries**: HTTP bodies *and* model output. A language model is an untrusted
-  input source.
-- **Secrets** — the service key, the Anthropic key and the connection string live only in the backend
-  environment. `.env` has been gitignored since the first commit, and the whole git history was scanned
-  for keys before the repository was made public.
-- **Honest limitations** are listed in `docs/security.md`: in-process rate limiting that resets on
-  deploy, question verification by a second model call rather than a human, invite codes that cannot be
-  rotated, no audit log, and a free-tier deployment with no WAF.
-
----
-
-# 15. Testing
+<details>
+<summary><b>Scale out behind a load balancer</b></summary>
 
 ```bash
-cd backend  && npm test     # 328 tests, 19 files
-cd frontend && npm test     #   7 tests
-cd backend  && npm run typecheck
+for p in 4001 4002 4003; do PORT=$p DB_POOL_MODE=transaction ./api & done
+nginx -p "$PWD" -c deploy/nginx.conf      # balancer on :4000, least-connections, failover
 ```
-
-CI runs typecheck, lint, both suites and a full production build on every push and pull request.
-
-### What the tests are for
-
-They are not coverage theatre. The engines encode judgements, and each suite pins the promises that
-engine must not break. Several exist because they caught a real bug:
-
-- **Difficulty weighting did nothing.** 20 easy-correct and 20 hard-correct both scored 87. Caught by a
-  unit test before it shipped.
-- **The plan gave a topic measured as weak *less* time than one never measured**, because unknown
-  mastery was standing in for zero. Answering a diagnostic question wrong moved that topic from 105
-  planned minutes to 75. Two tests now pin the ordering.
-- **A generation race charged three times for one topic.** Three simultaneous requests each found
-  nothing and each generated. The test asserts the number of **AI calls**, not questions, because
-  duplicate generation is invisible in the response and shows up only on the bill.
-- **A clock-skew error was a 500 on the first screen after signing in.** Intermittent by nature, so it
-  is only demonstrable by test — seven of them.
-
-### Database tests
-
-```bash
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/tests/003_questions.test.sql
-```
-
-58 numbered checks across 8 files, each inside a transaction that rolls back, so they are safe to run
-repeatedly against a live database. They assert the properties above — including that a learner cannot
-read `correct_answer`.
+</details>
 
 ---
 
-# 16. Screenshots
+## ✅ Testing — what was verified
 
-### Sign in
+Everything below was actually run; nothing in this table is a projection.
 
-![Sign in](docs/screenshots/landing.png)
-
-### Dashboard
-<img width="1470" height="835" alt="dashboard" src="https://github.com/user-attachments/assets/4ded0952-4792-4e27-87ee-94c2d9de6a92" />
-<img width="1464" height="823" alt="dashboard2" src="https://github.com/user-attachments/assets/8dcfefba-cb89-4d09-a44f-5db037aeadfd" />
-
-### AI Tutor
-<img width="1470" height="832" alt="Aitututor2" src="https://github.com/user-attachments/assets/b2b0ac46-bd82-4a7b-8f2f-a958ba521a69" />
-<img width="1467" height="832" alt="Aitutor" src="https://github.com/user-attachments/assets/3e3d353b-caf8-4cb9-b922-3ef730aa6de7" />
-
-### Goal setup
-<img width="1470" height="839" alt="goalsetup" src="https://github.com/user-attachments/assets/11e67298-e612-4306-9a5f-23f918bdde4f" />
-
-### Knowledge check
-<img width="1470" height="832" alt="Knowledgecheck" src="https://github.com/user-attachments/assets/f0d0d731-3681-42ec-9fa4-9533a9575dab" />
-
-### Landing page
-<img width="1467" height="877" alt="landingpage" src="https://github.com/user-attachments/assets/83c4fa0b-ad0f-471e-a3b1-a50c5979fd1a" />
-
-### Login page
-<img width="1434" height="822" alt="loginpage" src="https://github.com/user-attachments/assets/42821830-3cb7-4b0f-a0fa-d1112ad57a19" />
-
-### Practice
-<img width="1470" height="832" alt="practiceknowledgecheck" src="https://github.com/user-attachments/assets/31266a39-74fd-4f2c-bf44-9425bdad98da" />
-<img width="1470" height="831" alt="Practice" src="https://github.com/user-attachments/assets/ce16850a-71d4-40ac-b7c2-e38123ae76c7" />
-
-### Study plan
-<img width="1470" height="837" alt="studypaln" src="https://github.com/user-attachments/assets/847a9de0-b559-491c-8355-d2f6842bfbaf" />
-
-### Study group
-<img width="1469" height="833" alt="studygroup" src="https://github.com/user-attachments/assets/9a47d732-8508-4a86-be2b-81313781c7dd" />
-
-### Progress
-<img width="1470" height="835" alt="progress" src="https://github.com/user-attachments/assets/07d12c7b-cda6-4406-90c7-125042acaa6f" />
-
-### Voice module
-<img width="1468" height="838" alt="Voicemodule" src="https://github.com/user-attachments/assets/23e356f2-7c60-4305-a90d-94020afc926a" />
-<img width="1470" height="834" alt="studyplan2" src="https://github.com/user-attachments/assets/962390b0-36dc-4736-8b66-4d5e0e8df9e9" />
-
-
-
-
-### The rest
-
-The live app is the better tour, and the link is at the top. Behind sign-in there are ten screens:
-
-| Screen | What it shows |
-|---|---|
-| Dashboard | the next action with the reason it was chosen, a year of activity, the badge shelf |
-| Your goal | free-text goal entry, the resolved syllabus, subject selection, exam date |
-| Knowledge check | the diagnostic that tells the plan where to start |
-| Study plan | today first, the rest collapsed, every session explained |
-| Practice | subject picker, then one question at a time with the mastery change after each |
-| Mock tests | a paper marked at the end, broken down by topic, weakest first |
-| Exam readiness | the score, every component that made it, and the topics costing the most |
-| Ask Adigam | the tutor, by typing or by voice, grounded in your own mastery |
-| Groups | a leaderboard, and a plain statement of what it does and does not reveal |
-| Settings | name, timezone, and dark / light / match-device |
-
----
-
-# 17. Deployment
-
-Both halves are live, and both are on free tiers.
-
-| Part | Host | URL |
+| Area | What was tested | Result |
 |---|---|---|
-| Frontend | Vercel | https://adigamai.vercel.app |
-| Backend API | Render (Singapore) | https://adigam-api.onrender.com/api/v1 |
-| Database | Supabase | PostgreSQL 17, Mumbai |
+| **Go unit + integration** | 190 test functions in 19 packages (`go test ./...`), integration suites against the **live Supabase database, Storage and Redis**, each creating throwaway users and verifying nothing is left behind | ✅ all pass |
+| **Row-level security** | As a learner: another learner's goals and attempts are invisible; learners cannot write goals; `correct_answer` cannot be read | ✅ |
+| **Database** | 58 SQL assertions in 8 files, each in a rolled-back transaction | ✅ all pass |
+| **Engine correctness** | Plan and re-plan engines diffed against the reference implementation on **5,000 generated inputs**; mastery and spaced repetition on **1,158**; prompts, schemas, caption parsing and chunking byte-identical | ✅ identical output |
+| **End-to-end flow** | Through the running API: set goal → generate plan → recommendations → 19 answers graded → mastery, readiness, plan and activity updated | ✅ |
+| **Ingestion queue** | PDF, PPTX and captions through the Redis Stream; re-runs don't duplicate excerpts; a failing job retries then marks the source failed | ✅ |
+| **Claude API (live)** | Opus 5.5 structured JSON and Sonnet 5.5 multi-turn text, with server-side refusal fallback | ✅ |
+| **YouTube transcripts (live)** | MIT 6.006 lecture 1 → 1,135 caption segments → 45 one-minute excerpts | ✅ |
+| **PDF extraction quality** | Word overlap with pdf.js text: MIT lecture notes 0.99, PowerPoint-exported slides 0.999, two-column paper 0.95 recall / 0.996 precision | ✅ |
+| **Overload** | Requests beyond capacity get `503 SERVER_BUSY` + `Retry-After`; health checks never shed | ✅ |
+| **Load balancer failover** | 3 instances behind nginx; one killed mid-load-test | ✅ **0 failed requests** |
+| **UI** | Day and night themes, phone (390 px) and laptop (1440 px), every main screen, checked by headless-Chrome screenshots | ✅ |
+| **Windows** | Server cross-compiles and vets for Windows; `.env` with CRLF line endings | ✅ build · *not yet run on a Windows machine* |
 
-### Keeping a free tier awake
+### 📊 Scale — load tests
 
-Two deadlines, neither of them a billing problem: the backend spins down after about fifteen minutes
-idle, and the database pauses after about a week of inactivity. A paused database is not a slow app — it
-is a dead one.
+**One million distinct learners** in a local Postgres (1,000,000 users · 6.35 M attempts · 4.8 M mastery
+rows · 6.3 GB), traffic spread across all of them, mixing dashboard, recommendations, goal, plan, revision
+and activity requests. Server, database, Redis and the load generator all on **one M1 MacBook Air**:
 
-A scheduled job pings `GET /api/v1/health/deep` every ten minutes. The deep check is the point: the
-shallow one touches only Express, so pinging it would keep the instance warm and quietly let the
-database pause anyway. One counted read satisfies both.
+| Concurrent clients | Requests / s | p50 | p99 | Server errors |
+|---|---|---|---|---|
+| 100 | **2,830** | 30 ms | 129 ms | **0** |
+| 400 | 2,641 | 144 ms | 331 ms | **0** |
+| 800 | 2,776 | 283 ms | 512 ms | **0** |
 
-Details, and the free-plan instance-hour limit that makes this a judgement call:
-[`docs/deployment.md`](docs/deployment.md).
+A single request stays at **3–40 ms with a million learners in the database** — the indexes hold. Pure
+API throughput (no database): **80,663 req/s** at 3 ms on the same laptop, using 25 MB of memory.
 
----
+**What this means.** One laptop-sized instance serves roughly **40,000 learners studying at the same
+moment** (one request every ~15 s each). Servers are stateless and failover is tested, so capacity grows
+by adding instances and database capacity. On Supabase's free tier from a home connection the measured
+ceiling is ~65 req/s — the 15-connection limit and 48 ms network round trip, not the code.
 
-# 18. Implementation status
+Two bugs were found by these tests and fixed: token verification kept only 2 pooled connections (throughput
+1,300 → 2,800 req/s, and spurious 401s gone), and the connection pool exceeded the free-tier pooler limit.
 
-### Built and running
+### 🧑‍🎓 Simulated students (5c)
 
-| | |
-|---|---|
-| Database | 20 tables, RLS on all 20, 21 policies, 58 SQL checks |
-| Auth | Supabase Auth, JWT verified server-side, sign-up and sign-in |
-| Content | dynamic AI-resolved syllabi, 174 verified questions, on-demand generation |
-| Evidence | append-only attempts, server-side grading, mastery engine |
-| Adaptive | topic ranking, difficulty ladder, question selection with fallbacks |
-| Assessment | diagnostic knowledge check feeding the planner |
-| Planning | versioned day-by-day plans, automatic re-planning |
-| Retention | SM-2 spaced repetition, exam-capped intervals |
-| Mock tests | plan-derived papers, marked in one pass |
-| Readiness | one score, every component that made it, published thresholds |
-| Tutor | context-grounded, voice in and out |
-| Gamification | activity heatmap, streaks, consistency, 16 badges |
-| Groups | invite-code only, deliberate privacy boundary |
-| Frontend | 11 screens, code-split per route, ~101 kB gzip shared, dark and light themes |
-| Ops | CI on every push, keep-alive, deep health check |
+8 topics, 10 sessions two days apart, 15 questions per session, 5 random seeds, adaptive policy vs. a
+random baseline. Gain is in true-skill points; results in `backend/scripts/output/simulation-results.json`.
 
-### Not built
+| Profile | Overall gain (adaptive / random) | Weak-topic gain (adaptive / random) | Mastery estimate error (adaptive / random) |
+|---|---|---|---|
+| Novice | **26.8** / 25.5 | **31.7** / 21.9 | **12.5** / 14.6 |
+| Uneven | **23.7** / 18.2 | **46.1** / 24.9 | **15.5** / 15.9 |
+| Forgetful | 29.9 / **32.5** | 36.2 / 36.4 | **11.9** / 19.7 |
+| Advanced | 6.9 / 7.1 | 9.2 / 9.1 | 16.3 / 15.5 |
 
-- Mistake and misconception engine — recurring conceptual errors, and targeted interventions
-- What-if simulation — "what happens if I study 30 extra minutes a day"
-- AI insights screen — narrative progress summaries
-- Multilingual tutoring
-- Teacher and mentor dashboards
-
----
-
-# 19. Future scope
-
-Everything below is genuinely not built. Features that once sat on this list — the study planner,
-adaptive re-planning, spaced repetition, mock tests, the AI tutor, voice interaction and the exam
-readiness score — have since shipped and moved to the section above.
-
-### Mistake and misconception engine
-Cluster wrong answers by the misconception behind them rather than by topic, and intervene on the
-misconception. Two learners can fail the same question for different reasons and need different help.
-
-### What-if simulation
-Re-run the planner against a changed budget and show the projected difference. The planner is already a
-pure function, so this is a second call rather than new machinery.
-
-### Multilingual learning
-Hindi and Indian regional languages for tutoring, explanations and plans. The tutor already prompts in
-English only; voice recognition is already tuned to `en-IN` rather than `en-US`, because US recognition
-mishears Indian-accented English often enough to make voice input worse than typing.
-
-### Beyond
-Teacher and mentor dashboards · institutional deployments · offline-first practice · advanced knowledge
-tracing (DKT/BKT) rather than a weighted formula · multi-exam parallel preparation.
+Repeats within a session: **0 %** adaptive vs 6 % random. Honest reading: large gains on weak topics for
+novice and uneven learners; no advantage for forgetful and advanced profiles yet.
 
 ---
 
-# 20. Demo video
+## 🔐 Security
 
-**[Watch the demo](https://drive.google.com/file/d/1OZOz8_7u6kZ3lz69ClFEG-mfdVaGTqsQ/view?usp=sharing)**
-
-What it covers:
-
-```text
-Sign up  →  Goal in plain words ("GATE CSE")  →  AI resolves the syllabus
-         →  Knowledge check  →  Plan built around the weak subjects
-         →  Practice, with mastery moving  →  Ask by voice
-         →  Mock test  →  Group comparison
-```
+- **Row-level security on every table**, enforced for API reads by running them as the learner.
+- **The answer key never reaches the browser** before an answer is recorded — column grants, not convention.
+- **Learners hold no write privilege** on goals, attempts or mastery; the API validates and writes.
+- **Per-learner rate limits** in Redis on every AI and upload route — one person can't run up the bill.
+- **Secrets stay server-side**; the browser only ever holds the publishable key and its own session.
+- Default Supabase grants that bypass RLS (`TRUNCATE` for `anon`/`authenticated`) are revoked by migration.
 
 ---
 
-# 21. Presentation
+## 🛣️ Roadmap
 
-**[Download the slide deck](https://github.com/user-attachments/files/31072621/4bdf50dc-2c4f-436e-a971-9a77172d16af.pptx)**
-
-Story arc:
-
-| # | Section |
-|---|---|
-| 1 | The problem — same content for every student, no feedback loop |
-| 2 | A student's story — works hard, cannot tell if it is working |
-| 3 | The solution — evidence in, explainable next action out |
-| 4 | The student journey — goal → assessment → plan → practice → adapt |
-| 5 | The adaptive loop — answer, grade, mastery, rank, next |
-| 6 | AI strategy — where a model is used, and where arithmetic is used instead |
-| 7 | Features |
-| 8 | Architecture |
-| 9 | Security — the answer key, and read-only mastery |
-| 10 | Impact |
-| 11 | Future scope |
-| 12 | Live demo |
-
----
-
-# 22. License
-
-**Proprietary — all rights reserved.** See [LICENSE](LICENSE).
-
-The source may be read for the purpose of hackathon evaluation. It may not be copied, modified,
-redistributed or reused without written permission.
+- Publish the RAGAS run (faithfulness, answer relevancy, context precision/recall) on the MIT 6.006 set
+- Short-answer questions graded against a rubric; misconception clustering in the post-test report
+- Tutor conversations as learner-model evidence; an onboarding conversation for brand-new learners
+- Speech-to-text for lecture videos without captions; multilingual retrieval for Devanagari questions
+- Flashcards and audio revision briefs for weak topics; the course map as an interactive graph
 
 ---
 
@@ -961,6 +309,11 @@ redistributed or reused without written permission.
 
 **Adigam AI** · ADAPT · LEARN · MASTER
 
-Built for the **Multimodal AI Hackathon 2026** · Track D: Personalized Tutoring & Adaptive Learning
+Built by **Ayush Kumar** ([@shaunmortal](https://github.com/shaunmortal)) for the Multimodal AI Hackathon 2026.
+The adaptive engine — learner model, planner, spaced repetition and mock tests — comes from my earlier
+Adigam project; the Go platform, multimodal knowledge base, grounded tutor, design system and evaluation
+were built for this hackathon.
+
+Proprietary — all rights reserved. See [LICENSE](LICENSE).
 
 </div>

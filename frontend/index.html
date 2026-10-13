@@ -21,11 +21,13 @@
             try {
                 // ?theme=dark|light picks a theme from a link (handy for demos) and remembers it.
                 var asked = new URLSearchParams(location.search).get('theme');
-                if (asked === 'dark' || asked === 'light') localStorage.setItem('adigam-theme', asked);
+                if (asked === 'dark' || asked === 'light')
+                    localStorage.setItem('adigam-theme', asked);
                 var saved = localStorage.getItem('adigam-theme');
                 var dark =
                     saved === 'dark' ||
-                    (saved === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                    (saved === 'system' &&
+                        window.matchMedia('(prefers-color-scheme: dark)').matches);
                 document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
             } catch (e) {
                 document.documentElement.setAttribute('data-theme', 'light');

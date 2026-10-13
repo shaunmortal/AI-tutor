@@ -13,7 +13,17 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
             title={night ? 'Day mode' : 'Night mode'}
             onClick={() => setTheme(night ? 'light' : 'dark')}
         >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+            >
                 {night ? (
                     <>
                         <circle cx="12" cy="12" r="4.5" />

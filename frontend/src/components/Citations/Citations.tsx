@@ -23,7 +23,9 @@ export function Citations({ citations }: { citations: Citation[] }) {
                         key={citation.chunkId}
                         type="button"
                         title={citation.excerpt}
-                        onClick={() => setShown(shown === citation.chunkId ? null : citation.chunkId)}
+                        onClick={() =>
+                            setShown(shown === citation.chunkId ? null : citation.chunkId)
+                        }
                         aria-expanded={shown === citation.chunkId}
                     >
                         [{citation.n}] {citation.sourceTitle} · {citation.location}
@@ -57,7 +59,9 @@ export function OpenSourceButton({ chunkId, label }: { chunkId: string; label?: 
                     const tab = window.open('', '_blank');
 
                     try {
-                        const opened = await api.get<OpenedExcerpt>(`/sources/excerpts/${chunkId}/open`);
+                        const opened = await api.get<OpenedExcerpt>(
+                            `/sources/excerpts/${chunkId}/open`
+                        );
 
                         if (opened.url && tab) {
                             tab.location.href = opened.url;
@@ -67,7 +71,9 @@ export function OpenSourceButton({ chunkId, label }: { chunkId: string; label?: 
                         }
                     } catch (cause) {
                         tab?.close();
-                        setNote(cause instanceof Error ? cause.message : 'Could not open the source.');
+                        setNote(
+                            cause instanceof Error ? cause.message : 'Could not open the source.'
+                        );
                     }
                 }}
             >

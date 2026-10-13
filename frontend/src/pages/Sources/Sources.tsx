@@ -53,7 +53,8 @@ export default function Sources() {
                     <h1 style={{ marginBottom: 0 }}>Study from your own material</h1>
                     <p className="muted" style={{ margin: '6px 0 0' }}>
                         Add your textbook, slides and lecture videos. Adigam reads them, maps the
-                        course, and answers with citations that open the exact page, slide or moment.
+                        course, and answers with citations that open the exact page, slide or
+                        moment.
                     </p>
                 </div>
             </div>
@@ -136,10 +137,18 @@ function AddMaterial({ onAdded }: { onAdded: () => void }) {
     return (
         <form className="card stack" onSubmit={submit}>
             <div className="row" style={{ gap: 8 }}>
-                <button type="button" aria-pressed={mode === 'file'} onClick={() => setMode('file')}>
+                <button
+                    type="button"
+                    aria-pressed={mode === 'file'}
+                    onClick={() => setMode('file')}
+                >
                     Textbook or slides
                 </button>
-                <button type="button" aria-pressed={mode === 'video'} onClick={() => setMode('video')}>
+                <button
+                    type="button"
+                    aria-pressed={mode === 'video'}
+                    onClick={() => setMode('video')}
+                >
                     Lecture video
                 </button>
             </div>
@@ -166,7 +175,8 @@ function AddMaterial({ onAdded }: { onAdded: () => void }) {
                             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                         />
                         <span className="faint">
-                            Up to 40 MB. Figures and diagrams are read too, for files up to 100 pages.
+                            Up to 40 MB. Figures and diagrams are read too, for files up to 100
+                            pages.
                         </span>
                     </div>
                 </>
@@ -194,7 +204,9 @@ function AddMaterial({ onAdded }: { onAdded: () => void }) {
                             accept=".vtt,.srt"
                             onChange={(e) => setCaptions(e.target.files?.[0] ?? null)}
                         />
-                        <span className="faint">Only needed if the video has no captions on YouTube.</span>
+                        <span className="faint">
+                            Only needed if the video has no captions on YouTube.
+                        </span>
                     </div>
                 </>
             )}
@@ -205,7 +217,9 @@ function AddMaterial({ onAdded }: { onAdded: () => void }) {
                     id="title"
                     value={title}
                     maxLength={200}
-                    placeholder={mode === 'file' ? 'e.g. CLRS chapters 1–6' : 'e.g. Lecture 3: Sorting'}
+                    placeholder={
+                        mode === 'file' ? 'e.g. CLRS chapters 1–6' : 'e.g. Lecture 3: Sorting'
+                    }
                     onChange={(e) => setTitle(e.target.value)}
                 />
             </div>
@@ -231,8 +245,7 @@ function SourceRow({ source, onChanged }: { source: CourseSource; onChanged: () 
             <div style={{ minWidth: 0 }}>
                 <strong>{source.title}</strong>
                 <div className="faint">
-                    {KIND_LABEL[source.kind]} ·{' '}
-                    {source.status === 'processing' && 'Reading…'}
+                    {KIND_LABEL[source.kind]} · {source.status === 'processing' && 'Reading…'}
                     {source.status === 'ready' && `${source.excerptCount} excerpts`}
                     {source.status === 'failed' && (
                         <span style={{ color: 'var(--bad)' }}>Failed: {source.error}</span>
@@ -289,7 +302,9 @@ function BuildCourse({
         setBuilding(true);
 
         try {
-            setMap(await api.post<CourseMap>('/sources/organize', { courseName: courseName.trim() }));
+            setMap(
+                await api.post<CourseMap>('/sources/organize', { courseName: courseName.trim() })
+            );
             onBuilt();
         } catch (cause) {
             setError(cause instanceof Error ? cause.message : 'Could not build the course map.');
@@ -301,7 +316,9 @@ function BuildCourse({
     return (
         <div className="stack">
             <form className="card stack" onSubmit={build}>
-                <span className="label">{map ? 'Rebuild the course map' : 'Build your course map'}</span>
+                <span className="label">
+                    {map ? 'Rebuild the course map' : 'Build your course map'}
+                </span>
                 <p className="faint" style={{ margin: 0 }}>
                     Groups everything above into topics, key concepts and prerequisites. Practice,
                     mock tests and your study plan then come from this material.
@@ -360,7 +377,8 @@ function CourseMapView({ map }: { map: CourseMap }) {
                                 )}
                                 {topic.prerequisites.length > 0 && (
                                     <div className="faint">
-                                        Needs first: {topic.prerequisites.map((p) => p.name).join(', ')}
+                                        Needs first:{' '}
+                                        {topic.prerequisites.map((p) => p.name).join(', ')}
                                     </div>
                                 )}
                             </li>
