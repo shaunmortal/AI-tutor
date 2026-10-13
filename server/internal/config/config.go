@@ -15,6 +15,7 @@ type Config struct {
 
 	SupabaseURL            string
 	SupabasePublishableKey string
+	SupabaseSecretKey      string // optional: Storage (uploaded course files) needs it
 	DatabaseURL            string
 	RedisURL               string
 	AnthropicAPIKey        string // optional: AI features degrade without it
@@ -30,6 +31,7 @@ func Load() (*Config, error) {
 		CORSOrigins:            split(get("CORS_ORIGINS", "http://localhost:5173")),
 		SupabaseURL:            strings.TrimRight(os.Getenv("SUPABASE_URL"), "/"),
 		SupabasePublishableKey: os.Getenv("SUPABASE_PUBLISHABLE_KEY"),
+		SupabaseSecretKey:      os.Getenv("SUPABASE_SECRET_KEY"),
 		DatabaseURL:            os.Getenv("DATABASE_URL"),
 		RedisURL:               get("REDIS_URL", "redis://localhost:6379/0"),
 		AnthropicAPIKey:        os.Getenv("ANTHROPIC_API_KEY"),

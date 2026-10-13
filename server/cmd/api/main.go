@@ -17,10 +17,15 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
+	"github.com/shaunmortal/AI-tutor/server/internal/ai"
+	"github.com/shaunmortal/AI-tutor/server/internal/app"
 	"github.com/shaunmortal/AI-tutor/server/internal/auth"
 	"github.com/shaunmortal/AI-tutor/server/internal/config"
 	"github.com/shaunmortal/AI-tutor/server/internal/db"
 	"github.com/shaunmortal/AI-tutor/server/internal/httpx"
+	"github.com/shaunmortal/AI-tutor/server/internal/web/content"
+	"github.com/shaunmortal/AI-tutor/server/internal/web/learning"
+	"github.com/shaunmortal/AI-tutor/server/internal/web/practice"
 )
 
 var started = time.Now()
@@ -55,9 +60,13 @@ func main() {
 		SupabaseURL: cfg.SupabaseURL, PublishableKey: cfg.SupabasePublishableKey,
 		Redis: rdb, HTTP: &http.Client{Timeout: 10 * time.Second},
 	}
-	_ = verifier // used by feature routes as they are ported
-
 	mux := http.NewServeMux()
+	deps := &app.Deps{Cfg: cfg, DB: database, Redis: rdb, Auth: verifier, AI: ai.New(cfg.AnthropicAPIKey), Mux: mux}
+	learning.Register(deps)
+	practice.Register(deps)
+	content.Register(deps)
+	// Durable ingestion workers (Redis Streams); they stop when ctx is cancelled.
+	content.StartWorkers(ctx, deps)
 	mux.HandleFunc("GET /api/v1/health", func(w http.ResponseWriter, r *http.Request) {
 		httpx.OK(w, 200, map[string]any{"status": "ok", "uptime": int(time.Since(started).Seconds())})
 	})
@@ -79,7 +88,18 @@ func main() {
 	// Routes not yet ported to Go fall through to the TypeScript backend.
 	// ponytail: strangler proxy; delete with LEGACY_API_URL once every route is ported.
 	if cfg.LegacyURL != nil {
-		mux.Handle("/api/v1/", httputil.NewSingleHostReverseProxy(cfg.LegacyURL))
+		legacy := httputil.NewSingleHostReverseProxy(cfg.LegacyURL)
+		// This server already answers CORS; a second Access-Control-Allow-Origin from the
+		// legacy backend makes the browser reject the response outright.
+		legacy.ModifyResponse = func(res *http.Response) error {
+			for k := range res.Header {
+				if strings.HasPrefix(k, "Access-Control-") {
+					res.Header.Del(k)
+				}
+			}
+			return nil
+		}
+		mux.Handle("/api/v1/", legacy)
 	}
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		httpx.Fail(w, 404, "NOT_FOUND", "Route not found.")

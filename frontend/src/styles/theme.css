@@ -153,6 +153,7 @@ h3 {
     z-index: 0;
     overflow: hidden;
     pointer-events: none;
+    contain: strict;
 }
 
 .scene__blob,
@@ -167,7 +168,8 @@ h3 {
 .scene__blob {
     background: var(--blob);
     box-shadow: var(--blob-shadow);
-    animation: blob-morph 18s ease-in-out infinite alternate, blob-drift 26s ease-in-out infinite alternate;
+    border-radius: 46% 54% 58% 42% / 44% 46% 54% 56%;
+    animation: blob-drift 22s ease-in-out infinite alternate;
 }
 
 .scene__sphere {
@@ -177,28 +179,17 @@ h3 {
     animation: sphere-float 9s ease-in-out infinite alternate;
 }
 
-[data-theme='dark'] .scene__blob {
-    backdrop-filter: blur(2px);
-}
-
-@keyframes blob-morph {
+/* A slow breathe-and-turn. Transform only, so it runs on the compositor at full frame rate;
+   the uneven scale is what makes a fixed shape read as soft and alive. */
+@keyframes blob-drift {
     0% {
-        border-radius: 42% 58% 62% 38% / 45% 40% 60% 55%;
+        transform: rotate(-5deg) scale(1, 1);
     }
     50% {
-        border-radius: 58% 42% 38% 62% / 55% 62% 38% 45%;
+        transform: rotate(3deg) scale(1.05, 0.97);
     }
     100% {
-        border-radius: 48% 52% 55% 45% / 38% 55% 45% 62%;
-    }
-}
-
-@keyframes blob-drift {
-    from {
-        transform: rotate(-4deg) scale(1);
-    }
-    to {
-        transform: rotate(6deg) scale(1.06);
+        transform: rotate(7deg) scale(0.98, 1.05);
     }
 }
 
@@ -240,7 +231,7 @@ h3 {
         linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
-    animation: spin 3.2s linear infinite;
+    animation: runline-spin 3.2s linear infinite;
     pointer-events: none;
 }
 
@@ -250,7 +241,7 @@ h3 {
     opacity: 0.7;
 }
 
-@keyframes spin {
+@keyframes runline-spin {
     to {
         --spin: 360deg;
     }
@@ -263,8 +254,10 @@ h3 {
     border-radius: 22px;
     padding: 20px;
     box-shadow: var(--neu-out-sm);
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+[data-theme='dark'] .card {
+    background: rgb(17 23 54 / 0.86);
 }
 
 .card--accent {
@@ -480,6 +473,12 @@ input[type='checkbox']:checked::before {
     backdrop-filter: blur(20px) saturate(150%);
     -webkit-backdrop-filter: blur(20px) saturate(150%);
     top: 12px;
+}
+
+@media (min-width: 901px) {
+    .topbar__burger {
+        display: none;
+    }
 }
 
 .topnav__link {
@@ -749,6 +748,148 @@ input[type='checkbox']:checked::before {
     color: var(--accent);
 }
 
+/* ============================================================ press + ripple
+   Every pressable thing sinks a little under the finger and springs back, and a ripple of light
+   spreads from the exact point touched (components/Ripple). Transform and opacity only. */
+button,
+.btn,
+.card--hover,
+.sidebar__link,
+.topnav__link,
+.option,
+.row-item {
+    transition:
+        transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 220ms ease,
+        background-color 220ms ease,
+        color 220ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:active:not(:disabled),
+.btn:active,
+.card--hover:active,
+.sidebar__link:active,
+.topnav__link:active,
+.option:active,
+.row-item:active {
+    transform: scale(0.965);
+    transition-duration: 90ms;
+}
+
+.ripple-host {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(circle, rgb(255 255 255 / 0.55) 0%, rgb(255 255 255 / 0) 70%);
+    transform: translate(-50%, -50%) scale(0);
+    animation: ripple 600ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+    z-index: -1;
+}
+
+:not(.primary) > .ripple,
+.ripple--accent {
+    background: radial-gradient(circle, rgb(10 102 255 / 0.22) 0%, rgb(10 102 255 / 0) 70%);
+}
+
+@keyframes ripple {
+    to {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+    }
+}
+
+/* ============================================================ phone top bar
+   One slim row: menu, brand, theme, avatar, sign out. Every destination is in the drawer. */
+@media (max-width: 640px) {
+    .topbar {
+        flex-wrap: nowrap;
+        padding: 8px 10px;
+    }
+
+    .topnav {
+        display: none;
+    }
+
+    .topbar > .row,
+    .topbar .brand {
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        min-width: 0;
+    }
+
+    .topbar__account .primary {
+        white-space: nowrap;
+    }
+
+    .topbar__account {
+        gap: 8px;
+    }
+
+    .topbar__account .primary {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+
+    .themetoggle {
+        width: 38px;
+        height: 38px;
+    }
+}
+
+/* Selected tab / toggle: pressed into the surface. */
+button[aria-pressed='true'],
+button[aria-selected='true'] {
+    color: var(--accent);
+    box-shadow: var(--neu-in);
+}
+
+/* ============================================================ page hero mark + file picker */
+.hero-mark {
+    border-radius: 24px;
+    border: 1px solid var(--rim);
+    color: var(--accent);
+    background: var(--surface);
+    box-shadow: var(--neu-out);
+}
+
+[data-theme='dark'] .hero-mark {
+    color: #9db4ff;
+    background: radial-gradient(circle at 35% 30%, #26307a, #121845);
+    box-shadow:
+        0 0 0 1.5px rgb(110 100 255 / 0.45),
+        0 0 30px -4px rgb(100 90 255 / 0.5);
+}
+
+/* The breathing ring drew a second, offset square; the soft shadow already lifts the mark. */
+.hero-mark::after {
+    display: none;
+}
+
+input[type='file'] {
+    padding: 8px;
+    cursor: pointer;
+}
+
+input[type='file']::file-selector-button {
+    margin-right: 14px;
+    padding: 9px 18px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--grad);
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--btn-glow);
+}
+
 /* ============================================================ brand + theme toggle */
 .brand span {
     background: var(--grad);
@@ -792,11 +933,11 @@ span.brand > span,
 
 /* ============================================================ entrance motion */
 .rise {
-    animation: rise 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation: rise-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
     animation-delay: calc(var(--i, 0) * 70ms);
 }
 
-@keyframes rise {
+@keyframes rise-in {
     from {
         opacity: 0;
         transform: translateY(14px) scale(0.985);
@@ -815,8 +956,12 @@ span.brand > span,
     .inputwrap:focus-within::after,
     .authcard::after,
     .auth__badge svg,
-    .rise {
+    .rise,
+    .ripple {
         animation: none;
+    }
+    .ripple {
+        display: none;
     }
     .scene__blob,
     .scene__sphere {
