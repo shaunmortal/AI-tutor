@@ -19,6 +19,8 @@ type Deps struct {
 	Redis *redis.Client
 	Auth  *auth.Verifier
 	AI    *ai.Client // nil when ANTHROPIC_API_KEY is unset; ai methods then return AI_UNAVAILABLE
+	// Embed is nil when GEMINI_API_KEY is unset: excerpts are then searched by their words only.
+	Embed *ai.Embedder
 	Mux   *http.ServeMux
 }
 

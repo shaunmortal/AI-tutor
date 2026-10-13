@@ -36,9 +36,10 @@ var geminiModels = map[Quality]string{
 }
 
 type gemini struct {
-	key    string
-	http   *http.Client
-	models map[Quality]string
+	key     string
+	baseURL string // empty: geminiBase
+	http    *http.Client
+	models  map[Quality]string
 }
 
 type gPart struct {
@@ -174,8 +175,13 @@ func (g *gemini) send(ctx context.Context, req Request) (Response, error) {
 const geminiRetries = 2
 
 func (g *gemini) post(ctx context.Context, model string, payload []byte) ([]byte, error) {
+	return g.postTo(ctx, model+":generateContent", payload)
+}
+
+// postTo posts to geminiBase+path ("model:method"), retrying busy and rate-limited answers.
+func (g *gemini) postTo(ctx context.Context, path string, payload []byte) ([]byte, error) {
 	for attempt := 0; ; attempt++ {
-		hreq, err := http.NewRequestWithContext(ctx, http.MethodPost, geminiBase+model+":generateContent", bytes.NewReader(payload))
+		hreq, err := http.NewRequestWithContext(ctx, http.MethodPost, g.base()+path, bytes.NewReader(payload))
 		if err != nil {
 			return nil, err
 		}
@@ -206,6 +212,14 @@ func (g *gemini) post(ctx context.Context, model string, payload []byte) ([]byte
 			return nil, timeoutErr()
 		}
 	}
+}
+
+// base is geminiBase, or a test server's address.
+func (g *gemini) base() string {
+	if g.baseURL != "" {
+		return g.baseURL
+	}
+	return geminiBase
 }
 
 func isBusy(err error) bool {

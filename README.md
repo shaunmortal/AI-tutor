@@ -243,6 +243,7 @@ Everything below was actually run; nothing in this table is a projection.
 | **Claude API (live)** | Opus 5.5 structured JSON and Sonnet 5.5 multi-turn text, with server-side refusal fallback | ✅ |
 | **Gemini API (live, free tier)** | Structured JSON and multi-turn Hindi text; busy Flash model fell back to Flash-Lite automatically | ✅ |
 | **YouTube transcripts (live)** | MIT 6.006 lecture 1 → 1,135 caption segments → 45 one-minute excerpts | ✅ |
+| **Hybrid retrieval** | RRF scoring checked exactly against hand-made vectors on the live database; another learner's excerpts never returned; Devanagari query matched by meaning alone | ✅ |
 | **PDF extraction quality** | Word overlap with pdf.js text: MIT lecture notes 0.99, PowerPoint-exported slides 0.999, two-column paper 0.95 recall / 0.996 precision | ✅ |
 | **Overload** | Requests beyond capacity get `503 SERVER_BUSY` + `Retry-After`; health checks never shed | ✅ |
 | **Load balancer failover** | 3 instances behind nginx; one killed mid-load-test | ✅ **0 failed requests** |
@@ -279,16 +280,24 @@ source locations over MIT 6.006 lectures 1–3 — three PDF lecture-note sets a
 ingested through the normal pipeline. RAGAS 0.4.3 scores the 28 in-material answers with Claude Sonnet 5.5
 as judge (`eval/ragas_eval.py`); per-question rows are in `eval/results/`.
 
-| RAGAS metric | Score | | Grounding metric | Result |
-|---|---|---|---|---|
-| Faithfulness | **0.76** | | Off-material questions correctly declined | **100 %** (8/8) |
-| Answer relevancy | **0.79** | | In-material questions wrongly declined | **0 %** |
-| Context precision | 0.48 | | Retrieval hit rate (right excerpt retrieved) | 78.6 % |
-| Context recall | 0.48 | | Citation accuracy / precision | 75 % / 50 % |
+| | First run | **Current** |
+|---|---|---|
+| Retrieval | full text | **hybrid**: full text + Gemini embeddings (pgvector), fused with reciprocal-rank fusion |
+| RAGAS faithfulness | 0.76 | **0.79** |
+| RAGAS answer relevancy | 0.79 | **0.88** |
+| RAGAS context precision | 0.48 | **0.88** |
+| RAGAS context recall | 0.48 | **0.95** |
+| Retrieval hit rate (right excerpt retrieved) | 78.6 % | **96.4 %** |
+| Citation accuracy / precision | 75 % / 50 % | **96.4 % / 77.7 %** |
+| Off-material questions correctly declined | 100 % | **100 %** (8/8) |
+| In-material questions wrongly declined | 0 % | **0 %** |
 
-**Honest reading.** Refusals are exactly right and answers stay close to their sources. Retrieval is the weak
-point: Postgres full-text search finds the right lecture but often ranks neighbouring excerpts first (context
-precision/recall 0.48). The next step is hybrid retrieval — embeddings (pgvector) alongside full text.
+**What changed, honestly.** The first run turned out to have only the three videos: the PDF notes had failed
+ingestion (a NUL byte in extracted text, which Postgres rejects). Fixing that accounts for most of the jump;
+retrieval-only runs on the same data put hybrid search's own gain at +1–2 of 28 hits on top. The first run is
+kept in `eval/results/baseline-fulltext/`. One known trade-off: hybrid search always returns its top excerpts,
+so declining off-material questions now rests on the grounding check rather than on an empty search — still
+8/8 correct.
 
 ### 🧑‍🎓 Simulated students (5c)
 
@@ -320,7 +329,7 @@ novice and uneven learners; no advantage for forgetful and advanced profiles yet
 
 ## 🛣️ Roadmap
 
-- Hybrid retrieval (pgvector embeddings + full text) to lift context precision and recall
+- A similarity floor so off-material questions retrieve nothing at all
 - Speech-to-text for lecture videos without captions, and OCR for scanned PDFs
 - Audio revision briefs; the course map as an interactive graph
 

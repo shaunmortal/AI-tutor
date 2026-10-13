@@ -516,7 +516,7 @@ func (s *svc) ask(w http.ResponseWriter, r *http.Request) error {
 	if body.ConversationID != nil {
 		in.ConversationID = *body.ConversationID
 	}
-	t := &ai.Tutor{AI: s.d.AI, Conversations: conversations{store.NewAI(s.d.DB.Admin)}, Material: material{s.sources()}}
+	t := &ai.Tutor{AI: s.d.AI, Conversations: conversations{store.NewAI(s.d.DB.Admin)}, Material: material{s.sources(), s.d.Embed}}
 	reply, err := t.Ask(r.Context(), in)
 	if err != nil {
 		return err

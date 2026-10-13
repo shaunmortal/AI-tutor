@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/shaunmortal/AI-tutor/server/internal/httpx"
@@ -59,6 +60,8 @@ type NewChunk struct {
 	StartSec *int
 	EndSec   *int
 	Content  string
+	// Embedding is nil when it could not be made: the excerpt is then found by its words only.
+	Embedding []float32
 }
 
 // ChunkAssignment tags one excerpt with a topic.
@@ -154,16 +157,20 @@ func (r *Sources) InsertChunks(ctx context.Context, source SourceRow, chunks []N
 		return nil
 	}
 	n := len(chunks)
-	modalities, contents := make([]string, n), make([]string, n)
+	modalities, contents, embeddings := make([]string, n), make([]string, n), make([]*string, n)
 	pages, slides, starts, ends := make([]*int, n), make([]*int, n), make([]*int, n), make([]*int, n)
 	for i, c := range chunks {
 		modalities[i], contents[i] = c.Modality, c.Content
 		pages[i], slides[i], starts[i], ends[i] = c.Page, c.Slide, c.StartSec, c.EndSec
+		if c.Embedding != nil {
+			embeddings[i] = ptr(vectorText(c.Embedding))
+		}
 	}
 	return exec(ctx, r.q, "sources.insertChunks",
-		`insert into source_chunks (source_id, user_id, modality, page, slide, start_sec, end_sec, content)
-		 select $1, $2, * from unnest($3::text[], $4::int[], $5::int[], $6::int[], $7::int[], $8::text[])`,
-		source.ID, source.UserID, modalities, pages, slides, starts, ends, contents)
+		`insert into source_chunks (source_id, user_id, modality, page, slide, start_sec, end_sec, content, embedding)
+		 select $1, $2, m, p, s, st, e, c, v::extensions.vector
+		 from unnest($3::text[], $4::int[], $5::int[], $6::int[], $7::int[], $8::text[], $9::text[]) as u(m, p, s, st, e, c, v)`,
+		source.ID, source.UserID, modalities, pages, slides, starts, ends, contents, embeddings)
 }
 
 func (r *Sources) DeleteChunks(ctx context.Context, sourceID string) error {
@@ -196,12 +203,25 @@ func (r *Sources) ChunksForTopic(ctx context.Context, topicID, userID string, li
 // Search is full-text search over the learner's excerpts via search_source_chunks (TS default
 // limit 6), best first, with Rank set.
 func (r *Sources) Search(ctx context.Context, userID, query string, limit int) ([]ChunkRow, error) {
+	return r.ranked(ctx, "sources.search",
+		`select `+chunkCols+`, rank::float8 as rank from search_source_chunks($1, $2, $3)`, userID, query, limit)
+}
+
+// HybridSearch fuses full-text rank and similarity to embedding (the question's) with
+// hybrid_search_source_chunks (migration 029); Rank is the RRF score. Excerpts with no
+// embedding still compete on their words.
+func (r *Sources) HybridSearch(ctx context.Context, userID, query string, embedding []float32, limit int) ([]ChunkRow, error) {
+	return r.ranked(ctx, "sources.hybridSearch",
+		`select `+chunkCols+`, rank::float8 as rank from hybrid_search_source_chunks($1, $2, $3::text::extensions.vector, $4)`,
+		userID, query, vectorText(embedding), limit)
+}
+
+func (r *Sources) ranked(ctx context.Context, op, sql string, args ...any) ([]ChunkRow, error) {
 	type row struct {
 		ChunkRow
 		SearchRank float64 `db:"rank"`
 	}
-	rows, err := rowsOf[row](ctx, r.q, "sources.search",
-		`select `+chunkCols+`, rank::float8 as rank from search_source_chunks($1, $2, $3)`, userID, query, limit)
+	rows, err := rowsOf[row](ctx, r.q, op, sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -211,6 +231,45 @@ func (r *Sources) Search(ctx context.Context, userID, query string, limit int) (
 		out[i].Rank = &c.SearchRank
 	}
 	return out, nil
+}
+
+// ChunkToEmbed is an excerpt with no embedding yet, with its source's title.
+type ChunkToEmbed struct {
+	ID      string `db:"id"`
+	Title   string `db:"title"`
+	Content string `db:"content"`
+}
+
+// ChunksWithoutEmbedding is up to limit excerpts with no embedding, of one learner or (userID
+// "") everyone's, for cmd/backfill-embeddings.
+func (r *Sources) ChunksWithoutEmbedding(ctx context.Context, userID string, limit int) ([]ChunkToEmbed, error) {
+	return rowsOf[ChunkToEmbed](ctx, r.q, "sources.chunksWithoutEmbedding",
+		`select c.id, s.title, c.content from source_chunks c join course_sources s on s.id = c.source_id
+		 where c.embedding is null and ($1 = '' or c.user_id::text = $1) order by c.id limit $2`, userID, limit)
+}
+
+// SetEmbeddings stores embeddings[i] for ids[i].
+func (r *Sources) SetEmbeddings(ctx context.Context, ids []string, embeddings [][]float32) error {
+	vs := make([]string, len(embeddings))
+	for i, e := range embeddings {
+		vs[i] = vectorText(e)
+	}
+	return exec(ctx, r.q, "sources.setEmbeddings",
+		`update source_chunks c set embedding = u.v::extensions.vector
+		 from unnest($1::uuid[], $2::text[]) as u(id, v) where c.id = u.id`, ids, vs)
+}
+
+// vectorText is pgvector's text form, "[0.1,-0.2,…]": no driver type needed.
+func vectorText(v []float32) string {
+	b := make([]byte, 0, len(v)*10+2)
+	b = append(b, '[')
+	for i, x := range v {
+		if i > 0 {
+			b = append(b, ',')
+		}
+		b = strconv.AppendFloat(b, float64(x), 'g', -1, 32)
+	}
+	return string(append(b, ']'))
 }
 
 // TagChunks sets each excerpt's topic, one statement per topic.

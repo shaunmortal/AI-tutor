@@ -9,7 +9,9 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
+	"math"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -839,4 +841,57 @@ func TestTypedQuestionsAndCitations(t *testing.T) {
 	must(t, err)
 	check(t, len(other) == 0, "another learner's excerpt was cited")
 	check(t, ChunkRow{StartSec: ptr(3725)}.Location() == "1:02:05", "clock")
+}
+
+// unitVec is a 768-dimension vector pointing along axis i.
+func unitVec(i int) []float32 {
+	v := make([]float32, 768)
+	v[i] = 1
+	return v
+}
+
+func TestHybridSearch(t *testing.T) {
+	f := setup(t)
+	r := NewSources(f.tx)
+	mine, err := r.Create(f.ctx, NewSource{UserID: f.u1, Kind: "pdf", Title: "Algorithms", StoragePath: ptr(f.u1 + "/a.pdf")})
+	must(t, err)
+	must(t, r.InsertChunks(f.ctx, *mine, []NewChunk{
+		{Modality: "text", Page: ptr(1), Content: "Binary search halves a sorted array.", Embedding: unitVec(0)},
+		{Modality: "text", Page: ptr(2), Content: "A heap keeps the minimum on top.", Embedding: unitVec(1)},
+		{Modality: "text", Page: ptr(3), Content: "Recipes for bread."},
+	}))
+	theirs, err := r.Create(f.ctx, NewSource{UserID: f.u2, Kind: "pdf", Title: "Theirs", StoragePath: ptr(f.u2 + "/b.pdf")})
+	must(t, err)
+	must(t, r.InsertChunks(f.ctx, *theirs, []NewChunk{
+		{Modality: "text", Page: ptr(1), Content: "A sorted array, a heap.", Embedding: unitVec(1)}}))
+
+	pages := func(rows []ChunkRow) []int {
+		out := []int{}
+		for _, c := range rows {
+			out = append(out, *c.Page)
+		}
+		return out
+	}
+	// Words match page 1 only; the vector is page 2's. Page 1 is in both lists (1/61 + 1/62)
+	// and beats page 2, first in one (1/61). Page 3 has neither; the other learner's never shows.
+	hits, err := r.HybridSearch(f.ctx, f.u1, "sorted array", unitVec(1), 6)
+	must(t, err)
+	check(t, slices.Equal(pages(hits), []int{1, 2}), "fused order %v", pages(hits))
+	check(t, *hits[0].Rank > *hits[1].Rank && math.Abs(*hits[0].Rank-(1.0/61+1.0/62)) < 1e-6, "RRF scores %v %v", *hits[0].Rank, *hits[1].Rank)
+	// No word matches (a question in another script): the vector alone ranks.
+	hits, err = r.HybridSearch(f.ctx, f.u1, "क्रमबद्ध", unitVec(1), 6)
+	must(t, err)
+	check(t, slices.Equal(pages(hits), []int{2, 1}), "vector only %v", pages(hits))
+
+	// Backfill: page 3 is the only one of u1's without an embedding.
+	todo, err := r.ChunksWithoutEmbedding(f.ctx, f.u1, 10)
+	must(t, err)
+	check(t, len(todo) == 1 && todo[0].Title == "Algorithms" && todo[0].Content == "Recipes for bread.", "to embed %+v", todo)
+	must(t, r.SetEmbeddings(f.ctx, []string{todo[0].ID}, [][]float32{unitVec(2)}))
+	todo, err = r.ChunksWithoutEmbedding(f.ctx, f.u1, 10)
+	must(t, err)
+	check(t, len(todo) == 0, "all embedded %+v", todo)
+	hits, err = r.HybridSearch(f.ctx, f.u1, "bread", unitVec(2), 1)
+	must(t, err)
+	check(t, len(hits) == 1 && *hits[0].Page == 3, "backfilled excerpt found %v", pages(hits))
 }

@@ -2,9 +2,9 @@
   "questions": 36,
   "inMaterial": 28,
   "offMaterial": 8,
-  "retrievalHitRatePct": 78.6,
-  "citationAccuracyPct": 75,
-  "citationPrecisionPct": 50,
+  "retrievalHitRatePct": 96.4,
+  "citationAccuracyPct": 96.4,
+  "citationPrecisionPct": 77.7,
   "falseRefusalRatePct": 0,
   "correctRefusalRatePct": 100
 }

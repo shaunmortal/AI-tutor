@@ -3,6 +3,7 @@ package content
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"math"
 	"net/http"
 	"time"
@@ -130,7 +131,10 @@ func (c conversations) SaveCheck(ctx context.Context, userID string, q ai.CheckQ
 }
 
 // material is ai.Material over the learner's excerpts.
-type material struct{ r *store.Sources }
+type material struct {
+	r *store.Sources
+	e *ai.Embedder // nil: full-text search only
+}
 
 func (m material) HasMaterial(ctx context.Context, userID string) (bool, error) {
 	return m.r.HasReadySources(ctx, userID)
@@ -138,7 +142,7 @@ func (m material) HasMaterial(ctx context.Context, userID string) (bool, error) 
 
 // Retrieve is the excerpts for a question, numbered for the prompt and shaped for citation chips.
 func (m material) Retrieve(ctx context.Context, userID, query string, limit int) ([]ai.Citation, error) {
-	rows, err := m.r.Search(ctx, userID, query, limit)
+	rows, err := m.search(ctx, userID, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +170,26 @@ func (m material) Retrieve(ctx context.Context, userID, query string, limit int)
 	return out, nil
 }
 
+// search is hybrid (words and meaning) when the question embeds, else words alone. The query
+// already carries the English translation of a question in another language (ai.SearchQuery),
+// so one embedding covers both. A slow embedding service costs at most queryEmbedTimeout.
+func (m material) search(ctx context.Context, userID, query string, limit int) ([]store.ChunkRow, error) {
+	if m.e != nil {
+		ectx, cancel := context.WithTimeout(ctx, queryEmbedTimeout)
+		v, err := m.e.EmbedQuery(ectx, query)
+		cancel()
+		if err == nil {
+			return m.r.HybridSearch(ctx, userID, query, v, limit)
+		}
+		slog.Warn("tutor: question not embedded, searching by words", "err", err)
+	}
+	return m.r.Search(ctx, userID, query, limit)
+}
+
+const queryEmbedTimeout = 8 * time.Second
+
 // NewMaterial is the tutor's retrieval, for cmd/evalgrounding to run exactly what the tutor runs.
-func NewMaterial(r *store.Sources) ai.Material { return material{r} }
+func NewMaterial(r *store.Sources, e *ai.Embedder) ai.Material { return material{r, e} }
 
 // POST /ai/checks/{id}/answer {selectedOption}: grade the tutor's quick check server-side and
 // record it as a 'tutor' attempt, which moves mastery and the revision schedule like practice.

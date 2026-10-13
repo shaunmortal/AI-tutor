@@ -154,7 +154,7 @@ func run(userID string, ingest, dryRun bool, testsetPath, outDir string) error {
 		return n
 	}
 
-	material := content.NewMaterial(sources)
+	material := content.NewMaterial(sources, ai.NewEmbedder(cfg.GeminiAPIKey))
 	if dryRun {
 		fmt.Printf("learner %s: %d excerpts\n", userID, len(chunks))
 		if err := checkSources(ctx, sources, userID, items); err != nil {

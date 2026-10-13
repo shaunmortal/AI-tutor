@@ -59,7 +59,8 @@ func main() {
 		Redis: rdb, HTTP: authHTTP(),
 	}
 	mux := http.NewServeMux()
-	deps := &app.Deps{Cfg: cfg, DB: database, Redis: rdb, Auth: verifier, AI: ai.New(cfg.AISettings()), Mux: mux}
+	deps := &app.Deps{Cfg: cfg, DB: database, Redis: rdb, Auth: verifier, AI: ai.New(cfg.AISettings()),
+		Embed: ai.NewEmbedder(cfg.GeminiAPIKey), Mux: mux}
 	learning.Register(deps)
 	practice.Register(deps)
 	content.Register(deps)

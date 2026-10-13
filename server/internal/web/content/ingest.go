@@ -135,6 +135,7 @@ func (s *svc) ingest(ctx context.Context, payload []byte) error {
 		s.organizeIfPending(ctx, src.UserID)
 		return nil
 	}
+	s.embed(ctx, src, chunks)
 	defer s.organizeIfPending(ctx, src.UserID)
 	return pgx.BeginFunc(ctx, s.d.DB.Admin, func(tx pgx.Tx) error {
 		r := store.NewSources(tx)
@@ -146,6 +147,26 @@ func (s *svc) ingest(ctx context.Context, payload []byte) error {
 		}
 		return r.SetStatus(ctx, src.ID, "ready", nil)
 	})
+}
+
+// embed gives each excerpt its embedding for hybrid search. Not worth failing ingestion over:
+// without one an excerpt is still found by its words, and cmd/backfill-embeddings fills it in.
+func (s *svc) embed(ctx context.Context, src store.SourceRow, chunks []store.NewChunk) {
+	if s.d.Embed == nil {
+		return
+	}
+	docs := make([]ai.Doc, len(chunks))
+	for i, c := range chunks {
+		docs[i] = ai.Doc{Title: src.Title, Text: c.Content}
+	}
+	vs, err := s.d.Embed.EmbedDocs(ctx, docs)
+	if err != nil {
+		slog.Warn("ingest: excerpts not embedded, searchable by words until backfilled", "source", src.ID, "err", err)
+		return
+	}
+	for i := range chunks {
+		chunks[i].Embedding = vs[i]
+	}
 }
 
 // extract turns a source into excerpts. Storage and model errors are returned for a retry;

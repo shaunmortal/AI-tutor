@@ -72,7 +72,8 @@ func ExtractPDFPages(file []byte) ([]PageText, error) {
 	}
 	var pages []PageText
 	for i := 1; i <= r.NumPage(); i++ {
-		if text := tidy(pageText(r.Page(i))); text != "" {
+		// Some fonts map glyphs to U+0000, which Postgres text cannot store.
+		if text := tidy(strings.ReplaceAll(pageText(r.Page(i)), "\x00", "")); text != "" {
 			pages = append(pages, PageText{Page: i, Text: text})
 		}
 	}
