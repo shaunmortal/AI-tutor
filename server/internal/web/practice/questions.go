@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -40,10 +41,10 @@ const firstBatch = 3
 func nextRecommendation(d *app.Deps) httpx.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		userID := auth.UserID(r)
-		minutes, subject, ok := parseNextQuery(r)
+		minutes, subject, topic, ok := parseNextQuery(r)
 		if !ok {
 			return httpx.E(http.StatusBadRequest, "INVALID_INPUT",
-				"minutes must be a whole number between 1 and 600, and subject must be a uuid.")
+				"minutes must be a whole number between 1 and 600, and subject and topic must be uuids.")
 		}
 		ctx := r.Context()
 
@@ -67,6 +68,10 @@ func nextRecommendation(d *app.Deps) httpx.Handler {
 			if err != nil {
 				return err
 			}
+			// A topic picked on the course map: practise exactly that one, if it is in scope.
+			if topic != "" {
+				candidates = slices.DeleteFunc(candidates, func(c adaptive.TopicCandidate) bool { return c.TopicID != topic })
+			}
 			in := adaptive.RecommendationInput{Candidates: candidates, AvailableMinutes: minutes}
 			if profile != nil && profile.AvgSecondsPerQuestion != nil && *profile.AvgSecondsPerQuestion != 0 {
 				in.SecondsPerQuestion = profile.AvgSecondsPerQuestion
@@ -80,7 +85,9 @@ func nextRecommendation(d *app.Deps) httpx.Handler {
 		if plan == nil {
 			// An explainable empty state rather than a 404.
 			reason := "No topics are in scope yet. Set a learning goal to get started."
-			if subject != "" {
+			if topic != "" {
+				reason = "That topic is not part of your current goal."
+			} else if subject != "" {
 				reason = "That subject is not part of your current goal."
 			}
 			httpx.OK(w, http.StatusOK, nextSession{Questions: []adaptive.PracticeQuestion{}, Reason: reason})
@@ -118,34 +125,35 @@ func nextRecommendation(d *app.Deps) httpx.Handler {
 	}
 }
 
-// parseNextQuery is z.coerce.number().int().min(1).max(600).optional() for minutes and
-// z.string().uuid().optional() for subject.
-func parseNextQuery(r *http.Request) (minutes *float64, subject string, ok bool) {
+// parseNextQuery: minutes is an optional whole number 1..600; subject and topic optional uuids.
+func parseNextQuery(r *http.Request) (minutes *float64, subject, topic string, ok bool) {
 	q := r.URL.Query()
 	if vals, present := q["minutes"]; present {
 		if len(vals) != 1 {
-			return nil, "", false
+			return nil, "", "", false
 		}
 		s := strings.TrimSpace(vals[0])
 		f := 0.0 // Number("") is 0
 		if s != "" {
 			var err error
 			if f, err = strconv.ParseFloat(s, 64); err != nil {
-				return nil, "", false
+				return nil, "", "", false
 			}
 		}
 		if _, err := intIn("minutes", f, 1, 600); err != nil {
-			return nil, "", false
+			return nil, "", "", false
 		}
 		minutes = &f
 	}
-	if vals, present := q["subject"]; present {
-		if len(vals) != 1 || !isUUID(vals[0]) {
-			return nil, "", false
+	for name, dst := range map[string]*string{"subject": &subject, "topic": &topic} {
+		if vals, present := q[name]; present {
+			if len(vals) != 1 || !isUUID(vals[0]) {
+				return nil, "", "", false
+			}
+			*dst = vals[0]
 		}
-		subject = vals[0]
 	}
-	return minutes, subject, true
+	return minutes, subject, topic, true
 }
 
 // --- the question bank ---

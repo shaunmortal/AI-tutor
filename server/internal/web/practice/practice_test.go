@@ -341,9 +341,34 @@ func TestRecommendationsNext(t *testing.T) {
 		t.Fatalf("empty state: %s", res.raw)
 	}
 
-	for _, q := range []string{"minutes=0", "minutes=1.5", "minutes=601", "minutes=abc", "minutes=", "subject=nope"} {
+	// A topic picked on the course map is practised exactly.
+	var first struct {
+		Questions []struct {
+			TopicID string `json:"topic_id"`
+		} `json:"questions"`
+	}
+	e.call("GET", "/recommendations/next?minutes=20", user, nil).expect(t, 200, "").into(t, &first)
+	picked := first.Questions[0].TopicID
+	res = e.call("GET", "/recommendations/next?topic="+picked, user, nil).expect(t, 200, "")
+	var only struct {
+		Questions []struct {
+			TopicID string `json:"topic_id"`
+		} `json:"questions"`
+	}
+	res.into(t, &only)
+	for _, q := range only.Questions {
+		if q.TopicID != picked {
+			t.Fatalf("topic=%s returned a question on %s", picked, q.TopicID)
+		}
+	}
+	res = e.call("GET", "/recommendations/next?topic=00000000-0000-4000-8000-000000000000", user, nil).expect(t, 200, "")
+	if !strings.Contains(res.raw, "That topic is not part of your current goal.") {
+		t.Fatalf("topic empty state: %s", res.raw)
+	}
+
+	for _, q := range []string{"minutes=0", "minutes=1.5", "minutes=601", "minutes=abc", "minutes=", "subject=nope", "topic=nope"} {
 		res := e.call("GET", "/recommendations/next?"+q, user, nil).expect(t, 400, "INVALID_INPUT")
-		if res.Error.Message != "minutes must be a whole number between 1 and 600, and subject must be a uuid." {
+		if res.Error.Message != "minutes must be a whole number between 1 and 600, and subject and topic must be uuids." {
 			t.Errorf("%s: %s", q, res.Error.Message)
 		}
 	}
