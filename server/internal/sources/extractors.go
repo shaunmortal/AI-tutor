@@ -453,6 +453,14 @@ var (
 	xmlEntities    = strings.NewReplacer("&amp;", "&", "&lt;", "<", "&gt;", ">", "&quot;", `"`, "&#39;", "'", "&apos;", "'")
 )
 
+// ErrNoCaptions: the video exists (as far as can be told) but has no usable captions, so
+// transcribing it is worth a try. Test with errors.Is.
+var ErrNoCaptions = errors.New("no captions")
+
+type noCaptions struct{ error }
+
+func (noCaptions) Is(target error) bool { return target == ErrNoCaptions }
+
 // FetchYoutubeSegments returns timed captions for a YouTube lecture, from the captions
 // YouTube already publishes: the watch page yields an Innertube key, the Innertube player
 // (as the Android client) lists caption tracks, and the English track's XML is the transcript.
@@ -474,8 +482,8 @@ func FetchYoutubeSegments(ctx context.Context, hc *http.Client, url string) ([]T
 	}
 
 	unavailable := fmt.Errorf(`The video with ID "%s" is no longer available or has been removed. Please check the video URL or ID and try again.`, id)
-	notAvailable := fmt.Errorf(`No transcripts are available for the video with ID "%s". This may be because the video does not have captions or the captions are not accessible.`, id)
-	disabled := fmt.Errorf(`Transcripts are disabled for the video with ID "%s". This may be due to the video owner disabling captions or the video not supporting transcripts.`, id)
+	notAvailable := noCaptions{fmt.Errorf(`No transcripts are available for the video with ID "%s". This may be because the video does not have captions or the captions are not accessible.`, id)}
+	disabled := noCaptions{fmt.Errorf(`Transcripts are disabled for the video with ID "%s". This may be due to the video owner disabling captions or the video not supporting transcripts.`, id)}
 	tooMany := errors.New("YouTube is receiving too many requests from your IP address. Please try again later or use a proxy. If the issue persists, consider reducing the frequency of requests.")
 
 	status, page, err := fetch(ctx, hc, http.MethodGet, "https://www.youtube.com/watch?v="+id, nil)
@@ -549,7 +557,7 @@ func FetchYoutubeSegments(ctx context.Context, hc *http.Client, url string) ([]T
 				langs = append(langs, t.LanguageCode)
 			}
 		}
-		return nil, fmt.Errorf(`No transcripts are available in "%s" for the video with ID "%s". Available languages: %s. Please try a different language.`, captionLang, id, strings.Join(langs, ", "))
+		return nil, noCaptions{fmt.Errorf(`No transcripts are available in "%s" for the video with ID "%s". Available languages: %s. Please try a different language.`, captionLang, id, strings.Join(langs, ", "))}
 	}
 	transcriptURL := tracks[i].BaseURL
 	if transcriptURL == "" {

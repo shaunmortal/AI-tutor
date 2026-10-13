@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -470,4 +471,80 @@ func TestTutorRoutes(t *testing.T) {
 
 func aiMessage(conversationID string, i int) ai.NewMessage {
 	return ai.NewMessage{ConversationID: conversationID, Role: "learner", Content: fmt.Sprintf("m%d", i)}
+}
+
+func TestMediaFormat(t *testing.T) {
+	box := box4
+	for _, c := range []struct {
+		file []byte
+		ext  string
+	}{
+		{[]byte("ID3\x04\x00rest"), "mp3"},
+		{[]byte("\xFF\xFB\x90\x00"), "mp3"},
+		{[]byte("\xFF\xF1\x50\x80"), ""}, // ADTS AAC, not MPEG layer III
+		{[]byte("RIFF\x24\x00\x00\x00WAVEfmt "), "wav"},
+		{[]byte("RIFF\x24\x00\x00\x00AVI LIST"), ""},
+		{[]byte("\x1A\x45\xDF\xA3\x01\x00"), "webm"},
+		{box("ftyp", "M4A "), "m4a"},
+		{box("ftyp", "isom"), "mp4"},
+		{box("ftyp", "qt  "), "mov"},
+		{box("wide", "\x00\x00\x00\x08"), "mov"},
+		{[]byte("%PDF-1.4"), ""},
+		{[]byte("PK\x03\x04"), ""},
+		{nil, ""},
+	} {
+		m, ok := mediaFormat(c.file)
+		if m.ext != c.ext || ok != (c.ext != "") {
+			t.Errorf("mediaFormat(%q) = %q %v, want %q", c.file, m.ext, ok, c.ext)
+		}
+	}
+	if !isMedia("u/x.m4a") || isMedia("u/x.vtt") || isMedia("u/x.pdf") {
+		t.Error("isMedia")
+	}
+}
+
+func TestUploadMediaRules(t *testing.T) {
+	e := setup(t)
+	u := e.u1
+	// No Gemini key: refused up front rather than failing in the job.
+	expectError(t, e.do(u, "POST", "/sources/upload?kind=media&title=x", "", box4("ftyp", "M4A ")), 503, "TRANSCRIPTION_UNAVAILABLE", "")
+	e.s.tr = ai.NewTranscriber("unused")
+	expectError(t, e.do(u, "POST", "/sources/upload?kind=media&title=x", "", tinyPDF()), 400, "UNSUPPORTED_FILE", "Recordings must be .mp3, .m4a, .wav, .mp4, .webm or .mov.")
+	expectError(t, e.do(u, "POST", "/sources/upload?kind=media&title=x", "", nil), 400, "INVALID_INPUT", "The upload was empty.")
+	expectError(t, e.do(u, "POST", "/sources/upload?kind=media&title=x", "", make([]byte, maxMedia+1)), 413, "PAYLOAD_TOO_LARGE", "")
+}
+
+func box4(typ, brand string) []byte {
+	return []byte("\x00\x00\x00\x1c" + typ + brand + "\x00\x00\x00\x00")
+}
+
+// The whole path with the real Gemini API: upload a spoken m4a, the job transcribes it, the
+// excerpt opens the stored recording at its second. GEMINI_LIVE=1 and macOS say/afconvert.
+func TestUploadedRecordingLive(t *testing.T) {
+	if os.Getenv("GEMINI_LIVE") == "" {
+		t.Skip("set GEMINI_LIVE=1 to call the real API")
+	}
+	e := setup(t)
+	e.s.tr = ai.NewTranscriber(getenv("GEMINI_API_KEY"))
+	e.runWorker()
+	dir := t.TempDir()
+	if out, err := exec.Command("say", "-o", dir+"/x.aiff", "binary search halves the interval").CombinedOutput(); err != nil {
+		t.Skipf("say: %v %s", err, out)
+	}
+	if out, err := exec.Command("afconvert", "-f", "m4af", "-d", "aac", dir+"/x.aiff", dir+"/x.m4a").CombinedOutput(); err != nil {
+		t.Fatalf("afconvert: %v %s", err, out)
+	}
+	audio, err := os.ReadFile(dir + "/x.m4a")
+	must(t, err)
+	id := e.add(e.u1, "/sources/upload?kind=media&title=Lecture", "audio/mp4", audio)
+	if got := e.waitFor(e.u1, id); got.Status != "ready" || got.Kind != "video" || got.ExcerptCount != 1 {
+		t.Fatalf("recording: %+v", got)
+	}
+	var opened openedExcerpt
+	e.do(e.u1, "GET", "/sources/excerpts/"+e.firstChunk(id)+"/open", "", nil).into(t, &opened)
+	if opened.URL == nil || !strings.Contains(*opened.URL, ".m4a") || !strings.HasSuffix(*opened.URL, "#t=0") ||
+		opened.AtSec == nil || *opened.AtSec != 0 || !strings.Contains(strings.ToLower(opened.Excerpt), "binary search") {
+		t.Fatalf("open recording: %+v", opened)
+	}
+	t.Logf("excerpt %q at %s", opened.Excerpt, opened.Location)
 }

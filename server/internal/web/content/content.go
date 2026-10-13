@@ -32,19 +32,28 @@ const (
 	// its text indexed, only its figures are skipped.
 	maxUpload   = 40 << 20
 	maxCaptions = 5 << 20
+	// A lecture recording: Supabase Storage's free-plan cap per file is 50 MB (the Gemini Files
+	// API takes 2 GB). That is about 1.5 h of 64 kbit/s audio, or 10-20 min of phone video.
+	maxMedia = 50 << 20
+	// mediaReadFor replaces the server's 2-minute ReadTimeout on that route only: 50 MB on a
+	// 1 Mbit/s uplink takes ~7 minutes.
+	mediaReadFor = 10 * time.Minute
 )
 
 // The Redis stream ingestion jobs go through, and how long a job may run before another
 // worker assumes it died. Vars so tests use their own.
 var (
-	ingestStream     = "jobs:ingest"
-	ingestVisibility = 10 * time.Minute
+	ingestStream = "jobs:ingest"
+	// 30, not 10: transcribing a long lecture is several model calls of up to a minute each.
+	ingestVisibility = 30 * time.Minute
 )
 
 type svc struct {
 	d     *app.Deps
 	files *storage
 	queue *jobs.Queue
+	// tr is nil without GEMINI_API_KEY: recordings are then refused, captions still work.
+	tr *ai.Transcriber
 }
 
 func newSvc(d *app.Deps) *svc {
@@ -52,6 +61,7 @@ func newSvc(d *app.Deps) *svc {
 		d:     d,
 		files: &storage{url: d.Cfg.SupabaseURL, key: d.Cfg.SupabaseSecretKey, http: &http.Client{Timeout: 2 * time.Minute}},
 		queue: jobs.New(d.Redis, ingestStream),
+		tr:    ai.NewTranscriber(d.Cfg.GeminiAPIKey),
 	}
 	s.queue.Visibility = ingestVisibility
 	s.queue.OnGiveUp = s.giveUp
@@ -159,14 +169,18 @@ func accepted(w http.ResponseWriter, src *store.SourceRow) error {
 	return nil
 }
 
-// POST /sources/upload?kind=pdf|slides&title=… with the raw file as the body.
+// POST /sources/upload?kind=pdf|slides|media&title=… with the raw file as the body. media is a
+// lecture recording (audio or video), transcribed by the ingestion job.
 func (s *svc) upload(w http.ResponseWriter, r *http.Request) error {
 	userID := auth.UserID(r)
 	q := r.URL.Query()
 	kind := q.Get("kind")
 	t, ok := title(q.Get("title"))
-	if !ok || (kind != "pdf" && kind != "slides") {
+	if !ok || (kind != "pdf" && kind != "slides" && kind != "media") {
 		return invalid("Say what kind of file this is and give it a title.")
+	}
+	if kind == "media" {
+		return s.uploadMedia(w, r, userID, t)
 	}
 	file, err := readBody(w, r, maxUpload)
 	if err != nil {
@@ -188,6 +202,33 @@ func (s *svc) upload(w http.ResponseWriter, r *http.Request) error {
 		contentType = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 	}
 	src, err := s.store(r.Context(), store.NewSource{UserID: userID, Kind: kind, Title: t}, format, file, contentType)
+	if err != nil {
+		return err
+	}
+	return accepted(w, src)
+}
+
+// uploadMedia stores a lecture recording as a 'video' source with no link; the job transcribes it.
+func (s *svc) uploadMedia(w http.ResponseWriter, r *http.Request, userID, t string) error {
+	if s.tr == nil {
+		return httpx.E(http.StatusServiceUnavailable, "TRANSCRIPTION_UNAVAILABLE", "Transcription is not configured on this server. Add the lecture's captions instead.")
+	}
+	// Best effort: through a wrapper that can't set deadlines, the server's own timeouts stand.
+	rc := http.NewResponseController(w)
+	_ = rc.SetReadDeadline(time.Now().Add(mediaReadFor))
+	_ = rc.SetWriteDeadline(time.Now().Add(mediaReadFor + time.Minute))
+	file, err := readBody(w, r, maxMedia)
+	if err != nil {
+		return err
+	}
+	if len(file) == 0 {
+		return invalid("The upload was empty.")
+	}
+	m, ok := mediaFormat(file)
+	if !ok {
+		return httpx.E(http.StatusBadRequest, "UNSUPPORTED_FILE", "Recordings must be .mp3, .m4a, .wav, .mp4, .webm or .mov.")
+	}
+	src, err := s.store(r.Context(), store.NewSource{UserID: userID, Kind: "video", Title: t}, m.ext, file, m.contentType)
 	if err != nil {
 		return err
 	}
@@ -389,11 +430,13 @@ func (s *svc) mapRoute(w http.ResponseWriter, r *http.Request) error {
 // openedExcerpt is where a citation chip goes. Slide is new in the Go port: a .pptx has no
 // viewer that can jump to a slide, so the link opens the deck and the client says "slide N".
 type openedExcerpt struct {
-	URL         *string `json:"url"`
-	Slide       *int    `json:"slide"`
-	SourceTitle string  `json:"sourceTitle"`
-	Location    string  `json:"location"`
-	Excerpt     string  `json:"excerpt"`
+	URL   *string `json:"url"`
+	Slide *int    `json:"slide"`
+	// AtSec is where to start an uploaded recording (its URL also ends in #t=AtSec).
+	AtSec       *int   `json:"atSec,omitempty"`
+	SourceTitle string `json:"sourceTitle"`
+	Location    string `json:"location"`
+	Excerpt     string `json:"excerpt"`
 }
 
 // GET /sources/excerpts/{id}/open
@@ -425,6 +468,13 @@ func (s *svc) openExcerpt(ctx context.Context, chunkID, userID string) (openedEx
 	case src.VideoURL != nil && chunk.StartSec != nil:
 		u := sources.YoutubeAt(*src.VideoURL, *chunk.StartSec)
 		out.URL = &u
+	case src.StoragePath != nil && isMedia(*src.StoragePath) && chunk.StartSec != nil:
+		u, err := s.files.signedURL(ctx, *src.StoragePath)
+		if err != nil {
+			return openedExcerpt{}, err
+		}
+		u += "#t=" + strconv.Itoa(*chunk.StartSec) // a media fragment: the browser's player seeks there
+		out.URL, out.AtSec = &u, chunk.StartSec
 	case src.StoragePath != nil && (strings.HasSuffix(*src.StoragePath, ".pdf") || strings.HasSuffix(*src.StoragePath, ".pptx")):
 		u, err := s.files.signedURL(ctx, *src.StoragePath)
 		if err != nil {

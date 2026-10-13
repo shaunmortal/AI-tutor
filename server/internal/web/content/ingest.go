@@ -173,18 +173,9 @@ func (s *svc) embed(ctx context.Context, src store.SourceRow, chunks []store.New
 // problems with the material itself come back as a failure.
 func (s *svc) extract(ctx context.Context, src store.SourceRow) ([]store.NewChunk, error) {
 	if src.Kind == "video" {
-		var segments []sources.TranscriptSegment
-		if src.StoragePath != nil {
-			captions, err := s.files.download(ctx, *src.StoragePath)
-			if err != nil {
-				return nil, err
-			}
-			segments = sources.ParseCaptions(string(captions))
-		} else {
-			var err error
-			if segments, err = sources.FetchYoutubeSegments(ctx, nil, *src.VideoURL); err != nil {
-				return nil, failure{"Could not fetch captions for this video (" + err.Error() + "). Upload its .vtt or .srt captions instead."}
-			}
+		segments, err := s.videoSegments(ctx, src)
+		if err != nil {
+			return nil, err
 		}
 		var chunks []store.NewChunk
 		for _, w := range sources.WindowTranscript(segments, sources.TranscriptWindowSec) {
@@ -207,6 +198,46 @@ func (s *svc) extract(ctx context.Context, src store.SourceRow) ([]store.NewChun
 		return s.ingestPPTX(ctx, file)
 	}
 	return nil, failure{"That file is not a PDF or a .pptx."}
+}
+
+// videoSegments: uploaded captions, an uploaded recording (transcribed), or a YouTube video's
+// published captions, transcribed by Gemini straight from the link when it has none.
+func (s *svc) videoSegments(ctx context.Context, src store.SourceRow) ([]sources.TranscriptSegment, error) {
+	if src.StoragePath != nil {
+		file, err := s.files.download(ctx, *src.StoragePath)
+		if err != nil {
+			return nil, err
+		}
+		if !isMedia(*src.StoragePath) {
+			return sources.ParseCaptions(string(file)), nil
+		}
+		m, ok := mediaFormat(file)
+		if !ok || s.tr == nil {
+			return nil, failure{"This recording can't be transcribed on this server. Add the lecture's captions instead."}
+		}
+		return s.transcribed(s.tr.TranscribeFile(ctx, file, m.geminiType))
+	}
+	segments, err := sources.FetchYoutubeSegments(ctx, nil, *src.VideoURL)
+	if err == nil {
+		return segments, nil
+	}
+	noCaptions := failure{"Could not fetch captions for this video (" + err.Error() + "). Upload its .vtt or .srt captions instead."}
+	if !errors.Is(err, sources.ErrNoCaptions) || s.tr == nil {
+		return nil, noCaptions
+	}
+	segments, err = s.tr.TranscribeURL(ctx, *src.VideoURL)
+	if errors.Is(err, ai.ErrMedia) {
+		return nil, failure{"This video has no captions and could not be transcribed (" + err.Error() + "). Upload its .vtt or .srt captions, or the recording itself, instead."}
+	}
+	return segments, err
+}
+
+// transcribed maps a recording the model can't use to a failure; anything else is retried.
+func (s *svc) transcribed(segments []sources.TranscriptSegment, err error) ([]sources.TranscriptSegment, error) {
+	if errors.Is(err, ai.ErrMedia) {
+		return nil, failure{err.Error()}
+	}
+	return segments, err
 }
 
 // ingestPDF: a deck exported to PDF is still a deck, so with asSlides one page is one slide.
@@ -322,6 +353,58 @@ func fileFormat(file []byte) string {
 		return "pptx"
 	}
 	return ""
+}
+
+// media is an accepted recording format: its file extension, the type it is stored and served
+// with, and Gemini's name for it.
+type media struct{ ext, contentType, geminiType string }
+
+var mediaFormats = []media{
+	{"mp3", "audio/mpeg", "audio/mp3"},
+	{"m4a", "audio/mp4", "audio/mp4"},
+	{"wav", "audio/wav", "audio/wav"},
+	{"mp4", "video/mp4", "video/mp4"},
+	{"webm", "video/webm", "video/webm"},
+	{"mov", "video/quicktime", "video/mov"},
+}
+
+// mediaFormat reads magic bytes, as fileFormat does.
+func mediaFormat(file []byte) (media, bool) {
+	ext := ""
+	box := ""
+	if len(file) >= 12 {
+		box = string(file[4:8])
+	}
+	switch {
+	case bytes.HasPrefix(file, []byte("ID3")), len(file) >= 2 && file[0] == 0xFF && file[1]&0xE6 == 0xE2: // MPEG audio frame sync, layer III
+		ext = "mp3"
+	case bytes.HasPrefix(file, []byte("RIFF")) && len(file) >= 12 && string(file[8:12]) == "WAVE":
+		ext = "wav"
+	case bytes.HasPrefix(file, []byte("\x1A\x45\xDF\xA3")): // EBML: WebM (or Matroska, which Gemini also reads)
+		ext = "webm"
+	case box == "ftyp" && string(file[8:12]) == "qt  ", box == "moov", box == "mdat", box == "wide", box == "free":
+		ext = "mov"
+	case box == "ftyp" && strings.HasPrefix(string(file[8:12]), "M4A"):
+		ext = "m4a"
+	case box == "ftyp":
+		ext = "mp4"
+	}
+	for _, m := range mediaFormats {
+		if m.ext == ext {
+			return m, true
+		}
+	}
+	return media{}, false
+}
+
+// isMedia: a stored recording, by the extension store gave it.
+func isMedia(path string) bool {
+	for _, m := range mediaFormats {
+		if strings.HasSuffix(path, "."+m.ext) {
+			return true
+		}
+	}
+	return false
 }
 
 func ptr[T any](v T) *T { return &v }

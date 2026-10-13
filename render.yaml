@@ -36,7 +36,13 @@ services:
             sync: false
           - key: DATABASE_URL
             sync: false
+          - key: AI_PROVIDER
+            value: claude
           - key: ANTHROPIC_API_KEY
+            sync: false
+          # Gemini also powers embeddings (hybrid retrieval) and speech-to-text, whichever
+          # provider answers questions. Without it: full-text search only, no transcription.
+          - key: GEMINI_API_KEY
             sync: false
 
     # Auth cache, per-learner rate limits and the durable ingestion queue (Redis Streams).

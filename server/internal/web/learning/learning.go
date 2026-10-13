@@ -1,8 +1,7 @@
 // Package learning serves goals, curricula, the learner's own numbers, the study plan,
 // readiness, revision and study groups.
 //
-// Which database client each step uses is copied from the TS controllers and is the security
-// model: reads of the learner's own rows run AsUser (RLS applies); writes to tables learners
+// Which database client each step uses is the security model: reads of the learner's own rows run AsUser (RLS applies); writes to tables learners
 // only hold SELECT on, and reads that must see other learners' rows, run on Admin.
 package learning
 

@@ -2,8 +2,8 @@
 // attempts, the next-session recommendation (and the question bank behind it), AI question
 // generation, the diagnostic assessment and mock tests.
 //
-// Ported from the TypeScript attempts, recommendations, questions, assessments and mock-tests
-// routes. Which client each step uses (AsUser vs Admin) mirrors the TS userDb/adminDb choice.
+// Reads of the learner's own rows run AsUser (RLS applies); grading against the answer key and
+// writes to tables learners only hold SELECT on run on Admin.
 package practice
 
 import (

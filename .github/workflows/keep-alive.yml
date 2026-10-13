@@ -10,7 +10,7 @@
 #   is not a slow app, it is a dead one, and resuming it needs somebody to log in to a dashboard.
 #
 # This pings /health/deep rather than /health, which is the whole point: the shallow check touches only
-# Express, so it would keep the instance warm and quietly let the database pause anyway. The deep check
+# the Go process, so it would keep the instance warm and quietly let the database pause anyway. The deep check
 # does one cheap counted read, so a single request satisfies both.
 #
 # Cost: nothing. Actions minutes are free for public repositories, and both hosts are on free plans.
@@ -37,6 +37,9 @@ concurrency:
 
 jobs:
   ping:
+    # Skipped (and not billed) until a deployment exists. Private repos get limited free Actions
+    # minutes, and a 10-minute schedule is ~4,300 runs a month.
+    if: vars.API_HEALTH_URL != ''
     runs-on: ubuntu-latest
     timeout-minutes: 5
 

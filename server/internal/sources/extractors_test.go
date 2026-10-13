@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -178,6 +179,26 @@ func TestFetchYoutubeSegmentsOffline(t *testing.T) {
 	want := []TranscriptSegment{{1, 4, "it's a heap"}, {5, 6, "a < b"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %+v, want %+v", got, want)
+	}
+}
+
+// No captions is ErrNoCaptions (worth transcribing); a video that is gone is not.
+func TestFetchYoutubeNoCaptions(t *testing.T) {
+	for _, c := range []struct {
+		watch int
+		want  bool
+	}{{200, true}, {404, false}} {
+		hc := &http.Client{Transport: roundTrip(func(r *http.Request) (*http.Response, error) {
+			body, status := `<script>ytcfg.set({"INNERTUBE_API_KEY":"K"})</script>`, c.watch
+			if r.URL.Path == "/youtubei/v1/player" {
+				body, status = `{"playabilityStatus":{"status":"OK"}}`, 200
+			}
+			return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(body))}, nil
+		})}
+		_, err := FetchYoutubeSegments(context.Background(), hc, "https://youtu.be/ZA-tUyM_y7s")
+		if err == nil || errors.Is(err, ErrNoCaptions) != c.want {
+			t.Errorf("watch %d: %v, ErrNoCaptions want %v", c.watch, err, c.want)
+		}
 	}
 }
 

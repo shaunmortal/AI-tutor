@@ -45,6 +45,20 @@ type gemini struct {
 type gPart struct {
 	Text       string   `json:"text,omitempty"`
 	InlineData *gInline `json:"inlineData,omitempty"`
+	// FileData and VideoMetadata are for transcription (transcribe.go).
+	FileData      *gFileData  `json:"fileData,omitempty"`
+	VideoMetadata *gVideoMeta `json:"videoMetadata,omitempty"`
+}
+
+type gFileData struct {
+	MimeType string `json:"mimeType,omitempty"`
+	FileURI  string `json:"fileUri"`
+}
+
+type gVideoMeta struct {
+	StartOffset string  `json:"startOffset,omitempty"`
+	EndOffset   string  `json:"endOffset,omitempty"`
+	FPS         float64 `json:"fps,omitempty"`
 }
 
 type gInline struct {

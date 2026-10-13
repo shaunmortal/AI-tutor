@@ -1,362 +1,151 @@
 # Security
 
-How Adigam AI protects a learner's data, and — more importantly — how it protects the *integrity* of
-what the app claims about them.
+**In short:** the learner's identity comes from a verified token. The database enforces who may
+read what, through RLS and column grants, even for the API's own reads. Learners cannot write
+anything they are judged by. Every expensive route has a per-learner quota in Redis.
 
-Every claim in this document was verified against the running system rather than read off the source.
-The commands used are included so any of it can be checked again.
+## 1. Identity comes from a verified token only
 
----
+`internal/auth`:
 
-## The one-line version
+- `Require` takes `Authorization: Bearer <token>` and rejects it unless it is 20–4096 characters.
+- It verifies the token with Supabase (`GET /auth/v1/user`, using the publishable key).
+- The verified user id is cached in Redis under `auth:<sha256(token)>` for **1 minute**, so a revoked token keeps working for at most a minute.
+- Handlers read the id with `auth.UserID(r)`. That call panics if the middleware is missing, so no route can run unauthenticated by accident.
+- A `user_id` in a body, query string or header is never used.
 
-**A learner's browser holds no privilege to read an answer key or to write a single number the app
-uses to judge them.** Not "the API does not return it" — the database refuses.
+Every route except `/api/v1/health` and `/api/v1/health/deep` is mounted through `app.Deps.Authed`,
+which always wraps it in `Require`.
 
-There are two different things being defended here, and they need different mechanisms:
+## 2. Row-level security, enforced on API reads too
 
-| Risk | Why it matters | Defence |
+- Every table has RLS enabled. Learner-owned tables allow `SELECT` only where `auth.uid() = user_id`.
+- The API reads a learner's own data through `DB.AsUser`. It runs each transaction with `role = authenticated` and the learner's JWT claims set locally, so a query that forgets its `WHERE` clause still cannot return another learner's rows.
+- `DB.Admin` bypasses RLS and is used only where it is needed: grading against the answer key, writes to tables learners cannot write, and group comparisons. Every such query filters by the token's user id. See [architecture.md](architecture.md#admin-and-asuser-keeping-rls-in-force).
+
+## 3. The answer key never reaches the browser early
+
+`questions.correct_answer`, `explanation` and `option_misconceptions` are **not granted** to
+`authenticated`. That is a column grant, not a convention. Only `is_verified` rows are visible.
+Grading runs on the server, and the key is returned only:
+
+- in the response to a recorded answer; or
+- in the review of a submitted mock test.
+
+Mock test feedback and misconceptions are written only at marking time. Details are in
+[database.md](database.md#the-answer-key-column-grant).
+
+## 4. Learners cannot write what they are judged by
+
+- `authenticated` holds `SELECT` only on goals, attempts, mastery, plans, sessions, revision schedule, assessments, mock tests, self-ratings, mistake patterns, flashcards, sources and excerpts.
+- The only learner-writable columns are `profiles.display_name`, `avatar_url`, `timezone`, `settings` and `preferred_language`, on their own row.
+- All other writes go through the API, after validation, on `DB.Admin`.
+- Migration 024 revokes Supabase's default `TRUNCATE`/`REFERENCES`/`TRIGGER` grants from `anon` and `authenticated`, because `TRUNCATE` ignores RLS. `anon` has no table privileges at all.
+- The database also refuses impossible data through `CHECK` constraints: mastery 0–100, ease 1.3–3.0, an excerpt without a location, a short question without a key, and so on.
+
+## 5. Course material and AI input
+
+- **Uploads.**
+  - The file type is decided by magic bytes, not by the filename.
+  - Size is capped at 40 MB for files and 5 MB for captions (413 above that).
+  - Files are stored in the **private** bucket `course-sources` under `<userId>/<random>`. They are only ever opened through signed URLs that expire after **1 hour**, and only after the API has checked that the excerpt belongs to the caller.
+- **Search** functions filter by learner id. Execute is revoked from browser roles.
+- **Prompt injection.**
+  - Excerpts, typed answers and course text are passed to the model as data.
+  - The grounded tutor, course map, sourced question and rubric grader prompts each state that this content is not instructions.
+  - `CheckGrounding` removes citations to excerpts that were never provided, and moves uncited claims out of the "from your course" section.
+- **Generated questions** are only shown to learners after an independent second solve agrees with them (`is_verified`). The exception is the tutor's quick checks, which only the learner who received them can answer.
+
+## 6. Keys: what is secret and what is public
+
+| Value | Where | Secret? |
 |---|---|---|
-| Reading somebody else's data | ordinary privacy | Row-level security, on every table |
-| Reading data *about* yourself that would break the product | an answer key makes every score meaningless | Column-level privileges |
-| Writing data about yourself | self-marked mastery makes every plan, test and recommendation fiction | No write privilege at all |
+| `SUPABASE_SECRET_KEY` | API only (Storage) | **Yes** |
+| `DATABASE_URL` (owner credentials) | API only | **Yes** |
+| `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` | API only | **Yes** |
+| `REDIS_URL` | API only | **Yes** |
+| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | API and browser (`VITE_…`) | No. Public by design; every table is behind RLS and grants. |
+| `VITE_API_URL` | Browser | No |
 
-The third is the one most easily overlooked. A learner who could set their own mastery score is not a
-privacy problem — they are a correctness problem, because the adaptive engine, the study plan, the
-revision schedule and the readiness figures are all derived from it.
-
----
-
-## 1. Identity comes from a verified token, never from the request
-
-No endpoint accepts a user id. The learner is whoever Supabase says the bearer token belongs to:
-
-```ts
-const { data, error } = await adminDb.auth.getUser(token);   // verified with Supabase
-req.auth = { userId: data.user.id, accessToken: token };
-```
-
-`getUser` is a verification call, not a decode — a forged or edited token fails it.
-
-Verified: no controller reads a user id from `req.body`, `req.query` or `req.params`.
-
-```bash
-grep -rn "userId" backend/src/controllers/*.ts | grep -E "req.body|req.query|req.params"
-# no matches
-```
-
-Because identity cannot be supplied, the whole class of "change the id in the request and read
-somebody else's data" does not exist. Malformed and missing tokens are answered distinctly —
-`Malformed token.` and `Missing bearer token.` — both as 401.
-
----
-
-## 2. The answer key is unreachable from the browser
-
-`questions` grants `authenticated` SELECT on **seven named columns**. `correct_answer` and
-`explanation` are not among them:
-
-```
-granted: id  topic_id  question_type  body  options  difficulty  marks
-```
-
-The only privilege `authenticated` holds on `correct_answer` and `explanation` is `REFERENCES`, which
-permits a foreign key and no reading of data.
-
-This is not a filtered API response. Asking for the column directly, from the browser, with a valid
-signed-in token:
-
-```bash
-GET /rest/v1/questions?select=correct_answer   →  42501 permission denied for table questions
-GET /rest/v1/questions?select=*                →  42501 permission denied for table questions
-GET /rest/v1/questions?select=body             →  200  [{"body":"In C, what is the value of 17 % 5?"}]
-```
-
-The middle line is the interesting one. `select=*` **fails** rather than silently returning the
-allowed columns — asking for everything is refused outright, so there is no version of this request
-that leaks the key.
-
-### What this buys
-
-Grading happens on the server, and the answer travels back only in the response to a submitted
-attempt. That is what makes a score mean something:
-
-- **Practice** returns the correct answer and the explanation *after* the attempt is recorded.
-- **Mock tests** never return them while the paper is open, and mark every answer in one pass at
-  submission. Withholding answers could not be done in the client — they would sit in the response,
-  visible in devtools — which is precisely why mock tests have their own tables rather than looping
-  over the practice endpoint.
-- **AI-generated questions** stay invisible until verified. RLS on `questions` filters on
-  `is_verified`, so a question whose answer failed its independent check is present in the table and
-  unreadable by learners.
-
----
-
-## 3. Learners cannot write anything the app judges them by
-
-Across all twenty tables in the public schema, `authenticated` holds **zero table-level INSERT,
-UPDATE or DELETE grants**:
-
-```sql
-select count(*) from information_schema.role_table_grants
-where grantee = 'authenticated' and table_schema = 'public'
-  and privilege_type in ('INSERT','UPDATE','DELETE');
---  0
-```
-
-The only write privilege granted anywhere in the schema is **column-level UPDATE on four columns of
-`profiles`** — `display_name`, `avatar_url`, `timezone`, `settings`. Those are the learner's own
-preferences and nothing is derived from them except how the app addresses them.
-
-Tested from the browser with a valid token, against the learner's *own* row:
-
-```bash
-PATCH /rest/v1/profiles       {"email": "hacked@evil.com"}   →  42501 permission denied
-PATCH /rest/v1/concept_mastery {"mastery_score": 100}        →  42501 permission denied
-PATCH /rest/v1/profiles       {"display_name": "Ayush"}      →  200  updated
-```
-
-Everything else — attempts, mastery, plans, sessions, revision schedules, test marking, group
-membership — is written by the backend through an elevated client, behind validation the learner
-cannot skip.
-
-### Read-only by design, table by table
-
-| Table | Why learners may not write it |
-|---|---|
-| `concept_mastery` | a self-set score makes every plan and recommendation fiction |
-| `question_attempts` | append-only evidence; the mastery formula runs on it |
-| `study_plans`, `study_sessions` | self-marked sessions destroy the missed-session signal that adaptive re-planning reads |
-| `revision_schedule` | pushing a due date out would remove every difficult topic from revision — precisely the topic the schedule exists to return |
-| `mock_tests`, `mock_test_questions` | `is_correct` **is** the marking; writing it means marking your own paper |
-| `learner_profiles` | streaks and consistency are shown to a study group |
-| `group_members` | inserting directly would let anyone join any group whose id they learned, making the invite code decorative |
-
----
-
-## 4. Row-level security on every table
-
-All twenty tables in `public` have RLS enabled, with 21 policies between them.
-
-```sql
-select relname, relrowsecurity from pg_class
-where relnamespace = 'public'::regnamespace and relkind = 'r';
---  all 20 rows: true
-```
-
-The shape is always the same: `using (auth.uid() = user_id)`, or — for rows reachable only through a
-parent the learner owns — an `exists` check against that parent. `ai_messages` is readable only
-through an owned conversation; `mock_test_questions` only through an owned test.
-
-Two subtleties worth recording:
-
-**`questions` and `topics` are shared, not per-learner.** Their policies gate on `is_verified` and on
-nothing user-specific, because a question bank is meant to be common. The per-learner protection
-there is the column grant, not the row policy.
-
-**`is_group_member` is `security definer`, and has to be.** The obvious policy — "read
-`group_members` rows for groups you belong to" — must consult `group_members` to decide whether it may
-read `group_members`, and Postgres refuses that outright:
-
-```
-infinite recursion detected in policy for relation "group_members"
-```
-
-A `security definer` function runs with the definer's rights, so the lookup inside it is not itself
-subject to the policy. It is written as narrowly as possible: it takes both ids, answers one boolean,
-and so cannot be used to enumerate anything.
-
-### RLS is a second lock, not the only one
-
-Backend writes use the elevated client, which **bypasses RLS by design**. So every repository method
-that touches learner data filters on the user id from the token as well. Those filters are
-load-bearing, not decorative — with the elevated client they are the only thing standing between a
-record id and somebody else's data, which is why `findConversation`, `findTest` and `findGroup` all
-take a user id and return 404 without it.
-
----
-
-## 5. The database refuses to be lied to
-
-Four `BEFORE INSERT` triggers overwrite or reject caller-supplied values, because a denormalised
-field the caller controls is a field the caller can lie about:
-
-| Trigger | What it enforces |
-|---|---|
-| `question_attempts_fill_fields` | takes `topic_id` from the question and counts `attempt_number` from existing rows, so neither can be forged |
-| `study_sessions_fill_user` | takes `user_id` from the plan, so sessions cannot be attached to another learner's plan |
-| `mock_test_questions_fill_topic` | takes `topic_id` from the question, so a per-topic breakdown cannot be skewed |
-| `group_members_enforce_size` | caps a group at 30, so a publicly posted invite code cannot turn one group into a mailing list |
-
-CHECK constraints carry the same intent: mastery difficulty buckets must sum to the total attempts, a
-current streak may not exceed the longest, lapses may not exceed reviews, a submitted test must carry
-a complete result, and a marked question must have an answer. These are invariants the application
-also maintains — stated twice on purpose, because the copy in the database is the one that cannot be
-forgotten during a refactor.
-
----
-
-## 6. Keys, and what is safe to publish
-
-| Key | Where it lives | Exposure |
-|---|---|---|
-| Supabase publishable key | compiled into the frontend bundle | public by design; grants nothing without a signed-in token, because every table is behind RLS |
-| Supabase secret key | backend environment only | never sent to a browser |
-| Anthropic API key | backend environment only | never sent to a browser |
-| Postgres connection string | backend environment only | never sent to a browser |
-
-Verified: no reference to the secret key or `service_role` exists anywhere in `frontend/src`.
-
-The frontend deliberately uses `@supabase/auth-js` rather than the full `supabase-js`. The security
-consequence is incidental but real: the browser has no PostgREST client at all in the shipped bundle,
-so all data access goes through the app's own API where the validation lives.
-
-`.env`, `.env.*` and the demo credentials file have been gitignored since the first commit. Before the
-repository was made public, the entire git history was scanned for API keys, connection strings, JWTs
-and committed `.env` files. One real leak was found — the demo account's password, written into a
-documentation file — and it was removed and **the password rotated**, which also makes the copy left
-in history useless.
-
----
+- `server/.env` is gitignored. In production, secrets are set in the host dashboard; `render.yaml` marks them `sync: false`, so they are never in the repository.
+- Only `VITE_`-prefixed variables reach the browser bundle.
 
 ## 7. Abuse limits
 
-Rate limits are per learner per hour, and the reason differs by endpoint:
+**Per-learner hourly quotas** (`internal/ratelimit`): fixed windows in Redis, keyed on the verified
+user id and never on an IP address. They are shared across instances and survive restarts. If Redis
+is down they fail open, so studying is never blocked.
 
-| Endpoint | Limit | Why |
+| Quota | Limit / hour | Routes |
 |---|---|---|
-| `POST /questions/generate` | 10 | each call is real money at the model |
-| `POST /curricula/resolve` | 20 | free-text AI entry point |
-| `POST /ai/tutor` | 40 | AI cost, but a learner asks a lot in a session |
-| `POST /study-plan/generate` | 20 | writes a hundred rows and supersedes the previous plan |
-| `POST /mock-tests` | 20 | writes a paper and retires the open one |
-| `POST /groups/join` | 30 | **not a cost limit** — see below |
+| `ai-tutor` | 40 | `POST /ai/tutor` |
+| `questions-generate` | 10 | `POST /questions/generate` |
+| `sources-ingest` | 30 | `POST /sources/upload`, `/sources/video`, `/sources/video/captions` |
+| `sources-organize` | 10 | `POST /sources/organize` |
+| `curricula-resolve` | 20 | `POST /curricula/resolve` |
+| `plan-generate` | 20 | `POST /study-plan/generate` |
+| `assessments-start` | 10 | `POST /assessments/diagnostic` |
+| `mock-tests-generate` | 20 | `POST /mock-tests` |
+| `groups-join` | 30 | `POST /groups/join` (guessing invite codes) |
 
-The join limit is the tightest relative to its cost, which is zero. An invite code is six characters
-from a 31-symbol alphabet, about 900 million combinations. Unlimited attempts turn that into a
-guessing game whose prize is standing inside a stranger's group and reading their progress. Thirty an
-hour makes that hopeless while being far more than a person mistyping a code they were given.
+**Request limits:**
 
-Group codes also avoid `O`, `0`, `I`, `1` and `L` — they get read aloud across a room — and are
-generated with rejection sampling rather than modulo, so no symbol is likelier than another.
+- JSON bodies are capped at 100 KiB.
+- Read and write timeouts are 2 and 3 minutes.
+- Headers are capped at 64 KiB.
+- Each query has a 15 s `statement_timeout`.
+- Each instance sheds load past `MAX_IN_FLIGHT` with `503 SERVER_BUSY` (see [architecture.md](architecture.md#overload-shedding)).
 
----
+## 8. Not found rather than forbidden
 
-## 8. Not-found rather than forbidden
+A resource the caller does not own answers **404**, not 403. A malformed id gets the same 404 on
+the group and test routes, so probing cannot confirm that an id exists.
 
-Anything a learner does not own answers **404, not 403**. Telling somebody a record exists but is not
-theirs confirms the id, which is itself a small leak. Applied consistently:
+| Request | Response |
+|---|---|
+| `GET /groups/{not mine}` | 404 `GROUP_NOT_FOUND` |
+| `GET /mock-tests/{not mine}` | 404 `TEST_NOT_FOUND` |
+| `GET /assessments/{not mine}` | 404 `ASSESSMENT_NOT_FOUND` |
+| `GET /ai/conversations/{not mine}` | 404 `CONVERSATION_NOT_FOUND` |
+| `GET /sources/excerpts/{not mine}/open` | 404 `EXCERPT_NOT_FOUND` |
 
-```
-GET /groups/{someone elses}      →  404 GROUP_NOT_FOUND
-GET /mock-tests/{someone elses}  →  404 TEST_NOT_FOUND
-GET /ai/conversations/{not mine} →  404 CONVERSATION_NOT_FOUND
-```
+## 9. Study groups
 
-A malformed id returns the **same** 404 as a real one that is not yours, so the two cannot be told
-apart by probing.
+- Members see each other's display name, questions answered, current streak and topics mastered. They see nothing else: no answers, no mastery per topic, no goals.
+- Group reads are gated by `is_group_member`.
+- Invite codes are 6 characters from an alphabet without look-alike characters (`^[A-HJ-NP-Z2-9]{6}$`).
+- A group holds at most 30 members, enforced by a trigger. A learner can be in at most 10 groups.
 
----
+## 10. CORS
 
-## 9. What a study group can see
+The API echoes `Access-Control-Allow-Origin` only for origins listed in `CORS_ORIGINS`
+(comma-separated, exact match). It allows the headers `Authorization, Content-Type` and the methods
+`GET, POST, PUT, PATCH, DELETE, OPTIONS`.
 
-The only feature where one learner reads anything derived from another's account. It got its own
-tables and its own policies: **no policy on `concept_mastery`, `learner_profiles` or
-`question_attempts` was loosened to build it.**
+## Known limitations
 
-**Shared:** display name, questions answered, current streak, topics mastered.
-**Not shared:** accuracy, weakest topics, wrong answers, per-topic mastery, tutor conversations,
-goals, plans, email address.
+- **Token checks call Supabase.** One verification per token per minute; a revoked token works for up to a minute. Verifying signatures locally against the project's JWKS would remove that hop.
+- **Question verification is a second model call, not a human.** A question that both calls get wrong in the same way would still reach learners.
+- **Invite codes cannot be rotated.** The 30-member cap limits the damage.
+- **No audit log** of elevated writes.
+- **The curriculum named in `GET /sources/map/{curriculumId}` is not checked for ownership.** Only the excerpt counts are filtered by learner. Topic names in a course map are therefore readable by id, in the same way that `topics` is readable by any signed-in learner.
 
-The line is between *effort and achievement* on one side and *weakness* on the other. Publishing which
-topics somebody is worst at, to their classmates, would make the honest answer to "should I practise my
-weakest topic" become "not while my friends can see" — which would break the product to add a feature.
+## Checking it yourself
 
-Three mechanisms hold it rather than one:
+```sql
+-- correct_answer must not be in the learner's column grant
+select column_name from information_schema.column_privileges
+ where table_name = 'questions' and grantee = 'authenticated';
 
-1. `SharedProgress` is a **type**, so adding a field is a visible change to a file named
-   `groupEngine` rather than a column slipped into a query.
-2. The repository **never selects** what it will not share. The safest way not to leak a field is to
-   never fetch it.
-3. Groups cannot be listed, searched or discovered. There is no endpoint for it and no policy
-   permitting a lookup by invite code from a browser.
+-- RLS is on for every table
+select relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+ where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity;   -- expect no rows
 
-Verified with two real accounts, because a single account cannot prove anything about what somebody
-else can see:
-
-```
-peer, not a member:
-  GET /groups/{id}                    →  404
-  GET /groups                         →  []
-  browser → group_members             →  0 rows
-  browser → study_groups              →  0 rows
-  browser → concept_mastery           →  0 rows
-  browser → learner_profiles          →  1 row, their own, id-matched
-```
-
----
-
-## 10. Input validation at both trust boundaries
-
-zod validates HTTP bodies **and** model output. The second is easy to forget: a language model is an
-untrusted input source, and its reply is parsed, schema-checked, business-checked, and then — for a
-generated question — solved again by an independent request that has never seen the proposed answer.
-A question becomes visible only when the two agree.
-
-Twenty-one invalid-input cases were exercised against the live API. Every one returns 400 with a
-message naming the field, and none reaches the database. Numeric bounds mirror the CHECK constraints,
-so a bad value is a readable 400 rather than a database error the client cannot act on.
-
-Timezones are validated against the platform's own timezone database rather than a hand-written list,
-because a stored zone the server cannot format would silently corrupt every streak and revision date
-for that learner.
-
----
-
-## 11. Honest limitations
-
-Written down deliberately. A security document that lists only strengths is not a security document.
-
-- **Rate limiting is in-process.** Counters live in a `Map`, so they reset on deploy and are per
-  instance. Correct on the single instance this runs on; moving to more than one requires moving the
-  counter into Postgres or Redis first. The code says so at the top of the middleware.
-- **Question verification is a second model call, not a human.** It is strictly better than no check
-  and catches the common failure, but a question both calls agree on and both get wrong would still
-  reach a learner. Unverified questions are retained rather than deleted so they can be reviewed.
-- **Invite codes cannot be rotated.** A code shared too widely can only be escaped by leaving the
-  group and making another. The 30-member cap limits the damage.
-- **No audit log.** Elevated writes are not recorded separately from their effects. Nothing needs it
-  yet — there are no admin actions and no moderation surface.
-- **Email confirmation is currently enabled**, so a new account cannot sign in until the link is
-  clicked. That is the safer default and it is worth knowing before a live demonstration, because the
-  built-in mailer also limits how many messages an hour it will send.
-- **The deployment is a free tier.** No WAF, no DDoS protection beyond what the hosts provide, and the
-  backend cold-starts — the first request after a quiet period can be slow enough to look like a
-  failure, which the client now handles with a timeout rather than hanging.
-
----
-
-## Reproducing these checks
-
-```bash
-# Column grants on questions — correct_answer must be absent
-psql "$DATABASE_URL" -c "select column_name, privilege_type
-  from information_schema.column_privileges
-  where table_name='questions' and grantee='authenticated' order by column_name;"
-
-# Learners hold no table-level write grant anywhere
-psql "$DATABASE_URL" -c "select count(*) from information_schema.role_table_grants
-  where grantee='authenticated' and table_schema='public'
-    and privilege_type in ('INSERT','UPDATE','DELETE');"
-
-# RLS is on for every table
-psql "$DATABASE_URL" -c "select relname, relrowsecurity from pg_class
-  where relnamespace='public'::regnamespace and relkind='r' order by relname;"
-
-# Try to read an answer key with a real signed-in token
-curl "$SUPABASE_URL/rest/v1/questions?select=correct_answer&limit=1" \
-  -H "apikey: $PUBLISHABLE_KEY" -H "Authorization: Bearer $LEARNER_TOKEN"
+-- learners hold no table-level write privilege
+select table_name, privilege_type from information_schema.role_table_grants
+ where grantee in ('authenticated', 'anon') and privilege_type <> 'SELECT';  -- expect no rows
 ```
 
-The SQL tests under `database/tests/` assert the same properties inside rolled-back transactions, so
-they are safe to run repeatedly against a live database.
+The Go integration tests (`go test ./...` with `DATABASE_URL` set) cover the RLS cases as a
+learner: another learner's goals and attempts are invisible, learners cannot write goals, and
+`correct_answer` cannot be read.

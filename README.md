@@ -35,7 +35,7 @@ answer without tying anything to the course or to what the student already knows
 | 📚 **One knowledge base from your material** | Upload PDFs and slide decks, paste a lecture video link. Text, slide images, figures and transcripts become excerpts that remember their **page, slide or timestamp**. |
 | 🗺️ **A course map** | Topics, key concepts and prerequisites are identified from the material, and every excerpt is tagged to a topic. |
 | 💬 **A tutor that cites, or says it can't** | Answers quote numbered excerpts; one tap opens the exact page, slide or second of video. Anything the material doesn't cover is declined or clearly labelled as outside knowledge. Explains in Hindi/Hinglish too. |
-| 🎯 **Adaptive assessment** | Diagnostic, practice and mock exams. Every generated question is checked by a **second, independent solve** before a learner sees it, and repeats are avoided. |
+| 🎯 **Adaptive assessment** | Diagnostic, practice and mock exams. Every question generated for the shared bank is checked by a **second, independent solve** before a learner sees it, and repeats are avoided. |
 | 📈 **A learner model you can read** | Per-topic mastery from the evidence (recent vs historical accuracy, difficulty, consistency, decay), SM-2 spaced repetition, and an exam-readiness score that shows its working. |
 | 🗓️ **A plan that adapts** | Day-by-day sessions weighted to weak topics, forgetting curves and the exam date — rebuilt automatically when you fall behind. |
 | 🎙️ **Voice** | Ask by voice, hear answers read aloud. |
@@ -79,10 +79,10 @@ switches off under the OS "reduce motion" setting.
 
 | # | Requirement | Status | How |
 |---|---|---|---|
-| 1a | Ingest videos, textbooks, slides without preprocessing | ✅ | PDF (pure-Go extraction), PPTX (text + slide images), YouTube transcripts or uploaded `.vtt/.srt` — `server/internal/sources` |
+| 1a | Ingest videos, textbooks, slides without preprocessing | ✅ | PDF (pure-Go extraction), PPTX (text + slide images), YouTube captions or `.vtt/.srt`, and **speech-to-text** (Gemini) for uploaded recordings (mp3, m4a, wav, mp4, webm, mov) and YouTube videos without captions |
 | 1b | Units linked to origin | ✅ | Every excerpt stores page / slide / start–end second; a DB check makes one mandatory |
 | 1c | Topics, subtopics, concepts; every unit tagged | ✅ | Course map from the material (topics, key concepts, prerequisites) — `web/content/coursemap.go` |
-| 1d | Information from figures and diagrams | ✅ | Claude vision describes PDF figures and slide images; stored as `figure` excerpts |
+| 1d | Information from figures and diagrams | ✅ | The configured model's vision (Claude or Gemini) describes PDF figures and slide images; stored as `figure` excerpts |
 | 2a | Cited answers opening the exact location | ✅ | Citation chips open PDF at `#page=N`, YouTube at `&t=Ns`, slides show their slide number |
 | 2b | Decline / flag off-material queries | ✅ | `ai.CheckGrounding`: uncited answers become "not covered"; outside knowledge is labelled |
 | 3a | Quizzes and mock exams, tagged | ✅ | MCQ, multi-select, numerical and **short answer** (rubric-graded server-side); mock tests on learner-chosen topics; every question carries topic, difficulty and source excerpt |
@@ -140,7 +140,7 @@ flowchart LR
 |---|---|
 | Frontend | React 19, React Router 7, Vite 8, TypeScript, plain CSS design tokens (no UI framework) |
 | API | **Go 1.27**, `net/http` (stdlib router), pgx v5, go-redis v9, Anthropic Go SDK |
-| Data | Postgres on Supabase — 25 migrations, RLS on all tables, column-level grants |
+| Data | Postgres on Supabase — migrations 000–029, RLS on all tables, column-level grants |
 | Queue & cache | Redis Streams (durable ingestion), Redis rate limits and auth cache |
 | AI | **Claude or Gemini**, switchable with one setting. Claude: Opus 5.5 for data that gets stored (questions, answer checks, course maps), Sonnet 5.5 for explanations, server-side refusal fallbacks. Gemini (free tier works): 3.5 Flash / Flash-Lite, falling back to Flash-Lite when Flash is busy |
 | Auth | Supabase Auth — email/password, password reset, Google / Facebook / LinkedIn |
@@ -330,7 +330,7 @@ novice and uneven learners; no advantage for forgetful and advanced profiles yet
 ## 🛣️ Roadmap
 
 - A similarity floor so off-material questions retrieve nothing at all
-- Speech-to-text for lecture videos without captions, and OCR for scanned PDFs
+- OCR for scanned PDFs
 - Audio revision briefs; the course map as an interactive graph
 
 ---

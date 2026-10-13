@@ -1,11 +1,11 @@
 -- Course material a learner uploads: PDFs, slide decks and lecture videos.
 --
 -- Every unit of content keeps where it came from (page, slide, or video seconds) so the tutor can
--- cite it and the citation can open the exact spot. Search is Postgres full-text: no embedding
--- service, no extra key, and the same query runs locally and in production.
+-- cite it and the citation can open the exact spot. Search here is Postgres full-text; embeddings
+-- are added on top in 029.
 --
--- ponytail: lexical search only. Good on course material, where the learner's words and the
--- book's words overlap; add pgvector embeddings if paraphrased questions start missing.
+-- Full-text search here; 029_chunk_embeddings.sql adds pgvector embeddings and a hybrid search
+-- that fuses both, with this function kept as the fallback.
 
 create table if not exists public.course_sources (
     id uuid primary key default gen_random_uuid(),
