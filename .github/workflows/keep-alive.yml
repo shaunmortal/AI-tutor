@@ -43,7 +43,13 @@ jobs:
     steps:
       - name: Wake the API and the database
         run: |
-          URL="https://adigam-api.onrender.com/api/v1/health/deep"
+          # Set the repository variable API_HEALTH_URL (Settings → Secrets and variables → Actions →
+          # Variables) to the deployed https://<host>/api/v1/health/deep. Until then, nothing to ping.
+          URL="${{ vars.API_HEALTH_URL }}"
+          if [ -z "$URL" ]; then
+            echo "API_HEALTH_URL is not set; skipping."
+            exit 0
+          fi
 
           # Up to five tries with a widening gap. A cold start on the free plan can take the best part
           # of a minute, so the first attempt failing is the expected case rather than a problem — this

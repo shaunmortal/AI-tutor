@@ -17,8 +17,9 @@ services:
       envVars:
           - key: PORT
             value: 10000
+          # The deployed frontend's origin (no trailing slash), comma-separated with any others.
           - key: CORS_ORIGINS
-            value: https://adigamai.vercel.app,http://localhost:5173
+            sync: false
           - key: REDIS_URL
             fromService:
                 type: keyvalue
