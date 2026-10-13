@@ -133,7 +133,7 @@ The API echoes `Access-Control-Allow-Origin` only for origins listed in `CORS_OR
 - **Question verification is a second model call, not a human.** A question that both calls get wrong in the same way would still reach learners.
 - **Invite codes cannot be rotated.** The 30-member cap limits the damage.
 - **No audit log** of elevated writes.
-- **Syllabus tables are readable by every signed-in learner at the database.** `curricula`, `topics` and `topic_prerequisites` have the policy `true`, so a learner calling Supabase directly can read another learner's course-map topic names; only the API route is checked. `POST /goals` and `GET /goals/subjects` also accept any `curriculumId` without checking it.
+- ~~Syllabus tables readable by every learner~~ — closed by migration 032: `curricula`, `topics` and `topic_prerequisites` are read through `can_read_curriculum()` (shared syllabus, or a course map with the learner's own sources or goal), and `POST /goals` checks the same rule before its Admin insert, answering 404 otherwise. Tested in `web/learning/coursemap_access_test.go`.
 
 ## Checking it yourself
 

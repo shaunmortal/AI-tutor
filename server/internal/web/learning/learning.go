@@ -160,6 +160,17 @@ func (h handlers) createGoal(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
+	// The insert runs on Admin, where RLS doesn't apply, so the curriculum rule is checked here:
+	// a goal may only point at a shared syllabus or the learner's own course map. Otherwise a goal
+	// would be a way to read somebody else's map.
+	allowed, err := store.NewSources(h.d.DB.Admin).CanReadCourseMap(r.Context(), in.CurriculumID, in.UserID)
+	if err != nil {
+		return err
+	}
+	if !allowed {
+		return httpx.E(http.StatusNotFound, "CURRICULUM_NOT_FOUND", "That syllabus does not exist.")
+	}
+
 	goal, err := goals.New(store.NewGoals(h.d.DB.Admin)).Create(r.Context(), in)
 	if err != nil {
 		return err

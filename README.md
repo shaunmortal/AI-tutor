@@ -140,7 +140,7 @@ flowchart LR
 |---|---|
 | Frontend | React 19, React Router 7, Vite 8, TypeScript, plain CSS design tokens (no UI framework) |
 | API | **Go 1.27**, `net/http` (stdlib router), pgx v5, go-redis v9, Anthropic Go SDK |
-| Data | Postgres on Supabase — migrations 000–031, RLS on all tables, column-level grants |
+| Data | Postgres on Supabase — migrations 000–032, RLS on all tables, column-level grants |
 | Queue & cache | Redis Streams (durable ingestion), Redis rate limits and auth cache |
 | AI | **Claude or Gemini**, switchable with one setting. Claude: Opus 5.5 for data that gets stored (questions, answer checks, course maps), Sonnet 5.5 for explanations, server-side refusal fallbacks. Gemini (free tier works): 3.5 Flash / Flash-Lite, falling back to Flash-Lite when Flash is busy |
 | Auth | Supabase Auth — email/password, password reset, Google / Facebook / LinkedIn |
