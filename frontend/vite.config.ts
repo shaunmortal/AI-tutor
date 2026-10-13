@@ -45,5 +45,11 @@ export default defineConfig(({ mode, command }) => {
         resolve: {
             alias: { '@': path.resolve(__dirname, './src') },
         },
+        // Dev only: with VITE_API_URL=/api/v1 the page and the API share one origin, so a single
+        // tunnel (e.g. a Cloudflare quick tunnel) can serve the whole app to a phone.
+        server: {
+            proxy: { '/api': 'http://localhost:4000' },
+            allowedHosts: ['.trycloudflare.com'],
+        },
     };
 });
