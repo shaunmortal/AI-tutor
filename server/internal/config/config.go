@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -19,6 +20,12 @@ type Config struct {
 	DatabaseURL            string
 	RedisURL               string
 	AnthropicAPIKey        string // optional: AI features degrade without it
+
+	// MaxInFlight caps concurrent requests per instance; the excess gets 503 + Retry-After.
+	MaxInFlight int
+	// DBTransactionPooler: DATABASE_URL points at a transaction-mode pooler (Supabase :6543,
+	// PgBouncer). Needed past a few hundred connections; disables prepared statements.
+	DBTransactionPooler bool
 
 	// LegacyURL is the TypeScript backend that still serves routes not yet ported.
 	// Empty means every route must be served here.
@@ -35,6 +42,15 @@ func Load() (*Config, error) {
 		DatabaseURL:            os.Getenv("DATABASE_URL"),
 		RedisURL:               get("REDIS_URL", "redis://localhost:6379/0"),
 		AnthropicAPIKey:        os.Getenv("ANTHROPIC_API_KEY"),
+		MaxInFlight:            256,
+		DBTransactionPooler:    os.Getenv("DB_POOL_MODE") == "transaction",
+	}
+	if v := os.Getenv("MAX_IN_FLIGHT"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 {
+			return nil, fmt.Errorf("MAX_IN_FLIGHT: want a positive integer, got %q", v)
+		}
+		c.MaxInFlight = n
 	}
 
 	var missing []string

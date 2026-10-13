@@ -190,7 +190,10 @@ export const api = {
                     const gap =
                         error.code === 'TOKEN_NOT_YET_VALID' ? SKEW_RETRY_DELAY_MS : RETRY_DELAY_MS;
 
-                    await new Promise((resolve) => setTimeout(resolve, gap * (attempt + 1)));
+                    // Jittered (±50%), so a crowd turned away by an overloaded server doesn't come
+                    // back in the same instant and get turned away again.
+                    const wait = gap * (attempt + 1) * (0.5 + Math.random());
+                    await new Promise((resolve) => setTimeout(resolve, wait));
                 }
             }
         }

@@ -62,7 +62,7 @@ func setup(t *testing.T) *env {
 	if rdb.Ping(ctx).Err() != nil {
 		t.Skip("redis not running")
 	}
-	database, err := db.Open(ctx, cfg.DatabaseURL)
+	database, err := db.Open(ctx, cfg.DatabaseURL, false)
 	must(t, err)
 
 	ingestStream = fmt.Sprintf("test-ingest-%s-%d", t.Name(), time.Now().UnixNano())

@@ -49,7 +49,7 @@ func setup(t *testing.T) *env {
 		t.Skip("DATABASE_URL not set")
 	}
 	ctx := context.Background()
-	database, err := db.Open(ctx, url)
+	database, err := db.Open(ctx, url, false)
 	must(t, err)
 	e := &env{t: t, mux: http.NewServeMux(), database: database}
 

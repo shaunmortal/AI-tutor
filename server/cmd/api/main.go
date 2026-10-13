@@ -23,6 +23,7 @@ import (
 	"github.com/shaunmortal/AI-tutor/server/internal/config"
 	"github.com/shaunmortal/AI-tutor/server/internal/db"
 	"github.com/shaunmortal/AI-tutor/server/internal/httpx"
+	"github.com/shaunmortal/AI-tutor/server/internal/shed"
 	"github.com/shaunmortal/AI-tutor/server/internal/web/content"
 	"github.com/shaunmortal/AI-tutor/server/internal/web/learning"
 	"github.com/shaunmortal/AI-tutor/server/internal/web/practice"
@@ -41,7 +42,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	database, err := db.Open(ctx, cfg.DatabaseURL)
+	database, err := db.Open(ctx, cfg.DatabaseURL, cfg.DBTransactionPooler)
 	if err != nil {
 		slog.Error("database", "err", err)
 		os.Exit(1)
@@ -107,8 +108,14 @@ func main() {
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           cors(cfg.CORSOrigins, mux),
+		Handler:           cors(cfg.CORSOrigins, shed.Limit(cfg.MaxInFlight, mux)),
 		ReadHeaderTimeout: 10 * time.Second,
+		// Generous enough for a 40 MB upload on a slow phone and a 90 s AI answer; finite so a
+		// stalled client can't hold a connection for ever.
+		ReadTimeout:    2 * time.Minute,
+		WriteTimeout:   3 * time.Minute,
+		IdleTimeout:    2 * time.Minute,
+		MaxHeaderBytes: 64 << 10,
 	}
 	go func() {
 		<-ctx.Done()

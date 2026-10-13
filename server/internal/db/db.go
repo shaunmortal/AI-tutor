@@ -30,13 +30,24 @@ type DB struct {
 // ?pool_max_conns=N in DATABASE_URL.
 const defaultMaxConns = 12
 
-func Open(ctx context.Context, url string) (*DB, error) {
+// statementTimeout bounds any single query, so one slow statement can't hold a pooled
+// connection while everyone else queues behind it.
+const statementTimeout = "15s"
+
+// Open connects. transactionPooler must be true when url points at a transaction-mode pooler:
+// those hand each transaction a different server connection, so prepared statements break and
+// the simple protocol is used instead.
+func Open(ctx context.Context, url string, transactionPooler bool) (*DB, error) {
 	cfg, err := pgxpool.ParseConfig(url)
 	if err != nil {
 		return nil, err
 	}
 	if !strings.Contains(url, "pool_max_conns") {
 		cfg.MaxConns = defaultMaxConns
+	}
+	cfg.ConnConfig.RuntimeParams["statement_timeout"] = statementTimeout
+	if transactionPooler {
+		cfg.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 	}
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
