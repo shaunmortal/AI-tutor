@@ -511,6 +511,8 @@ export interface OpenedExcerpt {
     url: string | null;
     /** The slide number for an excerpt from a slide deck, else null. */
     slide: number | null;
+    /** For an uploaded recording: the second to play from (the url also ends in #t=…). */
+    atSec?: number;
     sourceTitle: string;
     location: string;
     excerpt: string;

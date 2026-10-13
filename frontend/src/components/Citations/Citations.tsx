@@ -102,6 +102,8 @@ function SourceLink({ chunkId }: { chunkId: string }) {
         );
     if (isDeck(opened)) return <DeckLink opened={opened} />;
     if (!opened.url) return null;
+    if (opened.atSec !== undefined)
+        return <RecordingPlayer url={opened.url} atSec={opened.atSec} />;
 
     return (
         <span className="row" style={{ gap: 10, marginTop: 8 }}>
@@ -117,6 +119,35 @@ function SourceLink({ chunkId }: { chunkId: string }) {
             </a>
         </span>
     );
+}
+
+/**
+ * An uploaded lecture recording, cued to the cited second. <video> plays audio-only files too, and
+ * seeking on loadedmetadata works where the #t= fragment is ignored (some mobile browsers).
+ */
+function RecordingPlayer({ url, atSec }: { url: string; atSec: number }) {
+    return (
+        <div className="stack" style={{ gap: 6, marginTop: 8 }}>
+            <video
+                className="citation__player"
+                src={url}
+                controls
+                preload="metadata"
+                onLoadedMetadata={(e) => {
+                    e.currentTarget.currentTime = atSec;
+                }}
+            />
+            <span className="faint">Plays from {clock(atSec)} in the recording.</span>
+        </div>
+    );
+}
+
+function clock(sec: number): string {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60);
+    const mm = String(m).padStart(h ? 2 : 1, '0');
+    return `${h ? `${h}:` : ''}${mm}:${String(s).padStart(2, '0')}`;
 }
 
 /**

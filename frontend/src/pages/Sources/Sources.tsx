@@ -95,8 +95,11 @@ export default function Sources() {
     );
 }
 
+/** The server's limit for recordings (Supabase Storage's free-plan per-file cap). */
+const MAX_RECORDING_BYTES = 50 * 1024 * 1024;
+
 export function AddMaterial({ onAdded }: { onAdded: () => void }) {
-    const [mode, setMode] = useState<'file' | 'video'>('file');
+    const [mode, setMode] = useState<'file' | 'video' | 'recording'>('file');
     const [kind, setKind] = useState<'pdf' | 'slides'>('pdf');
     const [file, setFile] = useState<File | null>(null);
     const [videoUrl, setVideoUrl] = useState('');
@@ -115,11 +118,16 @@ export function AddMaterial({ onAdded }: { onAdded: () => void }) {
         try {
             const name = title.trim() || file?.name.replace(/\.[^.]+$/, '') || 'Lecture';
 
-            if (mode === 'file') {
+            if (mode === 'file' || mode === 'recording') {
                 if (!file) throw new Error('Choose a file first.');
+                if (mode === 'recording' && file.size > MAX_RECORDING_BYTES) {
+                    throw new Error(
+                        'That recording is over 50 MB. Trim it, or export the audio only (an hour of speech is about 30 MB as .m4a).'
+                    );
+                }
 
                 await api.upload(
-                    `/sources/upload?kind=${kind}&title=${encodeURIComponent(name)}`,
+                    `/sources/upload?kind=${mode === 'recording' ? 'media' : kind}&title=${encodeURIComponent(name)}`,
                     file,
                     'application/octet-stream'
                 );
@@ -162,9 +170,34 @@ export function AddMaterial({ onAdded }: { onAdded: () => void }) {
                 >
                     Lecture video
                 </button>
+                <button
+                    type="button"
+                    aria-pressed={mode === 'recording'}
+                    onClick={() => {
+                        setMode('recording');
+                        setFile(null);
+                    }}
+                >
+                    Recording
+                </button>
             </div>
 
-            {mode === 'file' ? (
+            {mode === 'recording' ? (
+                <div className="field">
+                    <label htmlFor="recording">Audio or video file</label>
+                    <input
+                        id="recording"
+                        type="file"
+                        accept=".mp3,.m4a,.wav,.mp4,.webm,.mov,audio/*,video/*"
+                        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                    />
+                    <span className="faint">
+                        A recorded lecture or class, up to 50 MB (mp3, m4a, wav, mp4, webm, mov). It
+                        is transcribed with timestamps, so citations play from the exact moment.
+                        Large files can take a few minutes to upload.
+                    </span>
+                </div>
+            ) : mode === 'file' ? (
                 <>
                     <div className="field">
                         <label htmlFor="kind">What is it?</label>
@@ -240,9 +273,13 @@ export function AddMaterial({ onAdded }: { onAdded: () => void }) {
             <button
                 type="submit"
                 className="primary wide"
-                disabled={busy || (mode === 'file' ? !file : videoUrl.trim() === '')}
+                disabled={busy || (mode === 'video' ? videoUrl.trim() === '' : !file)}
             >
-                {busy ? 'Adding…' : 'Add material'}
+                {busy
+                    ? mode === 'recording'
+                        ? 'Uploading recording…'
+                        : 'Adding…'
+                    : 'Add material'}
             </button>
         </form>
     );
