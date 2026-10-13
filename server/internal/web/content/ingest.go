@@ -9,8 +9,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
+	"unicode"
 
 	"github.com/jackc/pgx/v5"
 
@@ -22,8 +26,16 @@ import (
 )
 
 const (
-	// Claude reads PDFs up to 100 pages in one request; past that, figures are skipped, text is not.
+	// Claude reads PDFs up to 100 pages in one request; past that, figures are skipped, text is
+	// not, and scanned pages are not read (OCR sends the whole file too).
 	maxPDFPagesForFigures = 100
+	// A page with fewer letters and digits than this is taken to be scanned and read by OCR.
+	ocrMinChars = 20
+	// Scanned pages transcribed per request: small enough to finish within the 90 s model
+	// timeout. Each request carries the whole file, as there is no PDF splitter here.
+	ocrPagesPerCall = 8
+	// OCR requests in flight at once, so 100 pages (13 requests) fit the 10-minute job lease.
+	ocrParallel = 4
 	// Slide pictures described per request.
 	imagesPerCall = 16
 	// A source left 'processing' this long with no job in the stream lost its job (see recover).
@@ -131,7 +143,7 @@ func (s *svc) ingest(ctx context.Context, payload []byte) error {
 		return err
 	}
 	if len(chunks) == 0 {
-		s.fail(ctx, src.ID, "No readable content was found. Scanned PDFs need OCR first.")
+		s.fail(ctx, src.ID, "No readable content was found.")
 		s.organizeIfPending(ctx, src.UserID)
 		return nil
 	}
@@ -246,6 +258,13 @@ func (s *svc) ingestPDF(ctx context.Context, file []byte, asSlides bool) ([]stor
 	if err != nil {
 		return nil, failure{"Could not read this PDF (" + err.Error() + ")."}
 	}
+	pageCount, err := sources.PDFPageCount(file)
+	if err != nil {
+		return nil, failure{"Could not read this PDF (" + err.Error() + ")."}
+	}
+	if pages, err = s.readScannedPages(ctx, file, pages, pageCount); err != nil {
+		return nil, err
+	}
 	at := func(n int) (page, slide *int) {
 		if asSlides {
 			return nil, ptr(n)
@@ -260,10 +279,6 @@ func (s *svc) ingestPDF(ctx context.Context, file []byte, asSlides bool) ([]stor
 		}
 	}
 
-	pageCount := 0
-	if len(pages) > 0 {
-		pageCount = pages[len(pages)-1].Page
-	}
 	if pageCount > 0 && pageCount <= maxPDFPagesForFigures {
 		what := "document"
 		if asSlides {
@@ -281,6 +296,103 @@ func (s *svc) ingestPDF(ctx context.Context, file []byte, asSlides bool) ([]stor
 		}
 	}
 	return chunks, nil
+}
+
+// readScannedPages fills in pages with no text layer (or next to none) by sending the PDF to the
+// model for OCR. A wholly scanned PDF that cannot be read fails with the reason; a PDF with some
+// text keeps that text when OCR is unavailable or fails, as with figures.
+func (s *svc) readScannedPages(ctx context.Context, file []byte, pages []sources.PageText, pageCount int) ([]sources.PageText, error) {
+	text := map[int]string{}
+	for _, p := range pages {
+		text[p.Page] = p.Text
+	}
+	var missing []int
+	for n := 1; n <= pageCount; n++ {
+		if countAlnum(text[n]) < ocrMinChars {
+			missing = append(missing, n)
+		}
+	}
+	scanned := len(missing) == pageCount
+	switch {
+	case len(missing) == 0:
+		return pages, nil
+	case s.d.AI == nil:
+		if scanned {
+			return nil, failure{"This PDF is scanned (it has no text layer), and this server has no AI provider configured to read it with OCR."}
+		}
+		return pages, nil
+	case pageCount > maxPDFPagesForFigures:
+		if scanned {
+			return nil, failure{fmt.Sprintf("This PDF is scanned (it has no text layer) and has %d pages; scanned PDFs are read with OCR up to %d pages. Split it into parts of at most %d pages.", pageCount, maxPDFPagesForFigures, maxPDFPagesForFigures)}
+		}
+		return pages, nil
+	}
+
+	pdf := []ai.Attachment{{PDF: true, MediaType: "application/pdf", Base64: base64.StdEncoding.EncodeToString(file)}}
+	var (
+		mu       sync.Mutex
+		wg       sync.WaitGroup
+		firstErr error
+		slots    = make(chan struct{}, ocrParallel)
+	)
+	for start := 0; start < len(missing); start += ocrPagesPerCall {
+		batch := missing[start:min(start+ocrPagesPerCall, len(missing))]
+		wg.Add(1)
+		slots <- struct{}{}
+		go func() {
+			defer func() { <-slots; wg.Done() }()
+			var out struct {
+				Pages []struct {
+					Page int    `json:"page"`
+					Text string `json:"text"`
+				} `json:"pages"`
+			}
+			nums := make([]string, len(batch))
+			for i, n := range batch {
+				nums[i] = strconv.Itoa(n)
+			}
+			_, err := s.d.AI.JSON(ctx, ai.Request{System: ai.OCRSystem, Schema: ai.OCRSchema, Attachments: pdf,
+				Prompt:  "Transcribe the text of these pages of the attached PDF: " + strings.Join(nums, ", ") + ".",
+				Quality: ai.Standard, MaxTokens: 8000}, &out)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				if firstErr == nil {
+					firstErr = err
+				}
+				return
+			}
+			for _, p := range out.Pages {
+				if t := sources.Tidy(p.Text); t != "" && slices.Contains(batch, p.Page) {
+					text[p.Page] = t
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	if firstErr != nil {
+		if scanned {
+			return nil, failure{"This PDF is scanned (it has no text layer), and reading it with OCR failed (" + firstErr.Error() + "). Try again later, or upload a PDF with selectable text."}
+		}
+		slog.Warn("ocr of scanned pages skipped", "err", firstErr)
+	}
+	out := make([]sources.PageText, 0, len(text))
+	for n := 1; n <= pageCount; n++ {
+		if text[n] != "" {
+			out = append(out, sources.PageText{Page: n, Text: text[n]})
+		}
+	}
+	return out, nil
+}
+
+func countAlnum(s string) int {
+	n := 0
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			n++
+		}
+	}
+	return n
 }
 
 func (s *svc) ingestPPTX(ctx context.Context, file []byte) ([]store.NewChunk, error) {

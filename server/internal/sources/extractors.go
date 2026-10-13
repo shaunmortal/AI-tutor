@@ -80,6 +80,18 @@ func ExtractPDFPages(file []byte) ([]PageText, error) {
 	return pages, nil
 }
 
+// PDFPageCount is the number of pages, with or without text: a scanned page has none.
+func PDFPageCount(file []byte) (int, error) {
+	r, err := pdf.NewReader(bytes.NewReader(file), int64(len(file)))
+	if err != nil {
+		return 0, err
+	}
+	return r.NumPage(), nil
+}
+
+// Tidy normalises text from elsewhere (OCR) the way extracted page text is.
+func Tidy(text string) string { return tidy(strings.ReplaceAll(text, "\x00", "")) }
+
 var ligatures = strings.NewReplacer("ﬀ", "ff", "ﬁ", "fi", "ﬂ", "fl", "ﬃ", "ffi", "ﬄ", "ffl", "ﬅ", "st", "ﬆ", "st")
 
 // pageText lays out one page's glyphs: a new line when the baseline moves by more than half

@@ -55,7 +55,7 @@ entries would reveal which options are correct.
 | `assessments`, `assessment_questions` | 006 | Diagnostic papers | kind ∈ diagnostic/checkpoint; status ∈ in_progress/completed/abandoned; `correct_count ≤ question_count`; unique position | Read own |
 | `learner_profiles` | 007 | Learner-level cache: totals, accuracy, consistency, streaks, pace, preferred difficulty | Counts ≥ 0, correct ≤ total, consistency 0–100 | Read own |
 | `concept_mastery` | 008 | Per-topic mastery cache and the evidence behind it | PK `(user_id, topic_id)`; score 0–100; difficulty buckets add up to the total; streak ≤ correct | Read own |
-| `curricula` | 009 | A syllabus learners can prepare for (seeded, AI-resolved, or built from material) | `slug` unique and shaped `^[a-z0-9][a-z0-9-]{1,79}$` | Read all |
+| `curricula` | 009, 031 | A syllabus learners can prepare for (seeded, AI-resolved, or built from material). `is_course_map` marks one built from a learner's own material. | `slug` unique and shaped `^[a-z0-9][a-z0-9-]{1,79}$` | Read all (the API's `GET /sources/map` serves a course map only to its learner) |
 | `study_plans` | 011 | Versioned plans | status ∈ active/superseded/completed/abandoned; reason ∈ initial/missed_sessions/poor_performance/goal_changed/requested; unique `(goal_id, version)`; one active plan per learner | Read own |
 | `study_sessions` | 012 | Day-by-day sessions in a plan | kind ∈ learn/revise/assess; status ∈ pending/completed/partial/missed/skipped; unique `(plan_id, scheduled_date, topic_id)` | Read own |
 | `revision_schedule` | 013 | SM-2 state per learner and topic | PK `(user_id, topic_id)`; interval 1–365; ease 1.30–3.00; lapses ≤ reviews | Read own |
@@ -74,7 +74,7 @@ signed links that the API issues, valid for 1 hour.
 
 ## Migrations
 
-There are 30 files from `000` to `029`. Seven are empty placeholders, kept so the numbering stays
+There are 32 files from `000` to `031`. Seven are empty placeholders, kept so the numbering stays
 stable: `009_mistake_patterns`, `010`, `014`, `016`, `019`, `020`, `021`. Misconceptions arrived in
 026. Number 018 is unused.
 
@@ -103,6 +103,8 @@ stable: `009_mistake_patterns`, `010`, `014`, `016`, `019`, `020`, `021`. Miscon
 | `027_tutor_checks_and_flashcards.sql` | Attempt source `tutor`; `flashcards` |
 | `028_onboarding.sql` | `profiles.preferred_language`; `self_ratings` |
 | `029_chunk_embeddings.sql` | pgvector, `source_chunks.embedding vector(768)`, HNSW index, `hybrid_search_source_chunks` (RRF, k = 60) |
+| `030_hybrid_similarity_floor.sql` | `hybrid_search_source_chunks`: vector matches need cosine similarity ≥ 0.67 |
+| `031_course_map_curricula.sql` | `curricula.is_course_map`, backfilled for existing course maps |
 
 `server/cmd/backfill-embeddings` embeds excerpts that were stored before 029, or whose embedding
 call failed.

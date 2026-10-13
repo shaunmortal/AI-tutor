@@ -291,6 +291,22 @@ func (r *Sources) TagChunks(ctx context.Context, assignments []ChunkAssignment) 
 	return nil
 }
 
+// CanReadCourseMap: a shared syllabus is readable by anyone; a course map (built from one
+// learner's material) only by a learner whose sources are attached to it or whose goal points at
+// it. An unknown id is false, so the caller answers 404 either way.
+func (r *Sources) CanReadCourseMap(ctx context.Context, curriculumID, userID string) (bool, error) {
+	var ok bool
+	err := r.q.QueryRow(ctx, `select exists (select 1 from curricula c where c.id = $1 and (
+		   not c.is_course_map
+		or exists (select 1 from course_sources s where s.curriculum_id = c.id and s.user_id = $2)
+		or exists (select 1 from learning_goals g where g.curriculum_id = c.id and g.user_id = $2)))`,
+		curriculumID, userID).Scan(&ok)
+	if err != nil {
+		return false, wrap("sources.canReadCourseMap", err)
+	}
+	return ok, nil
+}
+
 // AttachCurriculum points the learner's ready sources at a curriculum.
 func (r *Sources) AttachCurriculum(ctx context.Context, userID, curriculumID string) error {
 	return exec(ctx, r.q, "sources.attachCurriculum",

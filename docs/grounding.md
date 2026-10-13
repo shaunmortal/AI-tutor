@@ -6,7 +6,8 @@ are tied to a source and checked. How the method was evaluated.
 
 Code: `server/internal/sources` (extraction), `server/internal/web/content` (ingestion, course map,
 tutor wiring, flashcards), `server/internal/ai` (prompts, `tutor.go`), `server/internal/store/sources.go`
-(retrieval), `database/migrations/023_course_sources.sql` and `029_chunk_embeddings.sql`.
+(retrieval), `database/migrations/023_course_sources.sql`, `029_chunk_embeddings.sql` and
+`030_hybrid_similarity_floor.sql`.
 
 ## Ingestion
 
@@ -22,6 +23,7 @@ Every excerpt has a `modality` and a location. The database enforces both:
 | Input | How it arrives | Extraction (`internal/sources`) | Excerpts produced | Location stored |
 |---|---|---|---|---|
 | **PDF** | `POST /sources/upload?kind=pdf&title=…`. Raw body up to 40 MB; the type is checked by magic bytes (`%PDF`). | `ExtractPDFPages`, in pure Go. Words and lines are rebuilt from glyph positions: a new line when the baseline moves by more than half the font size, a space when the gap is wider than 0.15 em. Ligatures are expanded. A page that fails to parse reads as empty. | `text`: each page split by `SplitText` at paragraph, then sentence, boundaries into pieces of at most `MaxChunkChars` = 1500 characters. | `page` |
+| **Scanned PDF pages** | Same file | Pages with fewer than 20 letters and digits (`ocrMinChars`) after extraction are taken to be scanned. If the PDF has at most 100 pages, they are sent to the model for OCR (`readScannedPages`): the whole file as a PDF attachment, `OCRSystem` / `OCRSchema` at `Standard` quality, asking for `{pages: [{page, text}]}` for 8 named pages per request (`ocrPagesPerCall`), 4 requests at a time (`ocrParallel`). Pages that were not asked for are ignored. The text then goes through the same splitting as extracted text. Each request carries the whole file, because there is no PDF splitter, so a 100-page scan costs 13 reads of the file. | `text` | `page` (or `slide`) |
 | **PDF figures** | Same file | If the PDF has 1–100 pages (`maxPDFPagesForFigures`), the whole file is sent once to the model as a PDF attachment with `FigureSystem` / `PDFFiguresSchema`: "Describe the figures in this document. Give the page number each one is on." Figures with a page outside the document are dropped. | `figure`: `"Figure: <description>"` | `page` |
 | **Slides (.pptx)** | `POST /sources/upload?kind=slides`. Magic bytes `PK\x03\x04`. | `ExtractPPTXSlides` reads the zip directly: `ppt/slides/slideN.xml` text runs (`<a:t>`), speaker notes through the slide's rels file, and embedded pictures. | `text` per slide, split at 1500 characters | `slide` |
 | **Slide images** | Same file | Pictures are labelled "Slide N, picture M:" and sent to the model in batches of 16 (`imagesPerCall`) with `SlideFiguresSchema`. | `figure` | `slide` |
@@ -41,7 +43,7 @@ Each job then:
 
 1. **Embeds** every excerpt with Gemini `gemini-embedding-2` at 768 dimensions (`ai.Embedder.EmbedDocs`, as `"title: <source> | text: <excerpt>"`, batches of 100). If this fails the excerpts are stored without embeddings, and `cmd/backfill-embeddings` can fill them in later.
 2. **Stores**, in one transaction: deletes the source's old chunks, inserts the new ones, and sets the status to `ready`. Re-running a job therefore replaces excerpts rather than duplicating them.
-3. **Fails cleanly** when the problem is the material itself (unreadable PDF, no captions, no text: "Scanned PDFs need OCR first."). The source is marked `failed` with a message, and the job is not retried. Infrastructure errors are retried up to 3 deliveries.
+3. **Fails cleanly** when the problem is the material itself (unreadable PDF, no captions, no text). The source is marked `failed` with a message, and the job is not retried. Infrastructure errors are retried up to 3 deliveries. A PDF with no text layer at all fails with a reason when it cannot be read with OCR: it has more than 100 pages ("Split it into parts of at most 100 pages"), the server has no AI provider, or the OCR request failed (the model's error is quoted). A PDF with some text keeps that text if OCR of its other pages fails, as with figures.
 
 Original files are kept in the private Storage bucket `course-sources` at `<userId>/<random>.<ext>`.
 
@@ -69,7 +71,8 @@ processing, then runs from the last ingestion job.
    - an excerpt the model was shown and assigned keeps that topic;
    - every other excerpt takes the topic of the nearest shown excerpt in the same source (distance 1, 2, … checked on both sides).
 
-The course map can be read with `GET /sources/map/{curriculumId}`. The planner and the
+The course map can be read with `GET /sources/map/{curriculumId}`, by the learner whose material it
+was built from (`curricula.is_course_map`, migration 031); anyone else gets 404. The planner and the
 recommendation engine use its prerequisites (see [learner-model.md](learner-model.md)).
 
 ## Hybrid retrieval
@@ -80,10 +83,44 @@ for a question:
 1. The query is embedded with `EmbedQuery` (`"task: question answering | query: …"`), with a timeout of 8 s.
 2. If embedding succeeds, `store.Sources.HybridSearch` calls the SQL function `hybrid_search_source_chunks(user, query, embedding, 6)` from migration 029:
    - **Lexical list:** `plainto_tsquery('english', query)` with `&` replaced by `|`, so the question's words are OR-ed. Matched against the generated `tsv` column (GIN index), ranked by `ts_rank_cd`, top **40** for this learner.
-   - **Semantic list:** cosine distance `embedding <=> query_embedding` over the HNSW index (`vector_cosine_ops`), top **40** for this learner. `hnsw.iterative_scan = relaxed_order` stops the shared index from returning too few rows after the per-learner filter.
+   - **Semantic list:** cosine distance `embedding <=> query_embedding` over the HNSW index (`vector_cosine_ops`), top **40** for this learner. `hnsw.iterative_scan = relaxed_order` stops the shared index from returning too few rows after the per-learner filter. Of those, only excerpts with cosine similarity **≥ 0.67** are kept (migration 030, see [Similarity floor](#similarity-floor)). The lexical list has no floor.
    - **Fusion (Reciprocal Rank Fusion):** `score = Σ 1 / (60 + rank)` over the lists an excerpt appears in. `k = 60`. Ranks are fused rather than raw scores, because `ts_rank_cd` and cosine distance are on different scales.
    - The result is ordered by fused score, then id, and the limit is clamped to 1–20.
 3. If there is no Gemini key, or the question could not be embedded, retrieval falls back to `search_source_chunks` (migration 023): the same OR-ed full-text query, ranked by `ts_rank_cd`.
+
+### Similarity floor
+
+Without a floor, the vector side always has nearest neighbours, so every question retrieved six
+excerpts however unrelated it was. Migration 030 keeps a vector match only when its cosine
+similarity to the question is at least **0.67**. Full-text matches are kept whatever their
+similarity.
+
+The number comes from the evaluation learner's MIT 6.006 material (183 embedded excerpts) and the
+36 test questions, embedded with `gemini-embedding-2` as the tutor embeds them:
+
+| Questions | Similarity of the best excerpt | Similarity of the best expected excerpt |
+|---|---|---|
+| 28 in-material (text and figure) | 0.699–0.842 | **0.677**–0.842 (median 0.80) |
+| 8 off-material | **0.565–0.664** | — |
+
+Every off-material question's best excerpt is below 0.665, and every in-material question's best
+expected excerpt is above 0.677, so 0.67 sits in that gap: it removes all vector matches for every
+off-material question and keeps the best expected excerpt of every in-material one. The floor
+belongs to this embedding model and its task prefixes; re-measure it if either changes.
+
+Retrieval only (`go run ./cmd/evalgrounding -user <uuid> -dry-run`), before and after:
+
+| | Before (029) | After (030, floor 0.67) |
+|---|---|---|
+| In-material retrieval hit rate | 27/28 | **27/28** (the same question, q24, misses) |
+| Expected excerpts among the retrieved, summed over in-material questions | 76 | 76 |
+| Excerpts retrieved for the 8 off-material questions | 48 (6 each) | **36** (6 each for six questions, **0** for two) |
+
+Floors of 0.60, 0.65 and 0.70 give the same off-material count (36) on this set. The six
+off-material questions that still retrieve excerpts do so only through full-text matches: the
+query's words are OR-ed, so any shared word ("time", "tree", "search") matches. The two that retrieve nothing are the questions about the capital of France and baking bread. Ten in-material
+questions had one or two of their six excerpts replaced by others; the hit rate and the number of
+expected excerpts retrieved did not change.
 
 Both functions filter `user_id = p_user_id`, so a learner's search never sees another learner's
 excerpts. Execute is revoked from `public`, `anon` and `authenticated`; only the API calls them.
@@ -228,9 +265,10 @@ scores were faithfulness 0.76, relevancy 0.79, context precision and recall 0.48
 extracted text. Most of the improvement comes from fixing that ingestion bug. Retrieval-only runs
 on the same data attribute +1–2 of 28 hits to hybrid search itself.
 
-**Known trade-off:** hybrid search always returns its top excerpts. Declining an off-material
-question therefore depends on the model's `none` label and `CheckGrounding`, not on an empty
-search. A similarity floor is on the roadmap.
+**Known trade-off:** the similarity floor (above) empties the search only when an off-material
+question also shares no word with the course. On this set that is 2 of 8 questions; the other 6
+still retrieve six full-text matches each (48 excerpts before the floor, 36 after). Declining them
+therefore still depends on the model's `none` label and `CheckGrounding`, which declined 8/8.
 
 Reproduce:
 

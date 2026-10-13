@@ -850,13 +850,20 @@ func unitVec(i int) []float32 {
 	return v
 }
 
+// mixVec is a unit vector with cosine a to axis 0 and b to axis 1 (a² + b² = 1).
+func mixVec(a, b float32) []float32 {
+	v := make([]float32, 768)
+	v[0], v[1] = a, b
+	return v
+}
+
 func TestHybridSearch(t *testing.T) {
 	f := setup(t)
 	r := NewSources(f.tx)
 	mine, err := r.Create(f.ctx, NewSource{UserID: f.u1, Kind: "pdf", Title: "Algorithms", StoragePath: ptr(f.u1 + "/a.pdf")})
 	must(t, err)
 	must(t, r.InsertChunks(f.ctx, *mine, []NewChunk{
-		{Modality: "text", Page: ptr(1), Content: "Binary search halves a sorted array.", Embedding: unitVec(0)},
+		{Modality: "text", Page: ptr(1), Content: "Binary search halves a sorted array.", Embedding: mixVec(0.6, 0.8)},
 		{Modality: "text", Page: ptr(2), Content: "A heap keeps the minimum on top.", Embedding: unitVec(1)},
 		{Modality: "text", Page: ptr(3), Content: "Recipes for bread."},
 	}))
@@ -872,7 +879,8 @@ func TestHybridSearch(t *testing.T) {
 		}
 		return out
 	}
-	// Words match page 1 only; the vector is page 2's. Page 1 is in both lists (1/61 + 1/62)
+	// Words match page 1 only; the vector is page 2's, and page 1 is 0.8 similar to it (above the
+	// 0.67 floor). Page 1 is in both lists (1/61 + 1/62)
 	// and beats page 2, first in one (1/61). Page 3 has neither; the other learner's never shows.
 	hits, err := r.HybridSearch(f.ctx, f.u1, "sorted array", unitVec(1), 6)
 	must(t, err)
@@ -882,6 +890,14 @@ func TestHybridSearch(t *testing.T) {
 	hits, err = r.HybridSearch(f.ctx, f.u1, "क्रमबद्ध", unitVec(1), 6)
 	must(t, err)
 	check(t, slices.Equal(pages(hits), []int{2, 1}), "vector only %v", pages(hits))
+	// The similarity floor (migration 030): an unrelated vector contributes nothing, so a question
+	// with no matching words finds nothing, and one with matching words finds only those.
+	hits, err = r.HybridSearch(f.ctx, f.u1, "क्रमबद्ध", unitVec(5), 6)
+	must(t, err)
+	check(t, len(hits) == 0, "below the floor %v", pages(hits))
+	hits, err = r.HybridSearch(f.ctx, f.u1, "sorted array", unitVec(5), 6)
+	must(t, err)
+	check(t, slices.Equal(pages(hits), []int{1}), "words kept regardless %v", pages(hits))
 
 	// Backfill: page 3 is the only one of u1's without an embedding.
 	todo, err := r.ChunksWithoutEmbedding(f.ctx, f.u1, 10)

@@ -86,8 +86,8 @@ func (r *Curricula) Create(ctx context.Context, c curriculum.Resolved) (*Curricu
 		description = &c.Description
 	}
 	created, err := single[CurriculumRow](ctx, r.q, "curricula.create",
-		`insert into curricula (slug, name, description, is_ai_generated) values ($1, $2, $3, true)
-		 returning `+curriculumCols, c.Slug, c.Name, description)
+		`insert into curricula (slug, name, description, is_ai_generated, is_course_map) values ($1, $2, $3, true, $4)
+		 returning `+curriculumCols, c.Slug, c.Name, description, c.CourseMap)
 	if err != nil {
 		return nil, err
 	}

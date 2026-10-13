@@ -108,6 +108,11 @@ the group and test routes, so probing cannot confirm that an id exists.
 | `GET /assessments/{not mine}` | 404 `ASSESSMENT_NOT_FOUND` |
 | `GET /ai/conversations/{not mine}` | 404 `CONVERSATION_NOT_FOUND` |
 | `GET /sources/excerpts/{not mine}/open` | 404 `EXCERPT_NOT_FOUND` |
+| `GET /sources/map/{another learner's course map}` | 404 `CURRICULUM_NOT_FOUND` |
+
+A course map (`curricula.is_course_map`, built from one learner's material) is served only to a
+learner whose sources are attached to it or whose goal points at it. Shared syllabi (the default
+one and those resolved by `POST /curricula/resolve`) are readable by any learner.
 
 ## 9. Study groups
 
@@ -128,7 +133,7 @@ The API echoes `Access-Control-Allow-Origin` only for origins listed in `CORS_OR
 - **Question verification is a second model call, not a human.** A question that both calls get wrong in the same way would still reach learners.
 - **Invite codes cannot be rotated.** The 30-member cap limits the damage.
 - **No audit log** of elevated writes.
-- **The curriculum named in `GET /sources/map/{curriculumId}` is not checked for ownership.** Only the excerpt counts are filtered by learner. Topic names in a course map are therefore readable by id, in the same way that `topics` is readable by any signed-in learner.
+- **Syllabus tables are readable by every signed-in learner at the database.** `curricula`, `topics` and `topic_prerequisites` have the policy `true`, so a learner calling Supabase directly can read another learner's course-map topic names; only the API route is checked. `POST /goals` and `GET /goals/subjects` also accept any `curriculumId` without checking it.
 
 ## Checking it yourself
 

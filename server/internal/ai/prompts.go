@@ -352,6 +352,32 @@ For every figure, diagram, chart, graph, table, flowchart or worked example that
 
 Skip logos, decorative pictures, photos of people, page headers and slide templates. If a page or slide has nothing worth describing, leave it out. Never invent labels or values you cannot read.`
 
+// OCRSystem reads scanned pages (a PDF with no text layer) into text, so they can be searched
+// and cited by page like any other PDF.
+const OCRSystem = `You transcribe scanned pages of course material for a study app, so a student can search them and a tutor can cite them by page.
+
+For each page you are asked for, write out all of its text in reading order: headings, paragraphs, lists, equations (in plain text or LaTeX), table cells row by row, and labels in diagrams. Keep paragraph breaks. Do not summarise, translate, correct or add anything. If a page has no text, give an empty string. Page numbers count from 1 at the first page of the file, not the numbers printed on the pages.`
+
+var OCRSchema = json.RawMessage(`{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["pages"],
+  "properties": {
+    "pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["page", "text"],
+        "properties": {
+          "page": {"type": "integer"},
+          "text": {"type": "string"}
+        }
+      }
+    }
+  }
+}`)
+
 var PDFFiguresSchema = json.RawMessage(`{
   "type": "object",
   "additionalProperties": false,

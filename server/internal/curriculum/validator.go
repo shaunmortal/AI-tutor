@@ -68,6 +68,8 @@ type Resolved struct {
 	Name        string            `json:"name"`
 	Description string            `json:"description"`
 	Subjects    []ResolvedSubject `json:"subjects"`
+	// CourseMap marks a syllabus built from one learner's material: not shared (migration 031).
+	CourseMap bool `json:"-"`
 }
 
 // ResolvedSubject is a subject that survived validation.

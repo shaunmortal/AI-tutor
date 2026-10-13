@@ -248,6 +248,7 @@ func (s *svc) organize(ctx context.Context, userID, courseName string) (*courseM
 		Slug:        slug + "-" + strings.ToLower(rand.Text()[:8]),
 		Name:        courseName,
 		Description: fmt.Sprintf("Built from %d uploaded source%s.", len(titles), plural),
+		CourseMap:   true,
 	}
 	for _, sub := range subjects {
 		rs := curriculum.ResolvedSubject{Name: sub.Name, Weight: float64(sub.Weight)}
@@ -337,6 +338,13 @@ type courseMapView struct {
 
 // courseMap is a curriculum's subjects, topics, concepts, prerequisites and material per topic.
 func (s *svc) courseMap(ctx context.Context, curriculumID, userID string) (*courseMapView, error) {
+	ok, err := s.sources().CanReadCourseMap(ctx, curriculumID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, httpx.E(http.StatusNotFound, "CURRICULUM_NOT_FOUND", "That course map does not exist.")
+	}
 	m, err := s.sources().CourseMap(ctx, curriculumID, userID)
 	if err != nil {
 		return nil, err

@@ -79,7 +79,7 @@ switches off under the OS "reduce motion" setting.
 
 | # | Requirement | Status | How |
 |---|---|---|---|
-| 1a | Ingest videos, textbooks, slides without preprocessing | ✅ | PDF (pure-Go extraction), PPTX (text + slide images), YouTube captions or `.vtt/.srt`, and **speech-to-text** (Gemini) for uploaded recordings (mp3, m4a, wav, mp4, webm, mov) and YouTube videos without captions |
+| 1a | Ingest videos, textbooks, slides without preprocessing | ✅ | PDF (pure-Go extraction, with **OCR** by the AI provider for scanned pages, up to 100 pages), PPTX (text + slide images), YouTube captions or `.vtt/.srt`, and **speech-to-text** (Gemini) for uploaded recordings (mp3, m4a, wav, mp4, webm, mov) and YouTube videos without captions |
 | 1b | Units linked to origin | ✅ | Every excerpt stores page / slide / start–end second; a DB check makes one mandatory |
 | 1c | Topics, subtopics, concepts; every unit tagged | ✅ | Course map from the material (topics, key concepts, prerequisites) — `web/content/coursemap.go` |
 | 1d | Information from figures and diagrams | ✅ | The configured model's vision (Claude or Gemini) describes PDF figures and slide images; stored as `figure` excerpts |
@@ -140,7 +140,7 @@ flowchart LR
 |---|---|
 | Frontend | React 19, React Router 7, Vite 8, TypeScript, plain CSS design tokens (no UI framework) |
 | API | **Go 1.27**, `net/http` (stdlib router), pgx v5, go-redis v9, Anthropic Go SDK |
-| Data | Postgres on Supabase — migrations 000–029, RLS on all tables, column-level grants |
+| Data | Postgres on Supabase — migrations 000–031, RLS on all tables, column-level grants |
 | Queue & cache | Redis Streams (durable ingestion), Redis rate limits and auth cache |
 | AI | **Claude or Gemini**, switchable with one setting. Claude: Opus 5.5 for data that gets stored (questions, answer checks, course maps), Sonnet 5.5 for explanations, server-side refusal fallbacks. Gemini (free tier works): 3.5 Flash / Flash-Lite, falling back to Flash-Lite when Flash is busy |
 | Auth | Supabase Auth — email/password, password reset, Google / Facebook / LinkedIn |
@@ -295,9 +295,10 @@ as judge (`eval/ragas_eval.py`); per-question rows are in `eval/results/`.
 **What changed, honestly.** The first run turned out to have only the three videos: the PDF notes had failed
 ingestion (a NUL byte in extracted text, which Postgres rejects). Fixing that accounts for most of the jump;
 retrieval-only runs on the same data put hybrid search's own gain at +1–2 of 28 hits on top. The first run is
-kept in `eval/results/baseline-fulltext/`. One known trade-off: hybrid search always returns its top excerpts,
-so declining off-material questions now rests on the grounding check rather than on an empty search — still
-8/8 correct.
+kept in `eval/results/baseline-fulltext/`. One known trade-off: a similarity floor (cosine ≥ 0.67, chosen from this test set) cuts the
+vector side for unrelated questions, but full-text matches are kept, so 6 of the 8 off-material questions still
+retrieve excerpts through shared words (48 retrieved excerpts before the floor, 36 after; in-material hit rate
+unchanged at 27/28). Declining them rests on the grounding check — still 8/8 correct.
 
 ### 🧑‍🎓 Simulated students (5c)
 
@@ -329,8 +330,7 @@ novice and uneven learners; no advantage for forgetful and advanced profiles yet
 
 ## 🛣️ Roadmap
 
-- A similarity floor so off-material questions retrieve nothing at all
-- OCR for scanned PDFs
+- Off-material questions that share common words with the course still retrieve full-text matches; a floor on the lexical side too
 - Audio revision briefs; the course map as an interactive graph
 
 ---

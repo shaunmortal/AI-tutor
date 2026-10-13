@@ -9,6 +9,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -26,6 +27,7 @@ import (
 	"github.com/shaunmortal/AI-tutor/server/internal/app"
 	"github.com/shaunmortal/AI-tutor/server/internal/auth"
 	"github.com/shaunmortal/AI-tutor/server/internal/config"
+	"github.com/shaunmortal/AI-tutor/server/internal/curriculum"
 	"github.com/shaunmortal/AI-tutor/server/internal/db"
 	"github.com/shaunmortal/AI-tutor/server/internal/httpx"
 	"github.com/shaunmortal/AI-tutor/server/internal/store"
@@ -547,4 +549,34 @@ func TestUploadedRecordingLive(t *testing.T) {
 		t.Fatalf("open recording: %+v", opened)
 	}
 	t.Logf("excerpt %q at %s", opened.Excerpt, opened.Location)
+}
+
+// A course map is built from one learner's material: another learner gets 404, as for any id
+// they do not own, unless their goal points at it. A shared syllabus stays readable by anyone.
+func TestCourseMapIsPrivateToItsLearner(t *testing.T) {
+	e := setup(t)
+	c, err := store.NewCurricula(e.s.d.DB.Admin).Create(e.ctx, curriculum.Resolved{
+		Slug: "test-map-" + strings.ToLower(rand.Text()[:8]), Name: "Private course", CourseMap: true,
+		Subjects: []curriculum.ResolvedSubject{{Name: "Secret subject", Weight: 1, Topics: []string{"Secret topic"}}},
+	})
+	must(t, err)
+	t.Cleanup(func() { e.s.d.DB.Admin.Exec(e.ctx, `delete from curricula where id = $1`, c.ID) })
+	path := e.u1 + "/x.pdf"
+	src, err := e.s.sources().Create(e.ctx, store.NewSource{UserID: e.u1, Kind: "pdf", Title: "Notes", StoragePath: &path})
+	must(t, err)
+	_, err = e.s.d.DB.Admin.Exec(e.ctx, `update course_sources set curriculum_id = $2 where id = $1`, src.ID, c.ID)
+	must(t, err)
+
+	if r := e.do(e.u1, "GET", "/sources/map/"+c.ID, "", nil); r.status != 200 || !strings.Contains(string(r.Data), "Secret topic") {
+		t.Fatalf("owner: %d %.300s", r.status, r.Data)
+	}
+	expectError(t, e.do(e.u2, "GET", "/sources/map/"+c.ID, "", nil), 404, "CURRICULUM_NOT_FOUND", "")
+	expectError(t, e.do(e.u1, "GET", "/sources/map/00000000-0000-4000-8000-000000000000", "", nil), 404, "CURRICULUM_NOT_FOUND", "")
+
+	_, err = e.s.d.DB.Admin.Exec(e.ctx, `insert into learning_goals (user_id, title, exam_date, daily_minutes, curriculum_id)
+		values ($1, 'Goal', current_date + 30, 30, $2)`, e.u2, c.ID)
+	must(t, err)
+	if r := e.do(e.u2, "GET", "/sources/map/"+c.ID, "", nil); r.status != 200 {
+		t.Fatalf("goal's curriculum: %d %.300s", r.status, r.Data)
+	}
 }

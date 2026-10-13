@@ -345,7 +345,8 @@ Errors: 409 `NO_MATERIAL`, 502 `AI_MALFORMED`, AI errors.
 
 `CourseMap` = `{curriculum: {id, name} | null, subjects: [{id, name, topics: [{id, name, keyConcepts, excerptCount, prerequisites: [{id, name}]}]}]}`.
 
-**GET /sources/map/{curriculumId}** → `CourseMap`
+**GET /sources/map/{curriculumId}** → `CourseMap`. Returns 404 `CURRICULUM_NOT_FOUND` for an unknown id
+and for another learner's course map; shared syllabi are readable by anyone.
 
 **GET /sources/excerpts/{id}/open** → `{url, slide, sourceTitle, location, excerpt}`.
 Errors: 404 `EXCERPT_NOT_FOUND`, 404 `SOURCE_NOT_FOUND`.
