@@ -295,7 +295,7 @@ recommendation and readiness score built on it would be fiction. Tested directly
 `008_concept_mastery.test.sql` test 9 tries to set mastery to 100 as an authenticated learner
 and asserts it is blocked.
 
-Also: secrets exist only in `backend/.env` (gitignored — verified with `git check-ignore`); the
+Also: secrets exist only in `server/.env` (gitignored — verified with `git check-ignore`); the
 browser receives only `VITE_`-prefixed values; the environment is zod-validated at boot so the
 server refuses to start with a missing secret rather than failing on the first request; bodies
 are capped at 100 kB; and the AI route is rate limited per learner.

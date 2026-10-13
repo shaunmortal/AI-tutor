@@ -4,7 +4,7 @@
 --
 -- This is spaced repetition, and the interval arithmetic is the SuperMemo/SM-2 family that Anki and
 -- Mnemosyne use: get it right and the gap until the next review grows; get it wrong and it collapses
--- back to a day. The formula lives in backend/src/services/learner/srsEngine.ts, not in SQL, for the
+-- back to a day. The formula lives in server/internal/learner/srs.go, not in SQL, for the
 -- same reason the mastery formula does — it is meant to be tuned and unit tested.
 --
 -- Two things make this different from a flashcard scheduler, and both are why an off-the-shelf one

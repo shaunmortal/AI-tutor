@@ -8,7 +8,7 @@
 --   mastery_score   the OUTPUT of the mastery formula, stored so it can be read cheaply
 --   everything else the INPUTS that formula ran on, stored so the score is explainable
 --
--- The formula itself lives in backend/src/services/learner/masteryEngine.ts, not in SQL,
+-- The formula itself lives in server/internal/learner/mastery.go, not in SQL,
 -- because its weights are meant to be tuned and unit tested. This table is deliberately
 -- dumb: it holds numbers and refuses to hold impossible ones.
 --

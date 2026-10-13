@@ -90,7 +90,7 @@ switches off under the OS "reduce motion" setting.
 | 3c | Cited feedback + post-assessment report | ✅ partial | Per-answer explanation with source; weakest-topic report. *Misconception clustering: planned* |
 | 4a | Mastery updated after every quiz | ✅ | Evidence-based mastery + SM-2 after every graded answer. *Tutor chat → mastery: planned* |
 | 4b | New students | ✅ | Diagnostic knowledge check feeds the first plan |
-| 5a/b | RAGAS-style evaluation on a team-built test set | 🧪 harness ready | 36-question set on MIT 6.006 (in-material, figures, off-material); `eval/ragas_eval.py` + `evalGrounding.ts`. *Results to be published with the demo run* |
+| 5a/b | RAGAS-style evaluation on a team-built test set | 🧪 harness ready | 36-question set on MIT 6.006 (in-material, figures, off-material); `eval/ragas_eval.py` + `server/cmd/evalgrounding`. *Results to be published with the demo run* |
 | 5c | Simulated students across sessions | ✅ | 4 learner profiles × 10 sessions × 5 seeds — [results below](#-simulated-students-5c) |
 | 6a | Course flow map | ✅ list view | Topics with "needs first" prerequisites. *Graph view: planned* |
 | 6c | Study schedule from weak topics, forgetting curves, exam date | ✅ | `internal/planning` + `internal/learner/srs.go` |
@@ -153,6 +153,8 @@ flowchart LR
 AI-tutor/
 ├── server/                     Go API (the backend)
 │   ├── cmd/api/                entry point: config, routes, workers, graceful shutdown
+│   ├── cmd/simulate/           simulated students (5c), over internal/sim
+│   ├── cmd/evalgrounding/      grounding eval on the test set (5a/b), scored by internal/eval
 │   └── internal/
 │       ├── learner/            mastery, SM-2 spaced repetition, streaks, badges
 │       ├── planning/           study plan + re-planning
@@ -167,8 +169,7 @@ AI-tutor/
 │       └── web/                HTTP handlers: learning · practice · content
 ├── frontend/                   React app (styles/theme.css = the design system)
 ├── database/                   migrations, seed, SQL tests
-├── eval/                       RAGAS evaluation + test set
-├── backend/scripts/            simulated-student and grounding-eval harnesses
+├── eval/                       RAGAS evaluation, test set, results/
 └── deploy/nginx.conf           load balancer for several API instances
 ```
 
@@ -270,7 +271,7 @@ Two bugs were found by these tests and fixed: token verification kept only 2 poo
 ### 🧑‍🎓 Simulated students (5c)
 
 8 topics, 10 sessions two days apart, 15 questions per session, 5 random seeds, adaptive policy vs. a
-random baseline. Gain is in true-skill points; results in `backend/scripts/output/simulation-results.json`.
+random baseline. Gain is in true-skill points; reproduce with `cd server && go run ./cmd/simulate`; results in `eval/results/simulation-results.json`.
 
 | Profile | Overall gain (adaptive / random) | Weak-topic gain (adaptive / random) | Mastery estimate error (adaptive / random) |
 |---|---|---|---|

@@ -1,7 +1,7 @@
 """
 RAGAS scores for the source-grounded tutor.
 
-Reads eval/results/grounding.jsonl, written by `npm run eval:grounding` in backend/, which ran
+Reads eval/results/grounding.jsonl, written by `go run ./cmd/evalgrounding` in server/, which ran
 the tutor's real retrieval and answering on the team-built test set (eval/testset.json), and
 scores the in-material questions with RAGAS:
 
@@ -58,7 +58,7 @@ def main() -> int:
     scored = [row for row in rows if row["type"] != "off_material" and row["grounding"] != "none"]
 
     if not scored:
-        print("Nothing to score: run `npm run eval:grounding` first.", file=sys.stderr)
+        print("Nothing to score: run `cd server && go run ./cmd/evalgrounding -user <uuid>` first.", file=sys.stderr)
         return 1
 
     dataset = EvaluationDataset.from_list(

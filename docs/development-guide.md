@@ -15,12 +15,12 @@ Last updated: 2026-08-13 (frontend complete — the demo loop runs end to end in
 ## 1. How to run it
 
 ```bash
-# Backend
-cd backend
-npm install
-npm run dev          # http://localhost:4000/api/v1/health
-npm test             # 73 unit tests
-npm run typecheck
+# Backend (Go)
+cd server
+go run ./cmd/api     # http://localhost:4000/api/v1/health
+go test ./...
+go run ./cmd/simulate                     # simulated students -> eval/results/
+go run ./cmd/evalgrounding -dry-run       # grounding eval checks, no Claude calls
 
 # Frontend — login, dashboard, practice all working
 cd frontend
@@ -28,7 +28,7 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-`backend/.env` holds the real Supabase credentials **and a working `ANTHROPIC_API_KEY`**. It is
+`server/.env` holds the real Supabase credentials **and a working `ANTHROPIC_API_KEY`**. It is
 gitignored and stays on this machine — the key is not tied to any Claude Code login, so it
 survives switching accounts.
 
@@ -36,7 +36,7 @@ survives switching accounts.
 
 ```bash
 export PATH="/Library/PostgreSQL/18/bin:$PATH"
-DB=$(grep '^DATABASE_URL=' backend/.env | cut -d= -f2-)
+DB=$(grep '^DATABASE_URL=' server/.env | cut -d= -f2-)
 
 psql "$DB" -v ON_ERROR_STOP=1 -f database/migrations/000_roles.sql   # then 001, 002, ...
 psql "$DB" -v ON_ERROR_STOP=1 -f database/tests/001_profiles.test.sql
@@ -92,7 +92,7 @@ bank: 90 questions requested, 89 verified, 0 rejected, 0 failures. Pipeline is g
 schema check → business rules → **independent answer check** (a second request solves the
 question without seeing the proposed answer) → store, verified only on agreement.
 
-`ANTHROPIC_API_KEY` is set in `backend/.env`. Model `claude-opus-5`.
+`ANTHROPIC_API_KEY` is set in `server/.env`. Model `claude-opus-5`.
 
 **Spend so far: about $3.40 of the account's credit.** $2.14 for the successful bulk run
 (97k input / 66k output tokens), ~$1.25 wasted on a first run that generated everything and

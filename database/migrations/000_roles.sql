@@ -8,7 +8,7 @@
 -- column, in each table's own migration, and `anon` is granted nothing at all.
 --
 -- service_role is a different case. It is the backend's identity, it lives only in
--- backend/.env, it never reaches a browser, and it is expected to be able to do everything
+-- server/.env, it never reaches a browser, and it is expected to be able to do everything
 -- -- grade answers against stored answers, append to the attempt log, rewrite the mastery
 -- cache. Without the grants below the API cannot so much as read the question bank.
 --

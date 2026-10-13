@@ -15,7 +15,7 @@
 --
 -- Questions come from the learner's study plan, so a test covers what they have been asked to study
 -- rather than the whole syllabus. Selection lives in
--- backend/src/services/assessment/mockTestEngine.ts.
+-- server/internal/assessment/mocktest.go.
 
 create table if not exists public.mock_tests (
     id uuid primary key default gen_random_uuid (),

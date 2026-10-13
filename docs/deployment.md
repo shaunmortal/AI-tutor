@@ -23,7 +23,7 @@ asset filenames that no longer exist.
 Both hosts deploy from GitHub, so the code has to be pushed first. **That means a commit** —
 which, per the project's own rule, happens from the venue and only when you decide to.
 
-You will also need the values already in `backend/.env`:
+You will also need the values already in `server/.env`:
 
 ```
 SUPABASE_URL

@@ -3,8 +3,8 @@
 package config
 
 import (
+	"bufio"
 	"fmt"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -26,10 +26,6 @@ type Config struct {
 	// DBTransactionPooler: DATABASE_URL points at a transaction-mode pooler (Supabase :6543,
 	// PgBouncer). Needed past a few hundred connections; disables prepared statements.
 	DBTransactionPooler bool
-
-	// LegacyURL is the TypeScript backend that still serves routes not yet ported.
-	// Empty means every route must be served here.
-	LegacyURL *url.URL
 }
 
 func Load() (*Config, error) {
@@ -67,13 +63,6 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("missing required environment variables: %s", strings.Join(missing, ", "))
 	}
 
-	if raw := os.Getenv("LEGACY_API_URL"); raw != "" {
-		u, err := url.Parse(raw)
-		if err != nil {
-			return nil, fmt.Errorf("LEGACY_API_URL: %w", err)
-		}
-		c.LegacyURL = u
-	}
 	return c, nil
 }
 
@@ -93,4 +82,25 @@ func split(s string) []string {
 		}
 	}
 	return out
+}
+
+// LoadDotenv sets KEY=VALUE lines from path without overriding the real environment.
+// Missing file is fine: production sets variables directly.
+func LoadDotenv(path string) {
+	f, err := os.Open(path)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		line := strings.TrimSpace(s.Text())
+		k, v, ok := strings.Cut(line, "=")
+		if !ok || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if _, set := os.LookupEnv(k); !set {
+			os.Setenv(strings.TrimSpace(k), strings.Trim(strings.TrimSpace(v), `"'`))
+		}
+	}
 }

@@ -2,16 +2,13 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"log/slog"
 	"net/http"
-	"net/http/httputil"
 	"os"
 	"os/signal"
 	"slices"
-	"strings"
 	"syscall"
 	"time"
 
@@ -32,7 +29,7 @@ import (
 var started = time.Now()
 
 func main() {
-	loadDotenv(".env")
+	config.LoadDotenv(".env")
 	cfg, err := config.Load()
 	if err != nil {
 		slog.Error("config", "err", err)
@@ -86,22 +83,6 @@ func main() {
 		})
 	})
 
-	// Routes not yet ported to Go fall through to the TypeScript backend.
-	// ponytail: strangler proxy; delete with LEGACY_API_URL once every route is ported.
-	if cfg.LegacyURL != nil {
-		legacy := httputil.NewSingleHostReverseProxy(cfg.LegacyURL)
-		// This server already answers CORS; a second Access-Control-Allow-Origin from the
-		// legacy backend makes the browser reject the response outright.
-		legacy.ModifyResponse = func(res *http.Response) error {
-			for k := range res.Header {
-				if strings.HasPrefix(k, "Access-Control-") {
-					res.Header.Del(k)
-				}
-			}
-			return nil
-		}
-		mux.Handle("/api/v1/", legacy)
-	}
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		httpx.Fail(w, 404, "NOT_FOUND", "Route not found.")
 	})
@@ -158,25 +139,4 @@ func cors(origins []string, next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
-}
-
-// loadDotenv sets KEY=VALUE lines from path without overriding the real environment.
-// Missing file is fine: production sets variables directly.
-func loadDotenv(path string) {
-	f, err := os.Open(path)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	s := bufio.NewScanner(f)
-	for s.Scan() {
-		line := strings.TrimSpace(s.Text())
-		k, v, ok := strings.Cut(line, "=")
-		if !ok || strings.HasPrefix(line, "#") {
-			continue
-		}
-		if _, set := os.LookupEnv(k); !set {
-			os.Setenv(strings.TrimSpace(k), strings.Trim(strings.TrimSpace(v), `"'`))
-		}
-	}
 }

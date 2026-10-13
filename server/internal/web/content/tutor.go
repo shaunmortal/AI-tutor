@@ -149,3 +149,6 @@ func (m material) Retrieve(ctx context.Context, userID, query string, limit int)
 	}
 	return out, nil
 }
+
+// NewMaterial is the tutor's retrieval, for cmd/evalgrounding to run exactly what the tutor runs.
+func NewMaterial(r *store.Sources) ai.Material { return material{r} }

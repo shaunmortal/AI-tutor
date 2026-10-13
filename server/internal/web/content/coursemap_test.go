@@ -8,7 +8,7 @@ import (
 	"github.com/shaunmortal/AI-tutor/server/internal/store"
 )
 
-// Ported from backend/tests/unit/sources.test.ts, describe('course map').
+// Course-map cases: parsing, topic assignment and excerpt locations.
 
 func decode(t *testing.T, s string) any {
 	var v any

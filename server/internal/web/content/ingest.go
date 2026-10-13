@@ -3,6 +3,7 @@ package content
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -296,3 +297,28 @@ func fileFormat(file []byte) string {
 }
 
 func ptr[T any](v T) *T { return &v }
+
+// IngestNow adds a source and ingests it in this process, skipping the queue (d.Redis is not
+// used). file is a PDF, or nil for a video, whose captions are fetched from YouTube. For
+// cmd/evalgrounding -ingest. A problem with the material marks the source failed, as the
+// worker would; the returned error is anything else.
+func IngestNow(ctx context.Context, d *app.Deps, in store.NewSource, file []byte) error {
+	s := newSvc(d)
+	if file != nil {
+		path := in.UserID + "/" + strings.ToLower(rand.Text()) + ".pdf"
+		if err := s.files.upload(ctx, path, file, "application/pdf"); err != nil {
+			return err
+		}
+		in.StoragePath = &path
+	}
+	src, err := s.sources().Create(ctx, in)
+	if err != nil {
+		return err
+	}
+	payload, _ := json.Marshal(job{SourceID: src.ID})
+	if err := s.ingest(ctx, payload); err != nil {
+		s.fail(ctx, src.ID, err.Error())
+		return err
+	}
+	return nil
+}

@@ -12,7 +12,7 @@
 --
 -- What lives here: the inputs the plan was built from and the shape of the result. The
 -- day-by-day work is in 012_study_sessions. The algorithm is in
--- backend/src/services/planning/planEngine.ts -- deliberately not in SQL, and deliberately
+-- server/internal/planning/plan.go -- deliberately not in SQL, and deliberately
 -- not asked of the model. Dividing a budget by priority is arithmetic; a plan that came
 -- out of a language model could not be explained, reproduced, or unit tested, and the
 -- learner would have no way to know whether it added up.
