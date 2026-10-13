@@ -1,10 +1,12 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CourseGraph, MasteryLegend } from '@/components/CourseGraph/CourseGraph';
+import { masteryLabel, practiceHref } from '@/components/CourseGraph/layout';
 import { Icon } from '@/components/Icon/Icon';
 import { Failed, Loading } from '@/components/Loading/States';
 import { useApi } from '@/hooks/useApi';
 import { api } from '@/lib/api';
-import type { CourseMap, CourseSource, SourcesResponse } from '@/types/api';
+import type { CourseMap, CourseSource, MockTestList, SourcesResponse } from '@/types/api';
 
 /**
  * The learner's own course material: textbooks, slide decks and lecture videos.
@@ -360,11 +362,25 @@ function BuildCourse({
     );
 }
 
-/** Topics in teaching order, each with its concepts, prerequisites and how much material backs it. */
+/**
+ * The course map, as a graph of prerequisites (default) or as a list in teaching order.
+ *
+ * The list is always rendered: hidden visually while the graph is on screen, so a screen reader
+ * still reads the course in order whichever view is chosen.
+ */
 function CourseMapView({ map }: { map: CourseMap }) {
+    const [view, setView] = useState<'graph' | 'list'>('graph');
+    // Per-topic mastery for the learner's goal: the mock-test scope already carries it. Topics outside
+    // the goal (or before any answers) show as not started.
+    const scope = useApi<MockTestList>(() => api.get<MockTestList>('/mock-tests'));
+    const mastery = useMemo(
+        () => new Map((scope.data?.topics ?? []).map((t) => [t.topicId, t.masteryScore])),
+        [scope.data]
+    );
+
     return (
         <div className="card stack">
-            <div className="spread">
+            <div className="spread" style={{ flexWrap: 'wrap' }}>
                 <span className="label">{map.curriculum?.name ?? 'Course map'}</span>
                 {map.curriculum && (
                     <Link
@@ -376,28 +392,71 @@ function CourseMapView({ map }: { map: CourseMap }) {
                 )}
             </div>
 
-            {map.subjects.map((subject) => (
-                <div key={subject.id} className="stack" style={{ gap: 6 }}>
-                    <strong>{subject.name}</strong>
-                    <ol style={{ margin: 0, paddingLeft: 20 }}>
-                        {subject.topics.map((topic) => (
-                            <li key={topic.id} style={{ marginBottom: 8 }}>
-                                <span>{topic.name}</span>
-                                <span className="faint"> · {topic.excerptCount} excerpts</span>
-                                {topic.keyConcepts.length > 0 && (
-                                    <div className="faint">{topic.keyConcepts.join(' · ')}</div>
-                                )}
-                                {topic.prerequisites.length > 0 && (
-                                    <div className="faint">
-                                        Needs first:{' '}
-                                        {topic.prerequisites.map((p) => p.name).join(', ')}
-                                    </div>
-                                )}
-                            </li>
-                        ))}
-                    </ol>
+            <div className="spread" style={{ flexWrap: 'wrap' }}>
+                <div className="row" style={{ gap: 8 }} role="group" aria-label="Show the map as">
+                    <button
+                        type="button"
+                        aria-pressed={view === 'graph'}
+                        onClick={() => setView('graph')}
+                    >
+                        Graph
+                    </button>
+                    <button
+                        type="button"
+                        aria-pressed={view === 'list'}
+                        onClick={() => setView('list')}
+                    >
+                        List
+                    </button>
                 </div>
-            ))}
+                {view === 'graph' && <MasteryLegend />}
+            </div>
+
+            {view === 'graph' && (
+                <>
+                    <p className="faint" style={{ margin: 0 }}>
+                        Arrows run from what to learn first. Hover or tap a topic for its key
+                        concepts; click it (or tap again) to practise it.
+                    </p>
+                    <CourseGraph map={map} mastery={mastery} />
+                </>
+            )}
+
+            <div className={view === 'graph' ? 'sr-only' : 'stack'}>
+                {map.subjects.map((subject) => (
+                    <div key={subject.id} className="stack" style={{ gap: 6 }}>
+                        <strong>{subject.name}</strong>
+                        <ol style={{ margin: 0, paddingLeft: 20 }}>
+                            {subject.topics.map((topic) => (
+                                <li key={topic.id} style={{ marginBottom: 8 }}>
+                                    <Link
+                                        to={practiceHref(subject.id, topic.id)}
+                                        // Hidden behind the graph: reachable by a screen reader,
+                                        // not by a Tab that would land on nothing visible.
+                                        tabIndex={view === 'graph' ? -1 : undefined}
+                                    >
+                                        {topic.name}
+                                    </Link>
+                                    <span className="faint">
+                                        {' '}
+                                        · {masteryLabel(mastery.get(topic.id))} ·{' '}
+                                        {topic.excerptCount} excerpts
+                                    </span>
+                                    {topic.keyConcepts.length > 0 && (
+                                        <div className="faint">{topic.keyConcepts.join(' · ')}</div>
+                                    )}
+                                    {topic.prerequisites.length > 0 && (
+                                        <div className="faint">
+                                            Needs first:{' '}
+                                            {topic.prerequisites.map((p) => p.name).join(', ')}
+                                        </div>
+                                    )}
+                                </li>
+                            ))}
+                        </ol>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

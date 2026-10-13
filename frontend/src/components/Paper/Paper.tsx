@@ -132,7 +132,7 @@ export function ReviewList({ items }: { items: MockReviewItem[] }) {
                         )}
                         {item.feedback && <p style={{ margin: 0 }}>{item.feedback}</p>}
                         {item.misconception && (
-                            <div className="banner">
+                            <div className="banner banner--warn">
                                 <strong>Likely misconception:</strong> {item.misconception}
                             </div>
                         )}

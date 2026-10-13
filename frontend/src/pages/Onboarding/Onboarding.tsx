@@ -96,7 +96,7 @@ export default function Onboarding() {
                 </div>
             </div>
 
-            <ol className="steps" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            <ol className="steps steps--progress">
                 {STEPS.map((name, i) => (
                     <li
                         key={name}
@@ -139,7 +139,11 @@ export default function Onboarding() {
                         >
                             Skip for now
                         </button>
-                        <Link className="primary wide btn" to="/assessment">
+                        <Link
+                            className="primary btn"
+                            style={{ flex: '1 1 220px' }}
+                            to="/assessment"
+                        >
                             Start the knowledge check
                         </Link>
                     </div>
@@ -419,13 +423,7 @@ function Material({
                     }
                 />
             ) : (
-                <div className="row" style={{ gap: 10 }}>
-                    <button type="button" onClick={onBack} disabled={busy}>
-                        Back
-                    </button>
-                    <button type="button" disabled={busy} onClick={() => void fromSyllabus()}>
-                        No material yet — use a standard syllabus
-                    </button>
+                <div className="stack" style={{ gap: 10 }}>
                     <button
                         type="button"
                         className="primary wide"
@@ -434,6 +432,19 @@ function Material({
                     >
                         {busy ? 'Working…' : 'Build my course map'}
                     </button>
+                    <div className="row" style={{ gap: 10 }}>
+                        <button type="button" onClick={onBack} disabled={busy}>
+                            Back
+                        </button>
+                        <button
+                            type="button"
+                            className="linkish"
+                            disabled={busy}
+                            onClick={() => void fromSyllabus()}
+                        >
+                            No material yet? Use a standard syllabus
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

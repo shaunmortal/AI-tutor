@@ -24,18 +24,23 @@ import type { AttemptResult, NextSession } from '@/types/api';
  */
 export function PracticeSession({
     subjectId,
+    topicId,
     onExit,
 }: {
     subjectId: string | null;
+    /** From the course map. The server scopes by subject and ignores `topic` until it supports it. */
+    topicId?: string;
     onExit: () => void;
 }) {
     // Re-fetches when the subject changes, which is what `deps` on useApi is for.
     const session = useApi<NextSession>(
         () =>
             api.get<NextSession>(
-                subjectId ? `/recommendations/next?subject=${subjectId}` : '/recommendations/next'
+                subjectId
+                    ? `/recommendations/next?subject=${subjectId}${topicId ? `&topic=${topicId}` : ''}`
+                    : '/recommendations/next'
             ),
-        [subjectId]
+        [subjectId, topicId]
     );
 
     const [index, setIndex] = useState(0);
@@ -258,7 +263,7 @@ export function PracticeSession({
                     {result.feedback && <p style={{ margin: 0 }}>{result.feedback}</p>}
 
                     {result.misconception && (
-                        <div className="banner">
+                        <div className="banner banner--warn">
                             <strong>Likely misconception:</strong> {result.misconception}
                         </div>
                     )}

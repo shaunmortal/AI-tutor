@@ -503,8 +503,14 @@ export interface CourseMap {
 }
 
 export interface OpenedExcerpt {
-    /** Null for a .pptx slide, which has no viewer; the excerpt text is shown instead. */
+    /**
+     * Where to open the excerpt: a PDF at its page, a video at its second, or — for a .pptx, which no
+     * browser can open at a slide — a signed link to download the whole deck. Null when there is
+     * nothing to open; the excerpt text is shown instead.
+     */
     url: string | null;
+    /** The slide number for an excerpt from a slide deck, else null. */
+    slide: number | null;
     sourceTitle: string;
     location: string;
     excerpt: string;

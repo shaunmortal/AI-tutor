@@ -20,6 +20,12 @@ type ShownMessage = TutorMessage & { check?: QuickCheck };
 /** Answers not taken from the learner's material start with this, in the server's own words. */
 const GENERAL_KNOWLEDGE = 'General knowledge';
 
+/** The paragraph without its "General knowledge (…):" lead-in, which the pill above already says. */
+function withoutLabel(paragraph: string): string {
+    const lead = paragraph.match(/^General knowledge[^:\n]{0,60}:\s*/);
+    return lead ? paragraph.slice(lead[0].length) : paragraph;
+}
+
 /**
  * The doubt-solving tutor.
  *
@@ -153,7 +159,7 @@ export default function AITutor() {
                     </div>
                 </div>
                 {messages.length > 0 && (
-                    <button type="button" onClick={startNew}>
+                    <button type="button" onClick={startNew} style={{ whiteSpace: 'nowrap' }}>
                         New question
                     </button>
                 )}
@@ -213,20 +219,28 @@ export default function AITutor() {
                                     paragraph.startsWith(GENERAL_KNOWLEDGE) ? (
                                         <div
                                             key={i}
-                                            className="banner"
+                                            className="banner banner--note"
                                             style={{ marginTop: i === 0 ? 8 : 12 }}
                                         >
-                                            <span className="pill">General knowledge</span>
+                                            <span className="pill pill--note">
+                                                General knowledge · not from your material
+                                            </span>
                                             <p
                                                 style={{
                                                     margin: '8px 0 0',
                                                     whiteSpace: 'pre-wrap',
                                                 }}
                                             >
-                                                {paragraph}
+                                                {withoutLabel(paragraph)}
                                             </p>
                                             {paragraph.includes('Sources page') && (
-                                                <Link to="/sources">
+                                                <Link
+                                                    to="/sources"
+                                                    style={{
+                                                        display: 'inline-block',
+                                                        marginTop: 8,
+                                                    }}
+                                                >
                                                     Add your course material →
                                                 </Link>
                                             )}
@@ -382,8 +396,8 @@ function QuickCheckCard({ check }: { check: QuickCheck }) {
     }
 
     return (
-        <div className="stack" style={{ gap: 8, marginTop: 14 }}>
-            <span className="label">Quick check</span>
+        <div className="stack quickcheck" style={{ gap: 8 }}>
+            <span className="label">Quick check · one question on what you just read</span>
             <p style={{ margin: 0 }}>{check.body}</p>
             {check.options.map((option, index) => {
                 const marking = result

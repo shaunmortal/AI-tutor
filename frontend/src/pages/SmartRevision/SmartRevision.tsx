@@ -1,11 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Citations } from '@/components/Citations/Citations';
 import { Icon } from '@/components/Icon/Icon';
 import { Empty, Failed, Loading } from '@/components/Loading/States';
 import { useApi } from '@/hooks/useApi';
+import { toUtterances } from '@/hooks/useVoice';
 import { api } from '@/lib/api';
-import type { DueRevision, FlashcardDeck, FlashcardTopic } from '@/types/api';
+import type {
+    DueRevision,
+    FlashcardDeck,
+    FlashcardTopic,
+    LearnerProfile,
+    PreferredLanguage,
+} from '@/types/api';
+import { briefParts, pickVoice } from './brief';
 
 /**
  * Revision: what the schedule says is due, and flashcards for it.
@@ -19,6 +27,9 @@ export default function SmartRevision() {
         api.get<{ today: string; due: DueRevision[] }>('/revision/due')
     );
     const deck = useApi<FlashcardDeck>(() => api.get<FlashcardDeck>('/revision/flashcards'));
+    const profile = useApi<{ profile: LearnerProfile }>(() =>
+        api.get<{ profile: LearnerProfile }>('/learner/profile')
+    );
 
     return (
         <div className="stack">
@@ -43,7 +54,11 @@ export default function SmartRevision() {
                 <div className="card stack" style={{ gap: 8 }}>
                     <span className="label">Due for revision</span>
                     {due.data.due.map((topic) => (
-                        <div key={topic.topicId} className="spread">
+                        <div
+                            key={topic.topicId}
+                            className="spread"
+                            style={{ flexWrap: 'wrap', alignItems: 'baseline' }}
+                        >
                             <span>
                                 {topic.name}
                                 {topic.subjectName && (
@@ -85,6 +100,12 @@ export default function SmartRevision() {
                 <p className="faint" style={{ margin: 0 }}>
                     Cards for some topics could not be written just now. They will be next time.
                 </p>
+            )}
+            {deck.data && deck.data.topics.length > 0 && (
+                <AudioBrief
+                    topics={deck.data.topics}
+                    language={profile.data?.profile.preferredLanguage ?? 'english'}
+                />
             )}
             {deck.data?.topics.map((topic) => (
                 <TopicDeck key={topic.topicId} topic={topic} />
@@ -184,6 +205,139 @@ function TopicDeck({ topic }: { topic: FlashcardTopic }) {
                         </button>
                     )}
                 </>
+            )}
+        </div>
+    );
+}
+
+/* ------------------------------------------------------------------ audio brief */
+
+/**
+ * "Listen": the due and weak topics and their cards read aloud by the browser's own voice, with
+ * the card being read highlighted. Nothing goes to the server, and nothing plays until asked.
+ */
+function AudioBrief({
+    topics,
+    language,
+}: {
+    topics: FlashcardTopic[];
+    language: PreferredLanguage;
+}) {
+    const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window;
+    const [state, setState] = useState<'idle' | 'playing' | 'paused'>('idle');
+    const [current, setCurrent] = useState<string | null>(null);
+    // Bumped on every stop, so events from a cancelled run cannot move the highlight.
+    const run = useRef(0);
+
+    // Leaving the page stops the voice; it is not tied to the React tree.
+    useEffect(
+        () => () => {
+            if (canSpeak) window.speechSynthesis.cancel();
+        },
+        [canSpeak]
+    );
+
+    if (!canSpeak) return null;
+
+    function stop() {
+        run.current += 1;
+        window.speechSynthesis.cancel();
+        setState('idle');
+        setCurrent(null);
+    }
+
+    function play() {
+        const synth = window.speechSynthesis;
+        stop();
+        const mine = run.current;
+
+        const voices = synth.getVoices();
+        const { lang, index } = pickVoice(voices, language);
+        const parts = briefParts(topics, lang === 'hi-IN');
+        const chunks = parts.flatMap((part) =>
+            toUtterances(part.text).map((text) => ({ text, cardId: part.cardId }))
+        );
+
+        chunks.forEach((chunk, i) => {
+            const utterance = new SpeechSynthesisUtterance(chunk.text);
+            utterance.lang = lang;
+            if (index >= 0) utterance.voice = voices[index]!;
+            utterance.onstart = () => {
+                if (run.current === mine) setCurrent(chunk.cardId);
+            };
+            // A refusal (no user gesture, no audio device) must not leave the controls stuck on
+            // "playing" over silence. Interruptions are our own stop, already handled.
+            utterance.onerror = (event) => {
+                if (run.current !== mine) return;
+                if (event.error !== 'interrupted' && event.error !== 'canceled') stop();
+            };
+            if (i === chunks.length - 1) {
+                utterance.onend = () => {
+                    if (run.current === mine) stop();
+                };
+            }
+            synth.speak(utterance);
+        });
+        setState('playing');
+    }
+
+    const cards = topics.flatMap((topic) =>
+        topic.cards.map((card) => ({ ...card, topicName: topic.name }))
+    );
+
+    return (
+        <div className="card stack brief" data-playing={state !== 'idle'} style={{ gap: 10 }}>
+            <div className="spread" style={{ flexWrap: 'wrap' }}>
+                <div style={{ minWidth: 0 }}>
+                    <span className="label">Audio brief</span>
+                    <div className="faint">
+                        {cards.length} {cards.length === 1 ? 'card' : 'cards'} read aloud
+                        {language === 'hindi' ? ' — in Hindi where your device has a voice' : ''}.
+                    </div>
+                </div>
+                <div className="row" style={{ gap: 8 }}>
+                    {state === 'idle' ? (
+                        <button type="button" className="primary" onClick={play}>
+                            ▶ Listen
+                        </button>
+                    ) : (
+                        <>
+                            <button
+                                type="button"
+                                aria-pressed={state === 'paused'}
+                                onClick={() => {
+                                    if (state === 'paused') {
+                                        window.speechSynthesis.resume();
+                                        setState('playing');
+                                    } else {
+                                        window.speechSynthesis.pause();
+                                        setState('paused');
+                                    }
+                                }}
+                            >
+                                {state === 'paused' ? '▶ Resume' : '❚❚ Pause'}
+                            </button>
+                            <button type="button" onClick={stop}>
+                                ■ Stop
+                            </button>
+                        </>
+                    )}
+                </div>
+            </div>
+
+            {state !== 'idle' && (
+                <ol className="stack" style={{ gap: 4, margin: 0, padding: 0, listStyle: 'none' }}>
+                    {cards.map((card) => (
+                        <li
+                            key={card.id}
+                            className="brief__item"
+                            aria-current={card.id === current ? 'true' : undefined}
+                        >
+                            <span className="faint">{card.topicName} · </span>
+                            {card.front}
+                        </li>
+                    ))}
+                </ol>
             )}
         </div>
     );

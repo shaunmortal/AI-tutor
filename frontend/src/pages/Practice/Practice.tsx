@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Icon } from '@/components/Icon/Icon';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Empty, Failed, Loading } from '@/components/Loading/States';
 import { useApi } from '@/hooks/useApi';
 import { api } from '@/lib/api';
@@ -33,16 +33,27 @@ export default function Practice() {
      * An object rather than a plain string, because `null` has to mean "not started" while the
      * adaptive path legitimately runs with no subject id at all.
      */
-    const [running, setRunning] = useState<{ subjectId: string | null } | null>(null);
+    // Arriving from the course map (`?subject=&topic=`) starts that session straight away.
+    const [params, setParams] = useSearchParams();
+    const [running, setRunning] = useState<{
+        subjectId: string | null;
+        topicId?: string;
+    } | null>(() =>
+        params.get('subject')
+            ? { subjectId: params.get('subject'), topicId: params.get('topic') ?? undefined }
+            : null
+    );
 
     if (running) {
         return (
             <PracticeSession
                 subjectId={running.subjectId}
+                topicId={running.topicId}
                 // Back to the picker, not the dashboard. Finishing a set and wanting another is the
                 // common case, and this screen is now the only place practice starts from.
                 onExit={() => {
                     setRunning(null);
+                    setParams({}, { replace: true });
                     subjects.reload();
                 }}
             />
