@@ -93,7 +93,7 @@ switches off under the OS "reduce motion" setting.
 | 5a/b | RAGAS evaluation on a team-built test set | ✅ | 36 questions on MIT 6.006 lectures 1–3 (PDF notes + lecture videos) — [results below](#-grounding--ragas-5ab) |
 | 5c | Simulated students across sessions | ✅ | 4 learner profiles × 10 sessions × 5 seeds — [results below](#-simulated-students-5c) |
 | 6b | Revision material for weak topics | ✅ flashcards | Cited flashcards for due and weak topics, reviewed with SM-2. *Audio briefs: planned* |
-| 6a | Course flow map | ✅ list view | Topics with "needs first" prerequisites. *Graph view: planned* |
+| 6a | Course flow map | ✅ | Interactive prerequisite graph coloured by mastery (list view kept for screen readers); click a topic to practise it |
 | 6c | Study schedule from weak topics, forgetting curves, exam date | ✅ | `internal/planning` + `internal/learner/srs.go` |
 | 6d | English lectures, Hindi explanations | ✅ | Tutor replies in the learner's language; Hindi/Hinglish questions are translated before retrieval |
 | 6e | Audio tutoring | ✅ | Voice in (speech recognition), voice out (speech synthesis) |
